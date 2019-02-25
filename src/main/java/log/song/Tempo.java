@@ -1,20 +1,26 @@
 package log.song;
 
-public class Tempo {
-	public long t;
-	public int bpm;
+public class Tempo extends Position {
+	public long id;
+	public int kbpm;
 	public boolean sync;
 
-	public Tempo(final long t, final int bpm, final boolean sync) {
-		this.t = t;
-		this.bpm = bpm;
+	public Tempo(final long pos, final int kbpm, final boolean sync) {
+		super(pos);
+		this.kbpm = kbpm;
 		this.sync = sync;
+	}
+
+	public Tempo(final Tempo t) {
+		super(t);
+		id = t.id;
+		kbpm = t.kbpm;
+		sync = t.sync;
 	}
 
 	@Override
 	public String toString() {
-		return "Tempo{t: " + t//
-				+ ", bpm: " + bpm//
-				+ ", sync: " + (sync ? "T" : "F") + "}";
+		return sync ? "TempoBPM{pos: " + pos + ", kbpm: " + kbpm + "}"
+				: "TempoMeasure{pos: " + pos + ", measure: " + kbpm + "}";
 	}
 }

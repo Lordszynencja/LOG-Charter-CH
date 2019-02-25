@@ -1,29 +1,23 @@
 package log.song;
 
-public class Event implements Comparable<Event> {
-
-	/**
-	 * start in ms
-	 */
-	public long pos;
+public class Event extends Position {
 
 	/**
 	 * length in ms
 	 */
-	public long length;
+	public double length = -1;
 
-	public Event(final long pos) {
-		this.pos = pos;
+	public Event(final Event e) {
+		super(e);
+		length = e.length;
 	}
 
-	@Override
-	public int compareTo(final Event o) {
-		return new Long(pos).compareTo(o.pos);
+	public Event(final long pos) {
+		super(pos);
 	}
 
 	@Override
 	public String toString() {
-		return "Event{pos: " + pos//
-				+ ", length: " + length + "}";
+		return "Event{pos: " + pos + ", length: " + length + "}";
 	}
 }

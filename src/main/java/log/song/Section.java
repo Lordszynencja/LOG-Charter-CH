@@ -1,25 +1,24 @@
 package log.song;
 
-public class Section {
+public class Section extends Position {
 
 	/**
 	 * Section name
 	 */
-	String name;
+	public final String name;
 
-	/**
-	 * Section start in ms
-	 */
-	long pos;
+	public Section(final Section s) {
+		super(s);
+		name = s.name;
+	}
 
 	public Section(final String name, final long pos) {
+		super(pos);
 		this.name = name;
-		this.pos = pos;
 	}
 
 	@Override
 	public String toString() {
-		return "Section{name: " + name//
-				+ ", pos: " + pos + "}";
+		return "Section{name: " + name + ", pos: " + pos + "}";
 	}
 }

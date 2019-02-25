@@ -6,11 +6,19 @@ import java.io.PrintStream;
 public class Logger {
 	private static PrintStream out = System.out;
 
+	public static boolean debug = true;
+
 	static {
 		try {
 			out = new PrintStream(new FileOutputStream("D://log.txt"));
 		} catch (final Exception e) {
 			e.printStackTrace();
+		}
+	}
+
+	public static void debug(final String msg) {
+		if (debug) {
+			out.println("[DEBUG] " + msg);
 		}
 	}
 

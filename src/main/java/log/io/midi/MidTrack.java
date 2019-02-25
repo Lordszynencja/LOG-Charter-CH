@@ -1,6 +1,12 @@
-package log.io;
+package log.io.midi;
 
+import static java.lang.Math.round;
 import static java.util.Arrays.copyOfRange;
+import static log.io.Logger.debug;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import javax.sound.midi.MidiEvent;
 import javax.sound.midi.Track;
@@ -14,22 +20,32 @@ public class MidTrack {
 			this.t = t;
 			this.msg = msg;
 		}
+
+		@Override
+		public String toString() {
+			return "MidEvent{t: " + t + ", msg: " + Arrays.toString(msg) + "}";
+		}
 	}
 
 	public static enum TrackType {
 		GUITAR, BASS, KEYS, EVENTS, TEMPO, UNKNOWN;
 
 		public static TrackType from(final String s) {
-			if (s == null)
+			if (s == null) {
 				return UNKNOWN;
-			if (s.equals("EVENTS"))
+			}
+			if (s.equals("EVENTS")) {
 				return EVENTS;
-			if (s.equals("PART GUITAR"))
+			}
+			if (s.equals("PART GUITAR")) {
 				return GUITAR;
-			if (s.equals("PART BASS"))
+			}
+			if (s.equals("PART BASS")) {
 				return BASS;
-			if (s.equals("PART KEYS"))
+			}
+			if (s.equals("PART KEYS")) {
 				return KEYS;
+			}
 
 			return UNKNOWN;
 		}
@@ -37,24 +53,33 @@ public class MidTrack {
 	}
 
 	public final TrackType type;
-	public final MidEvent[] events;
+	public final List<MidEvent> events;
 
 	public MidTrack(final Track t, final boolean isTempo, final double scaler) {
 		TrackType trackType = null;
-		events = new MidEvent[t.size()];
+		events = new ArrayList<>(t.size());
 
 		for (int i = 0; i < t.size(); i++) {
 			final MidiEvent e = t.get(i);
 			final byte[] msg = e.getMessage().getMessage();
-			events[i] = new MidEvent(ms(e, scaler), msg);
 
-			if (msg[0] == -1 && msg[1] == 3)
+			debug(e.getTick() + ", " + Arrays.toString(msg));
+			if ((msg[0] == -1) && (msg[1] == 3)) {
 				trackType = TrackType.from(new String(copyOfRange(msg, 3, msg.length)));
+			} else if ((msg[0] != -1) || (msg[1] != 47) || (msg[2] != 0)) {
+				events.add(new MidEvent(ms(e, scaler), msg));
+			}
 		}
 		type = isTempo ? TrackType.TEMPO : trackType;
+		debug("Track " + type + " ended");
+	}
+
+	public MidTrack(final TrackType type, final List<MidEvent> events) {
+		this.type = type;
+		this.events = events;
 	}
 
 	private long ms(final MidiEvent e, final double scaler) {
-		return (long) Math.floor(e.getTick() * scaler);
+		return round(e.getTick() * scaler);
 	}
 }

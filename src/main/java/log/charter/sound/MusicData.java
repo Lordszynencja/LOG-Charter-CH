@@ -11,8 +11,8 @@ public class MusicData {
 	private static int[][] splitAudio(final byte[] b) {
 		final int[][] d = new int[2][b.length / 4];
 		for (int i = 0; i < b.length; i += 4) {
-			d[0][i / 4] = b[i] + b[i + 1] * 256;
-			d[1][i / 4] = b[i + 2] + b[i + 3] * 256;
+			d[0][i / 4] = b[i] + (b[i + 1] * 256);
+			d[1][i / 4] = b[i + 2] + (b[i + 3] * 256);
 		}
 
 		return d;
@@ -20,13 +20,13 @@ public class MusicData {
 
 	public final int[][] data;
 	public final AudioFormat outFormat;
-	public byte[] preparedData = new byte[0];
-	public int slow = 0;
+	public byte[] preparedData;
+	public int slow = 1;
 
 	public MusicData(final byte[] b, final float rate) {
+		preparedData = b;
 		data = splitAudio(b);
 		outFormat = new AudioFormat(Encoding.PCM_SIGNED, rate, 16, 2, 4, rate, false);
-		setSlow(1);
 	}
 
 	public void setSlow(final int newSlow) {

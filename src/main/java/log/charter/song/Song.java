@@ -25,16 +25,15 @@ public class Song {
 
 	public List<Section> sections = new ArrayList<>();
 	public List<Tempo> tempos = new ArrayList<>();
-	public String path = null;
 
 	public Song() {
 		g = new Instrument(InstrumentType.GUITAR);
 		b = new Instrument(InstrumentType.BASS);
 		k = new Instrument(InstrumentType.KEYS);
+		tempos.add(new Tempo(0, 0, 120000, true));
 	}
 
 	public Song(final Song s) {
-		path = s.path;
 		g = new Instrument(s.g);
 		b = new Instrument(s.b);
 		k = new Instrument(s.k);

@@ -1,12 +1,13 @@
 package log.charter.song;
 
 public class Tempo extends Position {
-	public long id;
+	public int id;
 	public int kbpm;
 	public boolean sync;
 
-	public Tempo(final long pos, final int kbpm, final boolean sync) {
+	public Tempo(final int id, final long pos, final int kbpm, final boolean sync) {
 		super(pos);
+		this.id = id;
 		this.kbpm = kbpm;
 		this.sync = sync;
 	}

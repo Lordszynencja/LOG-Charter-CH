@@ -27,19 +27,22 @@ public class SoundPlayer {
 		private Player start(final int start) {
 			new Thread(() -> {
 				try {
-					int startByte = (int) floor(md.outFormat.getFrameRate() * start / 250);
+					int startByte = (int) floor((md.outFormat.getFrameRate() * start) / 250);
 					startByte -= startByte % 4;
 
-					if (stopped)
+					if (stopped) {
 						return;
+					}
 
 					line.open(md.outFormat);
 					line.start();
-					if (md.preparedData.length - startByte > BUFF_SIZE) {
+					if ((md.preparedData.length - startByte) > BUFF_SIZE) {
 						line.write(md.preparedData, startByte, BUFF_SIZE);
 						startByte += BUFF_SIZE;
 					}
-					line.write(md.preparedData, startByte, md.preparedData.length - startByte);
+					if ((md.preparedData.length - startByte) > 0) {
+						line.write(md.preparedData, startByte, md.preparedData.length - startByte);
+					}
 					line.drain();
 					line.stop();
 				} catch (final LineUnavailableException e) {
@@ -85,8 +88,8 @@ public class SoundPlayer {
 		final int[][] data = new int[2][length];
 
 		for (int i = 0; i < length; i++) {
-			data[0][i] = (int) floor(sin(i * Math.PI * 2 / rate * pitch) * loudness);
-			data[1][i] = (int) floor(sin(i * Math.PI * 2 / rate * pitch) * loudness);
+			data[0][i] = (int) floor(sin(((i * Math.PI * 2) / rate) * pitch) * loudness);
+			data[1][i] = (int) floor(sin(((i * Math.PI * 2) / rate) * pitch) * loudness);
 		}
 
 		return data;
@@ -103,19 +106,22 @@ public class SoundPlayer {
 
 	private static int[] slow(final int[] d, final int s) {
 		final int l = d.length;
+		if (l < 2) {
+			return d;
+		}
 		if (s < 0) {
 			final int s1 = -s;
-			final int newL = (l - 1) / s1 * (s1 + 1) + 1;
+			final int newL = (((l - 1) / s1) * (s1 + 1)) + 1;
 			final int[] d1 = new int[newL];
 
-			for (int i = 0; i < (l - 1) / s1; i++) {
+			for (int i = 0; i < ((l - 1) / s1); i++) {
 				d1[i * (s1 + 1)] = d[i * s1];
 				for (int j = 1; j <= s1; j++) {
-					final int b = i * s1 + j;
+					final int b = (i * s1) + j;
 					final int a = b - 1;
 					final int wa = j;
-					final int wb = s1 - j + 1;
-					d1[i * (s1 + 1) + j] = (wa * d[a] + wb * d[b]) / (s1 + 1);
+					final int wb = (s1 - j) + 1;
+					d1[(i * (s1 + 1)) + j] = ((wa * d[a]) + (wb * d[b])) / (s1 + 1);
 				}
 			}
 			d1[newL - 1] = d[d.length - 1];
@@ -123,11 +129,13 @@ public class SoundPlayer {
 			return d1;
 		}
 
-		final int[] d1 = new int[(l - 1) * s + 1];
+		final int[] d1 = new int[((l - 1) * s) + 1];
 
-		for (int i = 0; i < l - 1; i++)
-			for (int j = 0; j < s; j++)
-				d1[i * s + j] = ((s - j) * d[i] + j * d[i + 1]) / s;
+		for (int i = 0; i < (l - 1); i++) {
+			for (int j = 0; j < s; j++) {
+				d1[(i * s) + j] = (((s - j) * d[i]) + (j * d[i + 1])) / s;
+			}
+		}
 
 		d1[(l - 1) * s] = d[l - 1];
 
@@ -141,15 +149,19 @@ public class SoundPlayer {
 	private static int[] sum(final int[]... d) {
 		int l = 0;
 
-		for (int i = 0; i < d.length; i++)
-			if (d[i].length > l)
+		for (int i = 0; i < d.length; i++) {
+			if (d[i].length > l) {
 				l = d[i].length;
+			}
+		}
 
 		final int[] summed = new int[l];
 
-		for (int i = 0; i < d.length; i++)
-			for (int j = 0; j < d[i].length; j++)
+		for (int i = 0; i < d.length; i++) {
+			for (int j = 0; j < d[i].length; j++) {
 				summed[j] += d[i][j];
+			}
+		}
 
 		return summed;
 	}
@@ -166,17 +178,18 @@ public class SoundPlayer {
 	}
 
 	public static byte[] toBytes(final int[][] data) {
-		if (data[0].length != data[1].length)
+		if (data[0].length != data[1].length) {
 			throw new IllegalArgumentException("Left and right channel have different lengths");
+		}
 
 		final int l = data[0].length;
 		final byte[] bytes = new byte[l * 4];
 
 		for (int i = 0; i < l; i++) {
 			bytes[i * 4] = (byte) data[0][i];
-			bytes[i * 4 + 1] = (byte) (data[0][i] / 256);
-			bytes[i * 4 + 2] = (byte) data[1][i];
-			bytes[i * 4 + 3] = (byte) (data[1][i] / 256);
+			bytes[(i * 4) + 1] = (byte) (data[0][i] / 256);
+			bytes[(i * 4) + 2] = (byte) data[1][i];
+			bytes[(i * 4) + 3] = (byte) (data[1][i] / 256);
 		}
 
 		return bytes;

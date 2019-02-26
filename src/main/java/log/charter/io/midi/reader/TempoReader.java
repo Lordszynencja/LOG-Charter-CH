@@ -6,6 +6,7 @@ import static log.charter.io.Logger.error;
 import java.util.ArrayList;
 import java.util.List;
 
+import log.charter.io.TickMsConverter;
 import log.charter.io.midi.MidTrack;
 import log.charter.io.midi.MidTrack.MidEvent;
 import log.charter.song.Tempo;
@@ -20,17 +21,17 @@ public class TempoReader {
 				final int mpq = ((e.msg[3] & 0xFF) << 16) | ((e.msg[4] & 0xFF) << 8) | (e.msg[5] & 0xFF);
 
 				final int kbpm = (int) Math.floor(6.0E10D / mpq);
-				tempos.add(new Tempo(e.t, kbpm, true));
+				tempos.add(new Tempo((int) (e.t / TickMsConverter.ticksPerBeat), e.t, kbpm, true));
 			} else if (type == 88) {// sync
 				final int num = e.msg[3];
-				tempos.add(new Tempo(e.t, num, false));
+				tempos.add(new Tempo((int) (e.t / TickMsConverter.ticksPerBeat), e.t, num, false));
 			} else {
 				error("Unknown Tempo: " + e);
 			}
 		}
 
 		if (tempos.isEmpty()) {
-			tempos.add(new Tempo(0, 120000, true));
+			tempos.add(new Tempo(0, 0, 120000, true));
 		}
 
 		tempos.sort(null);

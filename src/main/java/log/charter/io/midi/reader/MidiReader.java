@@ -30,10 +30,8 @@ public final class MidiReader {
 	}
 
 	private final List<MidTrack> tracks;
-	private final String path;
 
 	private MidiReader(final String path) throws InvalidMidiDataException, IOException {
-		this.path = path;
 		final Sequence seq = MidiSystem.getSequence(new File(path));
 		final double scaler = ((double) TickMsConverter.ticksPerBeat) / seq.getResolution();
 
@@ -48,7 +46,6 @@ public final class MidiReader {
 
 	private Song read() {
 		final Song s = new Song();
-		s.path = path.substring(0, path.lastIndexOf('/'));
 
 		for (final MidTrack t : tracks) {
 			switch (t.type) {

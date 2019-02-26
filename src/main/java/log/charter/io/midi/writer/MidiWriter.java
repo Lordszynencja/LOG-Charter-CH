@@ -9,12 +9,10 @@ import javax.sound.midi.Sequence;
 
 import log.charter.io.Logger;
 import log.charter.io.TickMsConverter;
-import log.charter.song.Song;
 import log.charter.song.Instrument.InstrumentType;
+import log.charter.song.Song;
 
 public final class MidiWriter {
-	public static final byte[] TRACK_END = { -1, 47, 0 };
-
 	public static void writeMidi(final String path, final Song s) {
 		try {
 			final Song conv = convertToTick(s);

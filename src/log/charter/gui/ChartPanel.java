@@ -74,10 +74,6 @@ public class ChartPanel extends JPanel {
 		return (lane0Y + (laneDistY * i));
 	}
 
-	private static int yToNote(final int y) {
-		return ((y - lane0Y) + (laneDistY / 2)) / laneDistY;
-	}
-
 	private final ChartData data;
 
 	public ChartPanel(final ChartEventsHandler handler) {
@@ -257,7 +253,6 @@ public class ChartPanel extends JPanel {
 		}
 		tap.draw(g, TAP_COLOR);
 
-		// TODO test
 		final DrawList solos = new DrawList();
 		for (final Event e : data.currentInstrument.solo) {
 			final int x = data.timeToX(e.pos);
@@ -274,26 +269,23 @@ public class ChartPanel extends JPanel {
 	}
 
 	private void drawSpecial(final Graphics g) {
-		// TODO mouse
 		int x = 0;
 		if (data.my < (sectionNamesY - 5)) {
 			return;
 		} else if (data.my < spY) {
 			g.setColor(Color.YELLOW);
 			x = data.timeToX(data.findBeatTime((int) data.xToTime(data.mx + 10)));
-			// TODO sections editing
+			g.fillRect(x, data.my - 1, 3, 3);
 		} else if (data.my < (lane0Y - (laneDistY / 2))) {
-			g.setColor(Color.ORANGE);
-			x = data.mx - 1;
-			// TODO sections editing
 		} else if (data.my < (lane0Y + ((laneDistY * 9) / 2))) {
+			final double closestNoteTime = data.findClosestNotePositionForX(data.mx);
+			final int y = ((((data.my - lane0Y) + (laneDistY / 2)) / laneDistY) * laneDistY) + lane0Y;
 			g.setColor(Color.RED);
-			x = data.mx - 1;
-			// TODO sections editing
+			g.fillRect(data.timeToX(closestNoteTime) - 2, y - 2, 5, 5);
+			// TODO notes highlighting
 		} else {
 			return;
 		}
-		g.fillRect(x, data.my - 1, 3, 3);
 	}
 
 	@Override
@@ -312,22 +304,7 @@ public class ChartPanel extends JPanel {
 		g.drawLine(data.markerOffset, lane0Y - 50, data.markerOffset, lane0Y + (laneDistY * 4) + 50);
 	}
 
-	@SuppressWarnings("unused")
-	private int stickX(final int x) {
-		return data.timeToX(xToNote(x));
-	}
-
-	@SuppressWarnings("unused")
-	private int stickY(final int y) {
-		return noteToY(yToNote(y));
-	}
-
 	private int tempoX(final double lastPos, final int id, final int lastId, final int lastKBPM) {
 		return data.timeToX(lastPos + (((id - lastId) * 60000000) / lastKBPM));
-	}
-
-	private int xToNote(final int x) {
-		return 0;
-		// return (((x + data.markerOffset + data.t) + (td / 2)) - t0) / td;
 	}
 }

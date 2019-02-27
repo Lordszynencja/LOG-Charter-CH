@@ -84,9 +84,7 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 		case KeyEvent.VK_LEFT:
 			stopMusic();
 			if (alt) {
-				System.out.println(data.t);
 				data.t = (int) data.findBeatTime(data.t - 1);
-				System.out.println(data.t);
 			} else {
 				left = true;
 			}
@@ -94,9 +92,7 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 		case KeyEvent.VK_RIGHT:
 			stopMusic();
 			if (alt) {
-				System.out.println(data.t);
 				data.t = (int) data.findNextBeatTime(data.t);
-				System.out.println(data.t);
 			} else {
 				right = true;
 			}
@@ -113,6 +109,14 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 		case KeyEvent.VK_S:
 			if (e.isControlDown()) {
 				save();
+			}
+			break;
+		case KeyEvent.VK_T:
+			if ((data.my >= (ChartPanel.lane0Y - (ChartPanel.laneDistY / 2))) && (data.my <= (ChartPanel.lane0Y
+					+ ((ChartPanel.laneDistY * 9) / 2)))) {
+				final double closestNoteTime = data.findClosestNotePositionForX(data.mx);
+				final int color = (((data.my - ChartPanel.lane0Y) + (ChartPanel.laneDistY / 2)) / ChartPanel.laneDistY);
+				data.toggleNote(closestNoteTime, 0);
 			}
 			break;
 		case KeyEvent.VK_O:
@@ -176,13 +180,31 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 			} else if (data.my < (ChartPanel.lane0Y - (ChartPanel.laneDistY / 2))) {
 				return;
 			} else if (data.my < (ChartPanel.lane0Y + ((ChartPanel.laneDistY * 9) / 2))) {
-				// TODO notes editing
+
+				// TODO notes selection
+				if (!ctrl && !shift) {
+					// TODO (find and) select single note
+					//
+				}
+
 			}
 			return;
 			// TODO select
+		} else if (e.getButton() == MouseEvent.BUTTON2) {
+			// TODO add note
+			if ((data.my >= (ChartPanel.lane0Y - (ChartPanel.laneDistY / 2))) && (data.my <= (ChartPanel.lane0Y
+					+ ((ChartPanel.laneDistY * 9) / 2)))) {
+				final double closestNoteTime = data.findClosestNotePositionForX(data.mx);
+				data.toggleNote(closestNoteTime, 0);
+			}
 		} else if (e.getButton() == MouseEvent.BUTTON3) {
 			// TODO add note
-
+			if ((data.my >= (ChartPanel.lane0Y - (ChartPanel.laneDistY / 2))) && (data.my <= (ChartPanel.lane0Y
+					+ ((ChartPanel.laneDistY * 9) / 2)))) {
+				final double closestNoteTime = data.findClosestNotePositionForX(data.mx);
+				final int color = ((data.my - (ChartPanel.laneDistY / 2)) / ChartPanel.laneDistY);
+				data.toggleNote(closestNoteTime, color);
+			}
 		}
 	}
 

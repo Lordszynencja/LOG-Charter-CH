@@ -1,10 +1,13 @@
 package log.charter.gui;
 
+import static java.lang.Math.round;
+
 import java.util.ArrayList;
 import java.util.List;
 
 import log.charter.song.IniData;
 import log.charter.song.Instrument;
+import log.charter.song.Note;
 import log.charter.song.Section;
 import log.charter.song.Song;
 import log.charter.song.Tempo;
@@ -39,6 +42,7 @@ public class ChartData {
 	public boolean drawAudio = false;
 	public boolean changed = false;
 	public int beatId = 0;
+	public int gridSize = 2;
 
 	public ChartData() {
 		resetZoom();
@@ -46,6 +50,19 @@ public class ChartData {
 
 	public void addZoom(final int change) {
 		setZoomLevel(Config.zoomLvl + change);
+	}
+
+	public double closestGridTime(final double time, final int tmpId) {
+		final Tempo tmp = s.tempos.get(tmpId);
+		final long gridPoint = round(ttb(time - tmp.pos, tmp.kbpm) * gridSize);
+
+		if (tmpId < (s.tempos.size() - 1)) {
+			final Tempo nextTmp = s.tempos.get(tmpId + 1);
+			if (gridPoint == ((nextTmp.id - tmp.id) * gridSize)) {
+				return nextTmp.pos;
+			}
+		}
+		return tmp.pos + (btt(gridPoint, tmp.kbpm) / gridSize);
 	}
 
 	public int findBeatId(final int time) {
@@ -114,6 +131,22 @@ public class ChartData {
 		return tmp.pos + btt(id - tmp.id, lastKbpm);
 	}
 
+	public double findClosestNotePositionForX(final int x) {
+		final List<Note> notes = currentInstrument.notes.get(currentDiff);
+		final double time = xToTime(x);
+		final int tmpId = findTempoId(time);
+		final double closestGrid = closestGridTime(time, tmpId);
+
+		return closestGrid;
+
+		/*
+		 * for (int i=0;i<notes.size();i++) { final Note n = notes.get(i); final
+		 * int nX = timeToX(n.pos); if (nX<x+) }
+		 *
+		 * return 0;
+		 */
+	}
+
 	public double findNextBeatTime(final int time) {
 		if (time < 0) {
 			return 0;
@@ -159,6 +192,31 @@ public class ChartData {
 		return newSection;
 	}
 
+	public Tempo findTempo(final double time) {
+		return s.tempos.get(findTempoId(time));
+	}
+
+	public int findTempoId(final double time) {
+		if (time <= 0) {
+			return 0;
+		}
+
+		int result = 0;
+		for (int i = 0; i < s.tempos.size(); i++) {
+			final Tempo tmp = s.tempos.get(i);
+			if (!tmp.sync) {
+				continue;
+			}
+
+			if (tmp.pos > time) {
+				return result;
+			}
+			result = i;
+		}
+
+		return result;
+	}
+
 	public void resetZoom() {
 		zoom = Math.pow(0.99, Config.zoomLvl);
 	}
@@ -174,6 +232,11 @@ public class ChartData {
 
 	public int timeToXLength(final double pos) {
 		return (int) (pos * zoom);
+	}
+
+	public void toggleNote(final double closestNoteTime, final int color) {
+		// TODO Auto-generated method stub
+		System.out.println("Toggling note " + closestNoteTime + ", c:" + color);
 	}
 
 	public double xToTime(final int x) {

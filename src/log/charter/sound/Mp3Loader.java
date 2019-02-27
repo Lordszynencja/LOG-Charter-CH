@@ -5,7 +5,7 @@ import static javax.sound.sampled.AudioSystem.getAudioInputStream;
 import static log.charter.io.Logger.error;
 
 import java.io.BufferedInputStream;
-import java.io.FileInputStream;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -15,10 +15,13 @@ import javax.sound.sampled.AudioFormat.Encoding;
 import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.UnsupportedAudioFileException;
 
+import log.charter.util.RW;
+
 public class Mp3Loader {
 	public static MusicData load(final String path) {
 		try {
-			final AudioInputStream in = getAudioInputStream(new BufferedInputStream(new FileInputStream(path)));
+			final AudioInputStream in = getAudioInputStream(new BufferedInputStream(new ByteArrayInputStream(RW.readB(
+					path))));
 
 			final float rate = in.getFormat().getSampleRate();
 			final AudioFormat outFormat = new AudioFormat(Encoding.PCM_SIGNED, rate, 16, 2, 4, rate, false);
@@ -35,6 +38,7 @@ public class Mp3Loader {
 					length += last;
 				}
 			}
+			in.close();
 
 			final byte[] buffer = new byte[length];
 			last = 0;

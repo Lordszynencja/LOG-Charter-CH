@@ -12,6 +12,7 @@ import java.awt.event.MouseWheelListener;
 import java.io.File;
 
 import javax.swing.JFileChooser;
+import javax.swing.JOptionPane;
 import javax.swing.filechooser.FileFilter;
 
 import log.charter.io.IniWriter;
@@ -19,9 +20,11 @@ import log.charter.io.Logger;
 import log.charter.io.midi.reader.MidiReader;
 import log.charter.io.midi.writer.MidiWriter;
 import log.charter.song.IniData;
+import log.charter.song.Section;
 import log.charter.song.Song;
 import log.charter.sound.Mp3Loader;
 import log.charter.sound.MusicData;
+import log.charter.sound.OggLoader;
 import log.charter.sound.SoundPlayer;
 import log.charter.sound.SoundPlayer.Player;
 
@@ -59,6 +62,9 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 		playStart = System.currentTimeMillis();
 		final int speed = (FL * (shift ? 10 : 2)) / (ctrl ? 10 : 1);
 		data.t += (player != null ? FL : 0) + (left ? -speed : 0) + (right ? speed : 0);
+		if (data.t < 0) {
+			data.t = 0;
+		}
 	}
 
 	@Override
@@ -77,7 +83,7 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 			break;
 		case KeyEvent.VK_LEFT:
 			stopMusic();
-			if (alt) {// TODO jump to previous beat
+			if (alt) {
 				System.out.println(data.t);
 				data.t = (int) data.findBeatTime(data.t - 1);
 				System.out.println(data.t);
@@ -87,7 +93,7 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 			break;
 		case KeyEvent.VK_RIGHT:
 			stopMusic();
-			if (alt) {// TODO jump to next beat
+			if (alt) {
 				System.out.println(data.t);
 				data.t = (int) data.findNextBeatTime(data.t);
 				System.out.println(data.t);
@@ -155,6 +161,24 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 	public void mouseClicked(final MouseEvent e) {
 		System.out.println("click");
 		if (e.getButton() == MouseEvent.BUTTON1) {
+			if (data.my < (ChartPanel.sectionNamesY - 5)) {
+				return;
+			} else if (data.my < ChartPanel.spY) {
+				final Section s = data.findOrCreateSectionCloseTo(data.findBeatTime(data.xToTime(data.mx + 10)));
+				final String newSectionName = JOptionPane.showInputDialog(frame, "Section name:", s.name);
+				if ((newSectionName == null) || newSectionName.trim().equals("")) {
+					data.s.sections.remove(s);
+					showPopup("Section deleted");
+				} else {
+					s.name = newSectionName;
+					showPopup("New section name is " + newSectionName);
+				}
+			} else if (data.my < (ChartPanel.lane0Y - (ChartPanel.laneDistY / 2))) {
+				return;
+			} else if (data.my < (ChartPanel.lane0Y + ((ChartPanel.laneDistY * 9) / 2))) {
+				// TODO notes editing
+			}
+			return;
 			// TODO select
 		} else if (e.getButton() == MouseEvent.BUTTON3) {
 			// TODO add note
@@ -165,6 +189,8 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 	@Override
 	public void mouseDragged(final MouseEvent e) {
 		// TODO moving notes / adding notes
+		data.mx = e.getX();
+		data.my = e.getY();
 	}
 
 	@Override
@@ -177,8 +203,8 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 
 	@Override
 	public void mouseMoved(final MouseEvent e) {
-		// TODO highlighting notes?
-
+		data.mx = e.getX();
+		data.my = e.getY();
 	}
 
 	@Override
@@ -199,9 +225,8 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 	public void mouseWheelMoved(final MouseWheelEvent e) {
 		if (ctrl) {
 			data.addZoom(e.getWheelRotation() * (shift ? 10 : 1));
-			System.out.println("new zoom: " + data.zoom);
 		} else {
-
+			// TODO add selected note length
 		}
 	}
 
@@ -256,10 +281,7 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 			} else {
 				musicFile = new File(dirPath + "/guitar.ogg");
 				if (musicFile.exists()) {
-					musicData = null;// TODO
-					showPopup("Ogg music file type is not supported cos I didn't finish it (remind Lordszynencja)");
-					error("TODO ogg music");
-					return;
+					musicData = OggLoader.load(musicFile.getAbsolutePath());// TODO
 				} else {
 					musicData = null;
 					showPopup("Music file (song.mp3 or song.ogg) not found in song folder");
@@ -280,6 +302,8 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 				Config.lastPath = dirPath;
 				data.path = dirPath;
 				data.s = s;
+				data.currentInstrument = s.g;
+				data.currentDiff = 3;
 				data.ini = iniData;
 				data.music = musicData;
 				data.t = 0;
@@ -293,17 +317,19 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 	}
 
 	public void save() {
-		MidiWriter.writeMidi(data.path + "notes.mid", data.s);
+		MidiWriter.writeMidi(data.path + "/notes.mid", data.s);
 		// TODO save chart, lcf notes
 		IniWriter.write(data.path + "/song.ini", data.ini);
+		Config.save();
 	}
 
 	public void saveAs() {
 		Logger.info("saveAs");// TODO
+		Config.save();
 	}
 
 	public void showPopup(final String msg) {
-		// TODO
+		JOptionPane.showMessageDialog(frame, msg);
 	}
 
 	private void stopMusic() {

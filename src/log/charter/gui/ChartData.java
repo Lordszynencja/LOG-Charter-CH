@@ -5,6 +5,7 @@ import java.util.List;
 
 import log.charter.song.IniData;
 import log.charter.song.Instrument;
+import log.charter.song.Section;
 import log.charter.song.Song;
 import log.charter.song.Tempo;
 import log.charter.sound.MusicData;
@@ -30,14 +31,14 @@ public class ChartData {
 	public int dragStartX = -1;
 	public int dragStartY = -1;
 	public int mx = -1;
-
 	public int my = -1;
+
 	public int t = 0;
 	public double zoom = 1;
 	public int markerOffset = 300;
 	public boolean drawAudio = false;
-
 	public boolean changed = false;
+	public int beatId = 0;
 
 	public ChartData() {
 		resetZoom();
@@ -69,7 +70,7 @@ public class ChartData {
 		return (int) (tmp.id + ttb(time - tmp.pos, lastKbpm));
 	}
 
-	public double findBeatTime(final int time) {
+	public double findBeatTime(final double time) {
 		if (time <= 0) {
 			return 0;
 		}
@@ -140,8 +141,22 @@ public class ChartData {
 		return tmp.pos + btt(id - tmp.id, lastKbpm);
 	}
 
-	public int noteToX(final double pos) {
-		return (int) ((pos - t) * zoom) + markerOffset;
+	public Section findOrCreateSectionCloseTo(final double time) {
+		for (int i = 0; i < s.sections.size(); i++) {
+			final Section section = s.sections.get(i);
+			if ((section.pos + 2) < time) {
+				continue;
+			}
+			if ((section.pos - 2) > time) {
+				final Section newSection = new Section("test", time);
+				s.sections.add(i, newSection);
+				return newSection;
+			}
+			return section;
+		}
+		final Section newSection = new Section("test", time);
+		s.sections.add(newSection);
+		return newSection;
 	}
 
 	public void resetZoom() {
@@ -152,4 +167,17 @@ public class ChartData {
 		Config.zoomLvl = newZoomLevel;
 		resetZoom();
 	}
+
+	public int timeToX(final double pos) {
+		return (int) ((pos - t) * zoom) + markerOffset;
+	}
+
+	public int timeToXLength(final double pos) {
+		return (int) (pos * zoom);
+	}
+
+	public double xToTime(final int x) {
+		return ((x - markerOffset) / zoom) + t;
+	}
+
 }

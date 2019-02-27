@@ -5,7 +5,7 @@ import java.util.List;
 
 public class Instrument {
 	public static enum InstrumentType {
-		GUITAR, BASS, KEYS;
+		GUITAR, GUITAR_COOP, GUITAR_RHYTM, BASS, KEYS, VOCALS;
 	}
 
 	private static final String[] diffNames = { "Easy", "Medium", "Hard", "Expert" };

@@ -49,23 +49,46 @@ public class MusicData {
 
 	public final int[][] data;
 	public final AudioFormat outFormat;
-	public byte[] preparedData;
+	public byte[][] preparedDataPlus = new byte[4][];
+	public byte[][] preparedDataMinus = new byte[6][];
 	public int slow = 1;
 
 	public MusicData(final byte[] b, final float rate) {
-		preparedData = b;
+		preparedDataPlus[0] = b;
 		data = splitAudio(b);
 		outFormat = new AudioFormat(Encoding.PCM_SIGNED, rate, 16, 2, 4, rate, false);
 	}
 
+	public byte[] getData() {
+		if (slow > 0) {
+			return preparedDataPlus[slow - 1];
+		}
+		return preparedDataPlus[-slow - 1];
+	}
+
 	public void setSlow(final int newSlow) {
 		if (newSlow == 0) {
-			setSlow(1);
 			return;
 		}
-		if (slow != newSlow) {
-			slow = newSlow;
-			preparedData = toBytes(slow(data, slow));
+		if (newSlow > 4) {
+			setSlow(4);
+			return;
 		}
+		if (newSlow < -6) {
+			setSlow(-6);
+			return;
+		}
+
+		slow = newSlow;
+		if ((newSlow > 0) && (preparedDataPlus[slow - 1] == null)) {
+			preparedDataPlus[slow - 1] = toBytes(slow(data, slow));
+		}
+		if ((newSlow < 0) && (preparedDataMinus[-slow - 1] == null)) {
+			preparedDataMinus[-slow - 1] = toBytes(slow(data, slow));
+		}
+	}
+
+	public double slowMultiplier() {
+		return slow > 0 ? 1.0 / slow : -slow / (-slow + 1.0);
 	}
 }

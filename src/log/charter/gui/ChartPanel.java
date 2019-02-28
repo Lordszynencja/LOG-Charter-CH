@@ -92,6 +92,26 @@ public class ChartPanel extends JPanel {
 	private void drawAudio(final Graphics g) {
 		if (data.drawAudio) {
 			// TODO
+			final int zero = (int) ((data.xToTime(0) * data.music.outFormat.getFrameRate()) / 1000);
+			int start = zero;
+			int end = (int) ((data.xToTime(getWidth()) * data.music.outFormat.getFrameRate()) / 1000);
+			final double multiplier = ((double) getWidth()) / (end - start);
+			if (start < 0) {
+				start = 0;
+			}
+			final int[] musicValues = data.music.data[0];
+			if (end > musicValues.length) {
+				end = musicValues.length;
+			}
+			final int midY = colorToY(2);
+
+			for (int i = start; i < end; i++) {
+				final double x0 = (i - zero) * multiplier;
+				final double x1 = x0 + multiplier;
+				final int y0 = musicValues[i] / 320;
+				final int y1 = musicValues[i + 1] / 320;
+				g.drawLine((int) x0, midY + y1, (int) x1, midY + y0);
+			}
 		}
 	}
 
@@ -302,6 +322,7 @@ public class ChartPanel extends JPanel {
 
 	@Override
 	public void paintComponent(final Graphics g) {
+		data.t = (int) data.nextT;
 		g.setColor(BG_COLOR);
 		g.fillRect(0, 0, getWidth(), getHeight());
 
@@ -317,6 +338,6 @@ public class ChartPanel extends JPanel {
 	}
 
 	private int tempoX(final double lastPos, final int id, final int lastId, final int lastKBPM) {
-		return data.timeToX(lastPos + (((id - lastId) * 60000000) / lastKBPM));
+		return data.timeToX(lastPos + (((id - lastId) * 60000000.0) / lastKBPM));
 	}
 }

@@ -9,6 +9,8 @@ import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.awt.event.MouseWheelEvent;
 import java.awt.event.MouseWheelListener;
+import java.awt.event.WindowEvent;
+import java.awt.event.WindowFocusListener;
 import java.io.File;
 
 import javax.swing.JFileChooser;
@@ -27,7 +29,8 @@ import log.charter.sound.SoundPlayer;
 import log.charter.sound.SoundPlayer.Player;
 import log.charter.util.RW;
 
-public class ChartEventsHandler implements KeyListener, MouseListener, MouseMotionListener, MouseWheelListener {
+public class ChartEventsHandler implements KeyListener, MouseListener, MouseMotionListener, MouseWheelListener,
+		WindowFocusListener {
 	public static final int FL = 10;
 
 	public final ChartData data;
@@ -35,11 +38,13 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 
 	private Player player = null;
 	private long playStart = 0;
+
 	private boolean ctrl = false;
 	private boolean alt = false;
 	private boolean shift = false;
 	private boolean left = false;
 	private boolean right = false;
+	private boolean gPressed = false;
 
 	public ChartEventsHandler(final CharterFrame frame) {
 		this.frame = frame;
@@ -60,9 +65,10 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 	private void frame() {
 		playStart = System.currentTimeMillis();
 		final int speed = (FL * (shift ? 10 : 2)) / (ctrl ? 10 : 1);
-		data.t += (player != null ? FL : 0) + (left ? -speed : 0) + (right ? speed : 0);
-		if (data.t < 0) {
-			data.t = 0;
+		data.nextT += ((player != null) && player.started ? FL * data.music.slowMultiplier() : 0) + (left ? -speed : 0)
+				+ (right ? speed : 0);
+		if (data.nextT < 0) {
+			data.nextT = 0;
 		}
 	}
 
@@ -71,6 +77,11 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 		switch (e.getKeyCode()) {
 		case KeyEvent.VK_SPACE:
 			if ((player == null) && !left && !right) {
+				if (ctrl) {
+					data.music.setSlow(4);
+				} else {
+					data.music.setSlow(1);
+				}
 				playMusic();
 			} else {
 				stopMusic();
@@ -109,6 +120,60 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 			if (JOptionPane.YES_OPTION == JOptionPane.showConfirmDialog(frame, "Are you sure you want to exit?", "Exit",
 					JOptionPane.YES_NO_OPTION)) {
 				frame.dispose();
+			}
+			break;
+		case KeyEvent.VK_F5:
+			data.drawAudio = !data.drawAudio;
+			break;
+		case KeyEvent.VK_1:
+			if (gPressed) {
+				data.gridSize = 1;
+			}
+			break;
+		case KeyEvent.VK_2:
+			if (gPressed) {
+				data.gridSize = 2;
+			}
+			break;
+		case KeyEvent.VK_3:
+			if (gPressed) {
+				data.gridSize = 3;
+			}
+			break;
+		case KeyEvent.VK_4:
+			if (gPressed) {
+				data.gridSize = 4;
+			}
+			break;
+		case KeyEvent.VK_5:
+			if (gPressed) {
+				data.gridSize = 5;
+			}
+			break;
+		case KeyEvent.VK_6:
+			if (gPressed) {
+				data.gridSize = 6;
+			}
+			break;
+		case KeyEvent.VK_7:
+			if (gPressed) {
+				data.gridSize = 7;
+			}
+			break;
+		case KeyEvent.VK_8:
+			if (gPressed) {
+				data.gridSize = 8;
+			}
+			break;
+		case KeyEvent.VK_9:
+			if (gPressed) {
+				data.gridSize = 9;
+			}
+			break;
+		case KeyEvent.VK_G:
+			gPressed = true;
+			if (!alt) {
+				data.useGrid = !data.useGrid;
 			}
 			break;
 		case KeyEvent.VK_O:
@@ -165,6 +230,9 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 		case KeyEvent.VK_SHIFT:
 			shift = false;
 			break;
+		case KeyEvent.VK_G:
+			gPressed = false;
+			break;
 		default:
 			break;
 		}
@@ -186,7 +254,6 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 				final String newSectionName = JOptionPane.showInputDialog(frame, "Section name:", s.name);
 				if ((newSectionName == null) || newSectionName.trim().equals("")) {
 					data.s.sections.remove(s);
-					showPopup("Section deleted");
 				} else {
 					s.name = newSectionName;
 				}
@@ -401,6 +468,20 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 			data.t += (int) (playStart - System.currentTimeMillis());
 			player = null;
 		}
+	}
+
+	@Override
+	public void windowGainedFocus(final WindowEvent e) {
+	}
+
+	@Override
+	public void windowLostFocus(final WindowEvent e) {
+		ctrl = false;
+		alt = false;
+		shift = false;
+		left = false;
+		right = false;
+		gPressed = false;
 	}
 
 }

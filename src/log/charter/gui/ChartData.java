@@ -44,11 +44,11 @@ public class ChartData {
 	}
 
 	public static double btt(final double t, final int kbpm) {
-		return (t * 60000000) / kbpm;
+		return (t * 60000000.0) / kbpm;
 	}
 
 	public static double ttb(final double t, final int kbpm) {
-		return (t * kbpm) / 60000000;
+		return (t * kbpm) / 60000000.0;
 	}
 
 	public String path = Config.lastPath;
@@ -67,11 +67,13 @@ public class ChartData {
 	public int my = -1;
 
 	public int t = 0;
+	public double nextT = 0;
 	public double zoom = 1;
 	public int markerOffset = 300;
 	public boolean drawAudio = false;
 	public boolean changed = false;
 	public int gridSize = 2;
+	public boolean useGrid = true;
 
 	private final LinkedList<UndoEvent> undo = new LinkedList<>();
 	private final LinkedList<UndoEvent> redo = new LinkedList<>();

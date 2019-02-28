@@ -19,6 +19,7 @@ public class CharterFrame extends JFrame {
 
 		addKeyListener(handler);
 		addMouseWheelListener(handler);
+		addWindowFocusListener(handler);
 		validate();
 	}
 

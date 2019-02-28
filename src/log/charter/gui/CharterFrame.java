@@ -10,7 +10,7 @@ public class CharterFrame extends JFrame {
 	public CharterFrame() {
 		super("LOG Charter");
 		handler = new ChartEventsHandler(this);
-		setDefaultCloseOperation(EXIT_ON_CLOSE);
+		setDefaultCloseOperation(DISPOSE_ON_CLOSE);
 		setLocationByPlatform(true);
 		setVisible(true);
 		this.setSize(800, 600);

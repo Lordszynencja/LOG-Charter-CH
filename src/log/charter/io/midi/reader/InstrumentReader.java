@@ -12,8 +12,8 @@ import log.charter.io.midi.MidTrack;
 import log.charter.io.midi.MidTrack.MidEvent;
 import log.charter.song.Event;
 import log.charter.song.Instrument;
-import log.charter.song.Note;
 import log.charter.song.Instrument.InstrumentType;
+import log.charter.song.Note;
 
 public class InstrumentReader {
 	private static enum EventType {
@@ -165,7 +165,7 @@ public class InstrumentReader {
 				for (final Note note : notes.get(i).get(j)) {
 					final Note n = notesMap.get((long) note.pos);
 					if (n == null) {
-						note.notes = (byte) (1 << (j - 1));
+						note.notes = (1 << (j - 1));
 						notesMap.put((long) note.pos, note);
 					} else {
 						if (n.notes != 0) {

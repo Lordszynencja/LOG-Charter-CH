@@ -12,6 +12,8 @@ public class Config {
 	public static String lastPath = "C:/";
 	public static int zoomLvl = 0;
 	public static int gridSize = 4;
+	public static String musicPath = System.getProperty("user.home") + "/Music";
+	public static String songsPath = System.getProperty("user.home") + "/Documents";
 
 	static {
 		read();

@@ -22,11 +22,10 @@ import log.charter.io.midi.writer.MidiWriter;
 import log.charter.song.IniData;
 import log.charter.song.Section;
 import log.charter.song.Song;
-import log.charter.sound.Mp3Loader;
 import log.charter.sound.MusicData;
-import log.charter.sound.OggLoader;
 import log.charter.sound.SoundPlayer;
 import log.charter.sound.SoundPlayer.Player;
+import log.charter.util.RW;
 
 public class ChartEventsHandler implements KeyListener, MouseListener, MouseMotionListener, MouseWheelListener {
 	public static final int FL = 10;
@@ -106,6 +105,22 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 		case KeyEvent.VK_SHIFT:
 			shift = true;
 			break;
+		case KeyEvent.VK_ESCAPE:
+			if (JOptionPane.YES_OPTION == JOptionPane.showConfirmDialog(frame, "Are you sure you want to exit?", "Exit",
+					JOptionPane.YES_NO_OPTION)) {
+				frame.dispose();
+			}
+			break;
+		case KeyEvent.VK_O:
+			if (e.isControlDown()) {
+				open();
+			}
+			break;
+		case KeyEvent.VK_R:
+			if (e.isControlDown()) {
+				data.redo();
+			}
+			break;
 		case KeyEvent.VK_S:
 			if (e.isControlDown()) {
 				save();
@@ -114,19 +129,17 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 		case KeyEvent.VK_T:
 			if ((data.my >= (ChartPanel.lane0Y - (ChartPanel.laneDistY / 2))) && (data.my <= (ChartPanel.lane0Y
 					+ ((ChartPanel.laneDistY * 9) / 2)))) {
-				final double closestNoteTime = data.findClosestNotePositionForX(data.mx);
-				final int color = (((data.my - ChartPanel.lane0Y) + (ChartPanel.laneDistY / 2)) / ChartPanel.laneDistY);
-				data.toggleNote(closestNoteTime, 0);
-			}
-			break;
-		case KeyEvent.VK_O:
-			if (e.isControlDown()) {
-				open();
+				data.toggleNote(data.findClosestIdOrPosForX(data.mx), 0);
 			}
 			break;
 		case KeyEvent.VK_N:
 			if (e.isControlDown()) {
 				newSong();
+			}
+			break;
+		case KeyEvent.VK_Z:
+			if (e.isControlDown()) {
+				data.undo();
 			}
 			break;
 		default:
@@ -163,47 +176,38 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 
 	@Override
 	public void mouseClicked(final MouseEvent e) {
-		System.out.println("click");
+		final int x = e.getX();
+		final int y = e.getY();
 		if (e.getButton() == MouseEvent.BUTTON1) {
-			if (data.my < (ChartPanel.sectionNamesY - 5)) {
+			if (y < (ChartPanel.sectionNamesY - 5)) {
 				return;
-			} else if (data.my < ChartPanel.spY) {
-				final Section s = data.findOrCreateSectionCloseTo(data.findBeatTime(data.xToTime(data.mx + 10)));
+			} else if (y < ChartPanel.spY) {
+				final Section s = data.findOrCreateSectionCloseTo(data.findBeatTime(data.xToTime(x + 10)));
 				final String newSectionName = JOptionPane.showInputDialog(frame, "Section name:", s.name);
 				if ((newSectionName == null) || newSectionName.trim().equals("")) {
 					data.s.sections.remove(s);
 					showPopup("Section deleted");
 				} else {
 					s.name = newSectionName;
-					showPopup("New section name is " + newSectionName);
 				}
-			} else if (data.my < (ChartPanel.lane0Y - (ChartPanel.laneDistY / 2))) {
+			} else if (y < (ChartPanel.lane0Y - (ChartPanel.laneDistY / 2))) {
 				return;
-			} else if (data.my < (ChartPanel.lane0Y + ((ChartPanel.laneDistY * 9) / 2))) {
-
-				// TODO notes selection
-				if (!ctrl && !shift) {
-					// TODO (find and) select single note
-					//
+			} else if (y < (ChartPanel.lane0Y + ((ChartPanel.laneDistY * 9) / 2))) {
+				if (shift) {
+					// TODO select note streak from data.lastNoteSelected to this
+					// note
+				} else if (ctrl) {
+					// TODO select single note
+				} else {
+					// TODO clear, select single note
 				}
-
 			}
-			return;
-			// TODO select
 		} else if (e.getButton() == MouseEvent.BUTTON2) {
-			// TODO add note
-			if ((data.my >= (ChartPanel.lane0Y - (ChartPanel.laneDistY / 2))) && (data.my <= (ChartPanel.lane0Y
-					+ ((ChartPanel.laneDistY * 9) / 2)))) {
-				final double closestNoteTime = data.findClosestNotePositionForX(data.mx);
-				data.toggleNote(closestNoteTime, 0);
-			}
 		} else if (e.getButton() == MouseEvent.BUTTON3) {
-			// TODO add note
-			if ((data.my >= (ChartPanel.lane0Y - (ChartPanel.laneDistY / 2))) && (data.my <= (ChartPanel.lane0Y
+			if ((y >= (ChartPanel.lane0Y - (ChartPanel.laneDistY / 2))) && (y <= (ChartPanel.lane0Y
 					+ ((ChartPanel.laneDistY * 9) / 2)))) {
-				final double closestNoteTime = data.findClosestNotePositionForX(data.mx);
-				final int color = ((data.my - (ChartPanel.laneDistY / 2)) / ChartPanel.laneDistY);
-				data.toggleNote(closestNoteTime, color);
+				final int color = ChartPanel.yToLane(y) + 1;
+				data.toggleNote(data.findClosestIdOrPosForX(x), color);
 			}
 		}
 	}
@@ -231,6 +235,7 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 
 	@Override
 	public void mousePressed(final MouseEvent e) {
+
 		System.out.println("press");
 		// TODO starting drag
 
@@ -248,11 +253,61 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 		if (ctrl) {
 			data.addZoom(e.getWheelRotation() * (shift ? 10 : 1));
 		} else {
-			// TODO add selected note length
+			// TODO add selected note length change
 		}
 	}
 
 	public void newSong() {// TODO
+		final JFileChooser chooser = new JFileChooser(new File(Config.musicPath));
+		chooser.setFileFilter(new FileFilter() {
+
+			@Override
+			public boolean accept(final File f) {
+				final String name = f.getName().toLowerCase();
+				return f.isDirectory() || name.endsWith(".mp3") || name.endsWith(".ogg");
+			}
+
+			@Override
+			public String getDescription() {
+				return "Mp3 (.mp3) or Ogg (.ogg) file";
+			}
+		});
+
+		if (chooser.showOpenDialog(frame) == JFileChooser.APPROVE_OPTION) {
+			final File songFile = chooser.getSelectedFile();
+			final String songName = songFile.getName();
+			final int dotIndex = songName.lastIndexOf('.');
+			final String extension = songName.substring(dotIndex + 1).toLowerCase();
+			if (!extension.equals("mp3") && !extension.equals("ogg")) {
+				showPopup("Not an Mp3 or Ogg file!");
+				return;
+			}
+			String folderName = songName.substring(0, songName.lastIndexOf('.'));
+
+			folderName = JOptionPane.showInputDialog(frame, "Choose folder name",
+					folderName);
+			File f = new File(Config.songsPath + "/" + folderName);
+			while (f.exists()) {
+				folderName = JOptionPane.showInputDialog(frame, "Given folder already exists, choose different name",
+						folderName);
+				f = new File(Config.songsPath + "/" + folderName);
+			}
+			f.mkdir();
+			final String songDir = f.getAbsolutePath();
+			RW.writeB(songDir + "/guitar." + extension, RW.readB(songFile));
+
+			final MusicData musicData = MusicData.readSongFile(f.getAbsolutePath());
+			if (musicData == null) {
+				showPopup("Music file (song.mp3 or song.ogg) not found in song folder");
+				return;
+			}
+
+			data.clear();
+			data.path = songDir;
+			data.music = musicData;
+			save();
+			Config.save();
+		}
 	}
 
 	public void open() {
@@ -267,7 +322,7 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 
 			@Override
 			public String getDescription() {
-				return "Midi (.mid), Chart (.chart) or Log Charter (.lcf) File";
+				return "Midi (.mid), Chart (.chart) or Log Charter (.lcf) file";
 			}
 		});
 
@@ -296,19 +351,10 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 				return;
 			}
 
-			File musicFile = new File(dirPath + "/guitar.mp3");
-			final MusicData musicData;
-			if (musicFile.exists()) {
-				musicData = Mp3Loader.load(musicFile.getAbsolutePath());
-			} else {
-				musicFile = new File(dirPath + "/guitar.ogg");
-				if (musicFile.exists()) {
-					musicData = OggLoader.load(musicFile.getAbsolutePath());// TODO
-				} else {
-					musicData = null;
-					showPopup("Music file (song.mp3 or song.ogg) not found in song folder");
-					return;
-				}
+			final MusicData musicData = MusicData.readSongFile(dirPath);
+			if (musicData == null) {
+				showPopup("Music file (song.mp3 or song.ogg) not found in song folder");
+				return;
 			}
 
 			final File iniFile = new File(dirPath + "/song.ini");
@@ -322,13 +368,8 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 
 			if ((s != null) && (musicData != null) && (iniData != null)) {
 				Config.lastPath = dirPath;
-				data.path = dirPath;
-				data.s = s;
-				data.currentInstrument = s.g;
-				data.currentDiff = 3;
-				data.ini = iniData;
-				data.music = musicData;
-				data.t = 0;
+				Config.save();
+				data.setSong(dirPath, s, iniData, musicData);
 			}
 		}
 	}

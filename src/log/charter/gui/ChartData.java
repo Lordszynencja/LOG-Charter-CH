@@ -1,10 +1,16 @@
 package log.charter.gui;
 
+import static java.lang.Math.abs;
 import static java.lang.Math.round;
 
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 
+import log.charter.gui.undoEvents.NoteAdd;
+import log.charter.gui.undoEvents.NoteChange;
+import log.charter.gui.undoEvents.NoteRemove;
+import log.charter.gui.undoEvents.UndoEvent;
 import log.charter.song.IniData;
 import log.charter.song.Instrument;
 import log.charter.song.Note;
@@ -14,6 +20,29 @@ import log.charter.song.Tempo;
 import log.charter.sound.MusicData;
 
 public class ChartData {
+	public static class IdOrPos {
+		public final int id;
+		public final double pos;
+
+		public IdOrPos(final int id, final double pos) {
+			this.id = id;
+			this.pos = pos;
+		}
+
+		public boolean isId() {
+			return id >= 0;
+		}
+
+		public boolean isPos() {
+			return pos >= 0;
+		}
+
+		@Override
+		public String toString() {
+			return "IdOrPos{" + (id >= 0 ? "id:" + id + "}" : "pos:" + pos + "}");
+		}
+	}
+
 	public static double btt(final double t, final int kbpm) {
 		return (t * 60000000) / kbpm;
 	}
@@ -29,6 +58,7 @@ public class ChartData {
 	public MusicData music = new MusicData(new byte[0], 44100);
 	public Instrument currentInstrument = s.g;
 	public int currentDiff = 3;
+	public List<Note> currentNotes = s.g.notes.get(currentDiff);
 	public List<Integer> selectedNotes = new ArrayList<>();
 	public Integer lastSelectedNote = null;
 	public int dragStartX = -1;
@@ -41,15 +71,46 @@ public class ChartData {
 	public int markerOffset = 300;
 	public boolean drawAudio = false;
 	public boolean changed = false;
-	public int beatId = 0;
 	public int gridSize = 2;
+
+	private final LinkedList<UndoEvent> undo = new LinkedList<>();
+	private final LinkedList<UndoEvent> redo = new LinkedList<>();
 
 	public ChartData() {
 		resetZoom();
 	}
 
+	private void addUndo(final UndoEvent e) {
+		undo.add(e);
+		while (undo.size() > 100) {
+			undo.removeFirst();
+		}
+		redo.clear();
+	}
+
 	public void addZoom(final int change) {
 		setZoomLevel(Config.zoomLvl + change);
+	}
+
+	public void clear() {
+		path = "C:/";
+		s = new Song();
+		ini = new IniData();
+		music = new MusicData(new byte[0], 44100);
+		currentInstrument = s.g;
+		currentDiff = 3;
+		currentNotes = currentInstrument.notes.get(currentDiff);
+
+		selectedNotes.clear();
+		lastSelectedNote = null;
+		dragStartX = -1;
+		dragStartY = -1;
+		mx = -1;
+		my = -1;
+
+		t = 0;
+		drawAudio = false;
+		changed = false;
 	}
 
 	public double closestGridTime(final double time, final int tmpId) {
@@ -131,20 +192,64 @@ public class ChartData {
 		return tmp.pos + btt(id - tmp.id, lastKbpm);
 	}
 
-	public double findClosestNotePositionForX(final int x) {
-		final List<Note> notes = currentInstrument.notes.get(currentDiff);
-		final double time = xToTime(x);
+	public int findCloseNoteForTime(final double time) {
+		final int closest = findClosestNoteForTime(time);
+		if (closest == -1) {
+			return -1;
+		}
+		final int noteX = timeToX(currentNotes.get(closest).pos);
+		final int x = timeToX(time);
+
+		return (noteX < (x + (ChartPanel.noteW / 2))) && (noteX > (x - (ChartPanel.noteW / 2))) ? closest : -1;
+	}
+
+	public double findClosestGridPositionForTime(final double time) {
 		final int tmpId = findTempoId(time);
 		final double closestGrid = closestGridTime(time, tmpId);
-
 		return closestGrid;
+	}
 
-		/*
-		 * for (int i=0;i<notes.size();i++) { final Note n = notes.get(i); final
-		 * int nX = timeToX(n.pos); if (nX<x+) }
-		 *
-		 * return 0;
-		 */
+	public IdOrPos findClosestIdOrPosForX(final int x) {// TODO
+		final double time = xToTime(x);
+		final double closestGridPosition = findClosestGridPositionForTime(time);
+		final int closestNoteId = findClosestNoteForTime(time);
+
+		return (closestNoteId == -1) || (abs(time - currentNotes.get(closestNoteId).pos) > (abs(closestGridPosition
+				- time) + 5))
+						? new IdOrPos(-1, closestGridPosition) : new IdOrPos(closestNoteId, -1);
+	}
+
+	public int findClosestNoteForTime(final double time) {
+		if (currentNotes.isEmpty()) {
+			return -1;
+		}
+		int closest = currentNotes.size() - 1;
+		double minDiff = abs(currentNotes.get(closest).pos - time);
+
+		for (int i = currentNotes.size() - 2; i >= 0; i--) {
+			final double diff = abs(currentNotes.get(i).pos - time);
+			if (diff > minDiff) {
+				return i + 1;
+			}
+			minDiff = diff;
+			closest = i;
+		}
+
+		return 0;
+	}
+
+	public int findFirstNoteAfterTime(final double time) {
+		if (currentNotes.isEmpty() || (currentNotes.get(currentNotes.size() - 1).pos < time)) {
+			return -1;
+		}
+
+		for (int i = currentNotes.size() - 1; i >= 0; i--) {
+			if (currentNotes.get(i).pos < time) {
+				return i + 1;
+			}
+		}
+
+		return 0;
 	}
 
 	public double findNextBeatTime(final int time) {
@@ -217,8 +322,26 @@ public class ChartData {
 		return result;
 	}
 
+	public void redo() {
+		if (!redo.isEmpty()) {
+			undo.add(redo.removeLast().go(this));
+		}
+	}
+
 	public void resetZoom() {
 		zoom = Math.pow(0.99, Config.zoomLvl);
+	}
+
+	public void setSong(final String dir, final Song song, final IniData iniData, final MusicData musicData) {
+		clear();
+		s = song;
+		currentInstrument = s.g;
+		currentNotes = currentInstrument.notes.get(currentDiff);
+		path = dir;
+		ini = iniData;
+		music = musicData;
+		undo.clear();
+		redo.clear();
 	}
 
 	public void setZoomLevel(final int newZoomLevel) {
@@ -234,9 +357,37 @@ public class ChartData {
 		return (int) (pos * zoom);
 	}
 
-	public void toggleNote(final double closestNoteTime, final int color) {
-		// TODO Auto-generated method stub
-		System.out.println("Toggling note " + closestNoteTime + ", c:" + color);
+	public void toggleNote(final IdOrPos idOrPos, final int colorByte) {
+		final int color = colorByte == 0 ? 0 : (1 << (colorByte - 1));
+		if (idOrPos.isPos()) {
+			final Note n = new Note(idOrPos.pos, color);
+			final int insertPos = findFirstNoteAfterTime(idOrPos.pos);
+			if (insertPos == -1) {
+				addUndo(new NoteAdd(currentNotes.size()));
+				currentNotes.add(n);
+			} else {
+				addUndo(new NoteAdd(insertPos));
+				currentNotes.add(insertPos, n);
+			}
+		} else if (idOrPos.isId()) {
+			final Note n = currentNotes.get(idOrPos.id);
+			if (n.notes == color) {
+				addUndo(new NoteRemove(idOrPos.id, n));
+				currentNotes.remove(idOrPos.id);
+			} else if (color == 0) {
+				n.notes = 0;
+				addUndo(new NoteChange(idOrPos.id, n));
+			} else {
+				addUndo(new NoteChange(idOrPos.id, n));
+				n.notes ^= color;
+			}
+		}
+	}
+
+	public void undo() {
+		if (!undo.isEmpty()) {
+			redo.add(undo.removeLast().go(this));
+		}
 	}
 
 	public double xToTime(final int x) {

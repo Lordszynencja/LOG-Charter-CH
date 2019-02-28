@@ -9,15 +9,20 @@ public class Note extends Event {
 	 * notes & 8 -> Blue<br/>
 	 * notes & 16 -> Orange
 	 */
-	public byte notes;
+	public int notes;
 
 	public boolean forced = false;
 	public boolean hopo = false;
 	public boolean tap = false;
 	public boolean crazy = false;
 
-	public Note(final long pos) {
+	public Note(final double pos) {
 		super(pos);
+	}
+
+	public Note(final double pos, final int notes) {
+		super(pos);
+		this.notes = notes;
 	}
 
 	public Note(final Note n) {

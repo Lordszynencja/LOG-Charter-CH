@@ -7,13 +7,13 @@ public class Event extends Position {
 	 */
 	public double length = -1;
 
+	public Event(final double pos) {
+		super(pos);
+	}
+
 	public Event(final Event e) {
 		super(e);
 		length = e.length;
-	}
-
-	public Event(final long pos) {
-		super(pos);
 	}
 
 	@Override

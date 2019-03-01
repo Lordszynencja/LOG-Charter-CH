@@ -9,9 +9,12 @@ import log.charter.util.RW;
 public class Config {
 	private static final String configName = "config.ini";
 
-	public static String lastPath = "C:/";
 	public static int zoomLvl = 0;
-	public static int gridSize = 4;
+	public static int minNoteDistance = 30;
+	public static int minTailLength = 30;
+	public static int delay = 15;
+
+	public static String lastPath = "C:/";
 	public static String musicPath = System.getProperty("user.home") + "/Music";
 	public static String songsPath = System.getProperty("user.home") + "/Documents";
 
@@ -33,8 +36,14 @@ public class Config {
 					case "zoomLvl":
 						zoomLvl = Integer.valueOf(val);
 						break;
-					case "gridSize":
-						gridSize = Integer.valueOf(val);
+					case "minNoteDistance":
+						minNoteDistance = Integer.valueOf(val);
+						break;
+					case "minTailLength":
+						minTailLength = Integer.valueOf(val);
+						break;
+					case "delay":
+						delay = Integer.valueOf(val);
 						break;
 					default:
 						error("Unknown config line " + line);
@@ -54,7 +63,9 @@ public class Config {
 
 		adder.accept("lastPath", lastPath);
 		adder.accept("zoomLvl", zoomLvl + "");
-		adder.accept("gridSize", gridSize + "");
+		adder.accept("minNoteDistance", minNoteDistance + "");
+		adder.accept("minTailLength", minTailLength + "");
+		adder.accept("delay", delay + "");
 
 		RW.write(configName, b.toString());
 	}

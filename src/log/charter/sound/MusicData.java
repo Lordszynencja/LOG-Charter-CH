@@ -9,6 +9,16 @@ import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioFormat.Encoding;
 
 public class MusicData {
+	private static final int DEF_RATE = 44100;
+
+	public static MusicData generateSound(final double pitch, final double length, final double loudness) {
+		final int[] data = new int[(int) (length * DEF_RATE)];
+		for (int i = 0; i < data.length; i++) {
+			data[i] = (int) (Math.pow(Math.sin((pitch * Math.PI * i) / DEF_RATE), 2) * loudness * 32768);
+		}
+
+		return new MusicData(new int[][] { data, data }, DEF_RATE);
+	}
 
 	public static MusicData readFile(final String path) {
 		if (path.endsWith(".mp3")) {
@@ -49,42 +59,32 @@ public class MusicData {
 
 	public final int[][] data;
 	public final AudioFormat outFormat;
-	public byte[][] preparedDataPlus = new byte[4][];
-	public byte[][] preparedDataMinus = new byte[6][];
-	public int slow = 1;
+	private byte[] preparedData;
+	private int slow = 1;
 
 	public MusicData(final byte[] b, final float rate) {
-		preparedDataPlus[0] = b;
+		preparedData = b;
 		data = splitAudio(b);
 		outFormat = new AudioFormat(Encoding.PCM_SIGNED, rate, 16, 2, 4, rate, false);
 	}
 
+	private MusicData(final int[][] data, final float rate) {
+		preparedData = toBytes(data);
+		this.data = data;
+		outFormat = new AudioFormat(Encoding.PCM_SIGNED, rate, 16, 2, 4, rate, false);
+	}
+
 	public byte[] getData() {
-		if (slow > 0) {
-			return preparedDataPlus[slow - 1];
-		}
-		return preparedDataPlus[-slow - 1];
+		return preparedData;
 	}
 
 	public void setSlow(final int newSlow) {
 		if (newSlow == 0) {
 			return;
 		}
-		if (newSlow > 4) {
-			setSlow(4);
-			return;
-		}
-		if (newSlow < -6) {
-			setSlow(-6);
-			return;
-		}
-
-		slow = newSlow;
-		if ((newSlow > 0) && (preparedDataPlus[slow - 1] == null)) {
-			preparedDataPlus[slow - 1] = toBytes(slow(data, slow));
-		}
-		if ((newSlow < 0) && (preparedDataMinus[-slow - 1] == null)) {
-			preparedDataMinus[-slow - 1] = toBytes(slow(data, slow));
+		if (newSlow != slow) {
+			slow = newSlow;
+			preparedData = toBytes(slow(data, slow));
 		}
 	}
 

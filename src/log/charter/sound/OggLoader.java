@@ -20,13 +20,14 @@ import com.jcraft.jorbis.Comment;
 import com.jcraft.jorbis.DspState;
 import com.jcraft.jorbis.Info;
 
+import log.charter.io.Logger;
 import log.charter.util.RW;
 
 /**
  * Based on ExamplePlayer by Jon Kristensen
  */
 public class OggLoader {
-	private static final int BUF_SIZE = 1024 * 64;
+	private static final int BUF_SIZE = 2048;
 
 	public static MusicData load(final String path) {
 		try {
@@ -61,7 +62,9 @@ public class OggLoader {
 	private final Info jorbisInfo = new Info();
 
 	private OggLoader(final String path) {
-		inputStream = new ByteArrayInputStream(RW.readB(path));
+		final byte[] bytes = RW.readB(path);
+		Logger.debug("Loaded " + bytes.length + " bytes of ogg audio from " + path);
+		inputStream = new ByteArrayInputStream(bytes);
 	}
 
 	private void cleanUp() throws IOException {

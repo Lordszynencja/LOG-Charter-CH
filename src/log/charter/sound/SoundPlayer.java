@@ -12,12 +12,12 @@ import javax.sound.sampled.SourceDataLine;
 public class SoundPlayer {
 
 	public static class Player {
-		private static final int BUFF_SIZE = 1024 * 16;
+		private static final int BUFF_SIZE = 1024 * 128;
 
 		private final MusicData md;
 		private final SourceDataLine line;
 		private boolean stopped;
-		public boolean started = false;
+		public long startTime = -1;
 
 		private Player(final MusicData md) throws LineUnavailableException {
 			this.md = md;
@@ -37,11 +37,17 @@ public class SoundPlayer {
 
 					line.open(md.outFormat);
 					line.start();
-					started = true;
 					final byte[] data = md.getData();
-					if ((data.length - startByte) > BUFF_SIZE) {
-						line.write(data, startByte, BUFF_SIZE);
-						startByte += BUFF_SIZE;
+					System.out.println(md.slowMultiplier());
+					startTime = System.nanoTime();
+					if (stopped) {
+						while ((data.length - startByte) > BUFF_SIZE) {
+							if (stopped) {
+								return;
+							}
+							line.write(data, startByte, BUFF_SIZE);
+							startByte += BUFF_SIZE;
+						}
 					}
 
 					if ((data.length - startByte) > 0) {

@@ -10,7 +10,7 @@ public class Logger {
 
 	static {
 		try {
-			out = new PrintStream(new FileOutputStream("D://log.txt"));
+			out = new PrintStream(new FileOutputStream("D://log.txt", false));
 		} catch (final Exception e) {
 			e.printStackTrace();
 		}

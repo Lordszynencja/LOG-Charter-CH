@@ -91,7 +91,6 @@ public class ChartPanel extends JPanel {
 
 	private void drawAudio(final Graphics g) {
 		if (data.drawAudio) {
-			// TODO
 			final int zero = (int) ((data.xToTime(0) * data.music.outFormat.getFrameRate()) / 1000);
 			int start = zero;
 			int end = (int) ((data.xToTime(getWidth()) * data.music.outFormat.getFrameRate()) / 1000);
@@ -105,12 +104,23 @@ public class ChartPanel extends JPanel {
 			}
 			final int midY = colorToY(2);
 
-			for (int i = start; i < end; i++) {
-				final double x0 = (i - zero) * multiplier;
-				final double x1 = x0 + multiplier;
-				final int y0 = musicValues[i] / 320;
-				final int y1 = musicValues[i + 1] / 320;
-				g.drawLine((int) x0, midY + y1, (int) x1, midY + y0);
+			int step = 1;
+			double xStep = multiplier;
+			while (xStep < 0.1) {
+				step++;
+				xStep += multiplier;
+			}
+			start -= start % step;
+			double x0 = 0;
+			double x1 = -xStep + ((start - zero) * multiplier);
+			int y0 = 0;
+			int y1 = 0;
+			for (int i = start; i < end; i += step) {
+				x0 = x1;
+				x1 += xStep;
+				y0 = y1;
+				y1 = musicValues[i] / 320;
+				g.drawLine((int) x0, midY + y0, (int) x1, midY + y1);
 			}
 		}
 	}
@@ -295,26 +305,18 @@ public class ChartPanel extends JPanel {
 	}
 
 	private void drawSpecial(final Graphics g) {
-		if (data.my < (sectionNamesY - 5)) {
+		if (data.my < (lane0Y - (laneDistY / 2))) {
 			return;
-		} else if (data.my < spY) {
-			g.setColor(Color.YELLOW);
-			final int x = data.timeToX(data.findBeatTime((int) data.xToTime(data.mx + 10)));
-			g.fillRect(x, data.my - 1, 3, 3);
-		} else if (data.my < (lane0Y - (laneDistY / 2))) {
 		} else if (data.my < (lane0Y + ((laneDistY * 9) / 2))) {
 			final IdOrPos idOrPos = data.findClosestIdOrPosForX(data.mx);
 			final int y = colorToY(yToLane(data.my));
+			final int x = idOrPos.isId() ? data.timeToX(data.currentNotes.get(idOrPos.id).pos)//
+					: idOrPos.isPos() ? data.timeToX(idOrPos.pos) : -1;
 
-			g.setColor(Color.RED);
-			if (idOrPos.isId()) {
-				final int x = data.timeToX(data.currentNotes.get(idOrPos.id).pos);
-				g.fillRect(x - 2, y - 2, 5, 5);
-			} else if (idOrPos.isPos()) {
-				final int x = data.timeToX(idOrPos.pos);
-				g.fillRect(x - 2, y - 2, 5, 5);
+			if (x >= 0) {
+				g.setColor(Color.RED);
+				g.drawRect(x - (noteW / 2), y - (noteH / 2), noteW, noteH);
 			}
-			// TODO notes highlighting
 		} else {
 			return;
 		}
@@ -326,6 +328,9 @@ public class ChartPanel extends JPanel {
 		g.setColor(BG_COLOR);
 		g.fillRect(0, 0, getWidth(), getHeight());
 
+		if (data.isEmpty) {
+			return;
+		}
 		drawSections(g);
 		drawAudio(g);
 		drawLanes(g);

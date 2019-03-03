@@ -1,6 +1,7 @@
 package log.charter.gui;
 
 import static java.lang.Math.abs;
+import static java.lang.Math.round;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -9,8 +10,6 @@ import java.util.List;
 import log.charter.gui.undoEvents.NoteAdd;
 import log.charter.gui.undoEvents.NoteChange;
 import log.charter.gui.undoEvents.NoteRemove;
-import log.charter.gui.undoEvents.TempoAdd;
-import log.charter.gui.undoEvents.TempoChange;
 import log.charter.gui.undoEvents.UndoEvent;
 import log.charter.gui.undoEvents.UndoGroup;
 import log.charter.song.Event;
@@ -46,6 +45,14 @@ public class ChartData {
 		}
 	}
 
+	public static double btt(final double t, final int kbpm) {
+		return (t * 60000000.0) / kbpm;
+	}
+
+	public static double ttb(final double t, final int kbpm) {
+		return (t * kbpm) / 60000000.0;
+	}
+
 	public String path = Config.lastPath;
 	public boolean isEmpty = true;
 	public Song s = new Song();
@@ -57,10 +64,6 @@ public class ChartData {
 	public List<Note> currentNotes = s.g.notes.get(currentDiff);
 	public List<Integer> selectedNotes = new ArrayList<>();
 	public Integer lastSelectedNote = null;
-	public Tempo draggedTempoPrev = null;
-	public Tempo draggedTempo = null;
-	public Tempo draggedTempoNext = null;
-	public List<UndoEvent> draggedTempoUndo = null;
 	public int mousePressX = -1;
 	public int mousePressY = -1;
 	public int dragStartX = -1;
@@ -117,6 +120,85 @@ public class ChartData {
 		changed = false;
 	}
 
+	public double closestGridTime(final double time, final int tmpId) {
+		final Tempo tmp = s.tempos.get(tmpId);
+		final long gridPoint = round(ttb(time - tmp.pos, tmp.kbpm) * gridSize);
+
+		if (tmpId < (s.tempos.size() - 1)) {
+			final Tempo nextTmp = s.tempos.get(tmpId + 1);
+			if (gridPoint == ((nextTmp.id - tmp.id) * gridSize)) {
+				return nextTmp.pos;
+			}
+		}
+		return tmp.pos + (btt(gridPoint, tmp.kbpm) / gridSize);
+	}
+
+	public int findBeatId(final int time) {// TODO binary search
+		if (time <= 0) {
+			return 0;
+		}
+		int lastKbpm = 120000;
+		for (int i = 0; i < (s.tempos.size() - 1); i++) {
+			final Tempo tmp = s.tempos.get(i);
+			if (tmp.sync) {
+				lastKbpm = tmp.kbpm;
+			}
+
+			if ((long) s.tempos.get(i + 1).pos > time) {
+				return (int) (tmp.id + ttb(time - tmp.pos, lastKbpm));
+			}
+		}
+		final Tempo tmp = s.tempos.get(s.tempos.size() - 1);
+		if (tmp.sync) {
+			lastKbpm = tmp.kbpm;
+		}
+		return (int) (tmp.id + ttb(time - tmp.pos, lastKbpm));
+	}
+
+	public double findBeatTime(final double time) {// TODO binary search
+		if (time <= 0) {
+			return 0;
+		}
+		int lastKbpm = 120000;
+		for (int i = 0; i < (s.tempos.size() - 1); i++) {
+			final Tempo tmp = s.tempos.get(i);
+			if (tmp.sync) {
+				lastKbpm = tmp.kbpm;
+			}
+
+			if ((long) s.tempos.get(i + 1).pos > time) {
+				return tmp.pos + btt(Math.floor(ttb(time - tmp.pos, lastKbpm)), lastKbpm);
+			}
+		}
+		final Tempo tmp = s.tempos.get(s.tempos.size() - 1);
+		if (tmp.sync) {
+			lastKbpm = tmp.kbpm;
+		}
+		return tmp.pos + btt(Math.floor(ttb(time - tmp.pos, lastKbpm)), lastKbpm);
+	}
+
+	public double findBeatTimeById(final int id) {// TODO binary search
+		if (id < 0) {
+			return 0;
+		}
+		int lastKbpm = 120000;
+		for (int i = 0; i < (s.tempos.size() - 1); i++) {
+			final Tempo tmp = s.tempos.get(i);
+			if (tmp.sync) {
+				lastKbpm = tmp.kbpm;
+			}
+
+			if (s.tempos.get(i + 1).id > id) {
+				return tmp.pos + btt(id - tmp.id, lastKbpm);
+			}
+		}
+		final Tempo tmp = s.tempos.get(s.tempos.size() - 1);
+		if (tmp.sync) {
+			lastKbpm = tmp.kbpm;
+		}
+		return tmp.pos + btt(id - tmp.id, lastKbpm);
+	}
+
 	public int findCloseNoteForTime(final double time) {
 		final int closest = findClosestNoteForTime(time);
 		if (closest == -1) {
@@ -128,9 +210,18 @@ public class ChartData {
 		return (noteX < (x + (ChartPanel.noteW / 2))) && (noteX > (x - (ChartPanel.noteW / 2))) ? closest : -1;
 	}
 
+	public double findClosestGridPositionForTime(final double time) {
+		if (useGrid) {
+			final int tmpId = findTempoId(time);
+			final double closestGrid = closestGridTime(time, tmpId);
+			return closestGrid;
+		}
+		return time;
+	}
+
 	public IdOrPos findClosestIdOrPosForX(final int x) {
 		final double time = xToTime(x);
-		final double closestGridPosition = s.tempoMap.findClosestGridPositionForTime(time, useGrid, gridSize);
+		final double closestGridPosition = findClosestGridPositionForTime(time);
 		final int closestNoteId = findClosestNoteForTime(time);
 
 		return (closestNoteId == -1) || (timeToXLength(abs(time - currentNotes.get(closestNoteId).pos)) > //
@@ -173,14 +264,41 @@ public class ChartData {
 		return 0;
 	}
 
+	public double findNextBeatTime(final int time) {// TODO binary search
+		if (time < 0) {
+			return 0;
+		}
+		int lastKbpm = 120000;
+		for (int i = 0; i < (s.tempos.size() - 1); i++) {
+			final Tempo tmp = s.tempos.get(i);
+			if (tmp.sync) {
+				lastKbpm = tmp.kbpm;
+			}
+
+			if ((long) s.tempos.get(i + 1).pos > time) {
+				final int id = (int) (tmp.id + ttb((time - tmp.pos) + 1, lastKbpm) + 1);
+				if (s.tempos.get(i + 1).id <= id) {
+					return s.tempos.get(i + 1).pos;
+				}
+				return tmp.pos + btt(id - tmp.id, lastKbpm);
+			}
+		}
+		final Tempo tmp = s.tempos.get(s.tempos.size() - 1);
+		if (tmp.sync) {
+			lastKbpm = tmp.kbpm;
+		}
+		final int id = (int) (tmp.id + ttb((time - tmp.pos) + 1, lastKbpm) + 1);
+		return tmp.pos + btt(id - tmp.id, lastKbpm);
+	}
+
 	public Section findOrCreateSectionCloseTo(final double time) {// TODO binary
 																					  // search
 		for (int i = 0; i < s.sections.size(); i++) {
 			final Section section = s.sections.get(i);
-			if ((section.pos) < time) {
+			if ((section.pos + 2) < time) {
 				continue;
 			}
-			if ((section.pos) > time) {
+			if ((section.pos - 2) > time) {
 				final Section newSection = new Section("", time);
 				s.sections.add(i, newSection);
 				return newSection;
@@ -190,6 +308,31 @@ public class ChartData {
 		final Section newSection = new Section("", time);
 		s.sections.add(newSection);
 		return newSection;
+	}
+
+	public Tempo findTempo(final double time) {
+		return s.tempos.get(findTempoId(time));
+	}
+
+	public int findTempoId(final double time) {// TODO binary search
+		if (time <= 0) {
+			return 0;
+		}
+
+		int result = 0;
+		for (int i = 0; i < s.tempos.size(); i++) {
+			final Tempo tmp = s.tempos.get(i);
+			if (!tmp.sync) {
+				continue;
+			}
+
+			if (tmp.pos > time) {
+				return result;
+			}
+			result = i;
+		}
+
+		return result;
 	}
 
 	private boolean isInSection(final Note n, final List<Event> sections) {
@@ -234,33 +377,12 @@ public class ChartData {
 		resetZoom();
 	}
 
-	public void startTempoDrag(final Tempo prevTmp, final Tempo tmp, final Tempo nextTmp, final boolean isNew) {
-		draggedTempoPrev = prevTmp;
-		draggedTempo = tmp;
-		draggedTempoNext = nextTmp;
-		draggedTempoUndo = new ArrayList<>();
-		if (isNew) {
-			draggedTempoUndo.add(new TempoAdd(tmp));
-		} else {
-			draggedTempoUndo.add(new TempoChange(tmp));
-		}
-		draggedTempoUndo.add(new TempoChange(prevTmp));
-		addUndo(new UndoGroup(draggedTempoUndo));
-	}
-
-	public void stopTempoDrag() {
-		draggedTempoPrev = null;
-		draggedTempo = null;
-		draggedTempoNext = null;
-		draggedTempoUndo = null;
-	}
-
 	public int timeToX(final double pos) {
 		return (int) ((pos - t) * zoom) + markerOffset;
 	}
 
-	public int timeToXLength(final double length) {
-		return (int) (length * zoom);
+	public int timeToXLength(final double pos) {
+		return (int) (pos * zoom);
 	}
 
 	public void toggleNote(final IdOrPos idOrPos, final int colorByte) {
@@ -314,10 +436,6 @@ public class ChartData {
 
 	public double xToTime(final int x) {
 		return ((x - markerOffset) / zoom) + t;
-	}
-
-	public double xToTimeLength(final int x) {
-		return x / zoom;
 	}
 
 }

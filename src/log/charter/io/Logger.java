@@ -1,10 +1,7 @@
 package log.charter.io;
 
-import java.io.File;
 import java.io.FileOutputStream;
 import java.io.PrintStream;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 
 public class Logger {
 	private static PrintStream out = System.out;
@@ -13,13 +10,7 @@ public class Logger {
 
 	static {
 		try {
-			final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-			final String name = "log-" + dateFormat.format(new Date()) + ".txt";
-			final File dir = new File("D:/logs/");
-			if (!dir.exists()) {
-				dir.mkdirs();
-			}
-			out = new PrintStream(new FileOutputStream(dir.getAbsolutePath() + "/" + name, false));
+			out = new PrintStream(new FileOutputStream("D://log.txt", false));
 		} catch (final Exception e) {
 			e.printStackTrace();
 		}

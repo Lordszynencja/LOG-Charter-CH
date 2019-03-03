@@ -38,6 +38,7 @@ public class SoundPlayer {
 					line.open(md.outFormat);
 					line.start();
 					final byte[] data = md.getData();
+					System.out.println(md.slowMultiplier());
 					startTime = System.nanoTime();
 					if (stopped) {
 						while ((data.length - startByte) > BUFF_SIZE) {

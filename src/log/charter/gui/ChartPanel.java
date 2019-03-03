@@ -126,7 +126,7 @@ public class ChartPanel extends JPanel {
 	}
 
 	private void drawBeats(final Graphics g) {
-		final List<Tempo> tempos = data.s.tempoMap.tempos;
+		final List<Tempo> tempos = data.s.tempos;
 		int lastKBPM = 120000;
 		int beatInMeasure = 0;
 		int beatsPerMeasure = 9999;
@@ -134,11 +134,12 @@ public class ChartPanel extends JPanel {
 		for (int i = 0; i < (tempos.size() - 1); i++) {
 			final Tempo tmp = tempos.get(i);
 			final Tempo nextTempo = tempos.get(i + 1);
-			if (beatsPerMeasure != tmp.beats) {
+			if (tmp.sync) {
+				lastKBPM = tmp.kbpm;
+			} else {
+				beatsPerMeasure = tmp.kbpm;
 				beatInMeasure = 0;
 			}
-			lastKBPM = tmp.kbpm;
-			beatsPerMeasure = tmp.beats;
 
 			for (int id = tmp.id; id < nextTempo.id; id++) {
 				final int x = tempoX(tmp.pos, id, tmp.id, lastKBPM);
@@ -153,9 +154,12 @@ public class ChartPanel extends JPanel {
 			}
 		}
 		final Tempo tmp = tempos.get(tempos.size() - 1);
-		lastKBPM = tmp.kbpm;
-		beatsPerMeasure = tmp.beats;
-		beatInMeasure = 0;
+		if (tmp.sync) {
+			lastKBPM = tmp.kbpm;
+		} else {
+			beatsPerMeasure = tmp.kbpm;
+			beatInMeasure = 0;
+		}
 
 		int id = tmp.id;
 		while (id < 9999) {

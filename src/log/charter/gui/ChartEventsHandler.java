@@ -24,8 +24,6 @@ import log.charter.io.midi.writer.MidiWriter;
 import log.charter.song.IniData;
 import log.charter.song.Section;
 import log.charter.song.Song;
-import log.charter.song.Tempo;
-import log.charter.song.TempoMap;
 import log.charter.sound.MusicData;
 import log.charter.sound.SoundPlayer;
 import log.charter.sound.SoundPlayer.Player;
@@ -46,9 +44,9 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 	private Player player = null;
 	private int playStartT = 0;
 	private int nextNoteId = -1;
-	private boolean claps = false;
+	private boolean claps = true;
 	private double nextTempoTime = -1;
-	private boolean metronome = false;
+	private boolean metronome = true;
 
 	private boolean ctrl = false;
 	private boolean alt = false;
@@ -93,21 +91,17 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 			data.nextT = (playStartT + (((System.nanoTime() - player.startTime) * data.music.slowMultiplier()) / 1000000))
 					- Config.delay;
 
-			while ((nextNoteId != -1) && (data.currentNotes.get(nextNoteId).pos < (data.nextT - Config.delay))) {
+			while (claps && (nextNoteId != -1) && (data.currentNotes.get(nextNoteId).pos < (data.nextT - Config.delay))) {
+				SoundPlayer.play(note, 0);
 				nextNoteId++;
 				if (nextNoteId >= data.currentNotes.size()) {
 					nextNoteId = -1;
 				}
-				if (claps) {
-					SoundPlayer.play(note, 0);
-				}
 			}
 
-			while ((nextTempoTime >= 0) && (nextTempoTime < (data.nextT - Config.delay))) {
-				nextTempoTime = data.s.tempoMap.findNextBeatTime((int) (data.nextT - Config.delay));
-				if (metronome) {
-					SoundPlayer.play(tick, 0);
-				}
+			while (metronome && (nextTempoTime >= 0) && (nextTempoTime < (data.nextT - Config.delay))) {
+				nextTempoTime = data.findNextBeatTime((int) (data.nextT - Config.delay));
+				SoundPlayer.play(tick, 0);
 			}
 		} else {
 			final int speed = (FL * (shift ? 10 : 2)) / (ctrl ? 10 : 1);
@@ -132,10 +126,11 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 					nextNoteId = -1;
 				}
 
-				nextTempoTime = data.s.tempoMap.findNextBeatTime((int) (data.nextT - Config.delay));
+				nextTempoTime = data.findNextBeatTime((int) (data.nextT - Config.delay));
 
 				if (ctrl) {
 					data.music.setSlow(2);
+					System.out.println(2);
 				} else {
 					data.music.setSlow(1);
 				}
@@ -147,18 +142,12 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 			break;
 		case KeyEvent.VK_HOME:
 			stopMusic();
-			data.nextT = ctrl ? (int) (data.currentNotes.isEmpty() ? 0 : data.currentNotes.get(0).pos)
-					: 0;
-			break;
-		case KeyEvent.VK_END:
-			stopMusic();
-			data.nextT = ctrl ? (int) (data.currentNotes.isEmpty() ? 0
-					: data.currentNotes.get(data.currentNotes.size() - 1).pos) : data.music.msLength();
+			data.t = 0;
 			break;
 		case KeyEvent.VK_LEFT:
 			stopMusic();
 			if (alt) {
-				data.t = (int) data.s.tempoMap.findBeatTime(data.t - 1);
+				data.t = (int) data.findBeatTime(data.t - 1);
 			} else {
 				left = true;
 			}
@@ -166,7 +155,7 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 		case KeyEvent.VK_RIGHT:
 			stopMusic();
 			if (alt) {
-				data.t = (int) data.s.tempoMap.findNextBeatTime(data.t);
+				data.t = (int) data.findNextBeatTime(data.t);
 			} else {
 				right = true;
 			}
@@ -343,8 +332,7 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 			if (y < (ChartPanel.sectionNamesY - 5)) {
 				return;
 			} else if (y < ChartPanel.spY) {
-				stopMusic();
-				final Section s = data.findOrCreateSectionCloseTo(data.s.tempoMap.findBeatTime(data.xToTime(x + 10)));
+				final Section s = data.findOrCreateSectionCloseTo(data.findBeatTime(data.xToTime(x + 10)));
 				final String newSectionName = JOptionPane.showInputDialog(frame, "Section name:", s.name);
 				if ((newSectionName == null) || newSectionName.trim().equals("")) {
 					data.s.sections.remove(s);
@@ -354,7 +342,6 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 			} else if (y < (ChartPanel.lane0Y - (ChartPanel.laneDistY / 2))) {
 				return;
 			} else if (y < (ChartPanel.lane0Y + ((ChartPanel.laneDistY * 9) / 2))) {
-				stopMusic();
 				if (shift) {
 					// TODO select note streak from data.lastNoteSelected to this
 					// note
@@ -368,7 +355,6 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 		} else if (e.getButton() == MouseEvent.BUTTON3) {
 			if ((y >= (ChartPanel.lane0Y - (ChartPanel.laneDistY / 2))) && (y <= (ChartPanel.lane0Y
 					+ ((ChartPanel.laneDistY * 9) / 2)))) {
-				stopMusic();
 				final int color = ChartPanel.yToLane(y) + 1;
 				data.toggleNote(data.findClosestIdOrPosForX(x), color);
 			}
@@ -380,21 +366,6 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 		// TODO moving notes / adding notes
 		data.mx = e.getX();
 		data.my = e.getY();
-
-		if (data.draggedTempo != null) {
-			System.out.println("Dragged tempo " + data.draggedTempo);
-			data.draggedTempo.pos = data.xToTime(data.mx);
-			if (data.draggedTempo.pos < (data.draggedTempoPrev.pos + 1)) {
-				data.draggedTempo.pos = data.draggedTempoPrev.pos + 1;
-			}
-			TempoMap.calcBPM(data.draggedTempoPrev, data.draggedTempo);
-			if (data.draggedTempoNext != null) {
-				if (data.draggedTempo.pos > (data.draggedTempoNext.pos - 1)) {
-					data.draggedTempo.pos = data.draggedTempoNext.pos - 1;
-				}
-				TempoMap.calcBPM(data.draggedTempo, data.draggedTempoNext);
-			}
-		}
 	}
 
 	@Override
@@ -412,40 +383,18 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 	}
 
 	@Override
-	public void mousePressed(final MouseEvent e) {// TODO start note drag/ tempo
-																 // drag
-		data.mx = e.getX();
-		data.my = e.getY();
+	public void mousePressed(final MouseEvent e) {
+		data.mousePressX = e.getX();
+		data.mousePressY = e.getY();
 
-		final int x = e.getX();
-		final int y = e.getY();
-		if (e.getButton() == MouseEvent.BUTTON1) {
-			if (y < ChartPanel.spY) {
-				return;
-			} else if (y < (ChartPanel.lane0Y - (ChartPanel.laneDistY / 2))) {
-				final Object[] tempoData = data.s.tempoMap.findOrCreateClosestTempo(data.xToTime(x));
-				if (tempoData != null) {
-					data.startTempoDrag((Tempo) tempoData[0], (Tempo) tempoData[1], (Tempo) tempoData[2],
-							(boolean) tempoData[3]);
-				}
-				return;
-			} else if (y < (ChartPanel.lane0Y + ((ChartPanel.laneDistY * 9) / 2))) {
-				stopMusic();
-				if (shift) {
-					// TODO select note streak from data.lastNoteSelected to this
-					// note
-				} else if (ctrl) {
-					// TODO select single note
-				} else {
-					// TODO clear, select single note
-				}
-			}
-		}
+		System.out.println("press");
+		// TODO starting drag
+
 	}
 
 	@Override
 	public void mouseReleased(final MouseEvent e) {
-		data.stopTempoDrag();
+
 		data.mousePressX = -1;
 		data.mousePressY = -1;
 		System.out.println("release");

@@ -19,7 +19,7 @@ public final class MidiWriter {
 
 			final Sequence seq = new Sequence(Sequence.PPQ, TickMsConverter.ticksPerBeat);
 
-			TempoWriter.write(conv.tempoMap, seq.createTrack());
+			TempoWriter.write(conv.tempos, seq.createTrack());
 			SectionsWriter.write(conv.sections, seq.createTrack());
 			if (conv.g.hasNotes()) {
 				InstrumentWriter.write(conv.g, InstrumentType.GUITAR, seq.createTrack());

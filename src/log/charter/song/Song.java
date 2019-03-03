@@ -24,13 +24,13 @@ public class Song {
 	public Instrument k;
 
 	public List<Section> sections = new ArrayList<>();
-	public TempoMap tempoMap;
+	public List<Tempo> tempos = new ArrayList<>();
 
 	public Song() {
 		g = new Instrument(InstrumentType.GUITAR);
 		b = new Instrument(InstrumentType.BASS);
 		k = new Instrument(InstrumentType.KEYS);
-		tempoMap = new TempoMap(new ArrayList<>());
+		tempos.add(new Tempo(0, 0, 120000, true));
 	}
 
 	public Song(final Song s) {
@@ -40,8 +40,9 @@ public class Song {
 		for (final Section sec : s.sections) {
 			sections.add(new Section(sec));
 		}
-
-		tempoMap = new TempoMap(s.tempoMap);
+		for (final Tempo t : s.tempos) {
+			tempos.add(new Tempo(t));
+		}
 	}
 
 	public Instrument[] instruments() {
@@ -60,7 +61,14 @@ public class Song {
 			sb.append(first ? "" : ",\n\t\t").append(s);
 			first = false;
 		}
-		sb.append("],\n\ttempoMap: ").append(tempoMap.toString().replaceAll("\n\t", "\n\t\t\t")).append("}");
+		sb.append("],\n\ttempos: [");
+
+		first = true;
+		for (final Tempo t : tempos) {
+			sb.append(first ? "" : ",\n\t\t").append(t);
+			first = false;
+		}
+		sb.append("]}");
 
 		return sb.toString();
 	}

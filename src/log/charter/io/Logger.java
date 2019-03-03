@@ -15,7 +15,7 @@ public class Logger {
 		try {
 			final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
 			final String name = "log-" + dateFormat.format(new Date()) + ".txt";
-			final File dir = new File("D:/logs/");
+			final File dir = new File("logs/");
 			if (!dir.exists()) {
 				dir.mkdirs();
 			}

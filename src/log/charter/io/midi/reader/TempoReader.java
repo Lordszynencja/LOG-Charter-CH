@@ -30,12 +30,6 @@ public class TempoReader {
 			}
 		}
 
-		if (tempos.isEmpty()) {
-			tempos.add(new Tempo(0, 0, 120000, true));
-		}
-
-		tempos.sort(null);
-
 		debug("Reading tempo finished");
 		return tempos;
 	}

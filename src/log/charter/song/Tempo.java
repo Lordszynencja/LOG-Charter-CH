@@ -3,25 +3,24 @@ package log.charter.song;
 public class Tempo extends Position {
 	public int id;
 	public int kbpm;
-	public boolean sync;
+	public int beats;
 
-	public Tempo(final int id, final long pos, final int kbpm, final boolean sync) {
+	public Tempo(final int id, final double pos, final int kbpm, final boolean sync) {
 		super(pos);
 		this.id = id;
-		this.kbpm = kbpm;
-		this.sync = sync;
+		this.kbpm = sync ? kbpm : -1;
+		beats = sync ? -1 : kbpm;
 	}
 
 	public Tempo(final Tempo t) {
 		super(t);
 		id = t.id;
 		kbpm = t.kbpm;
-		sync = t.sync;
+		beats = t.beats;
 	}
 
 	@Override
 	public String toString() {
-		return sync ? "TempoBPM{pos: " + pos + ", kbpm: " + kbpm + "}"
-				: "TempoMeasure{pos: " + pos + ", measure: " + kbpm + "}";
+		return "Tempo{pos: " + pos + ", kbpm: " + kbpm + ", beats: " + beats + "}";
 	}
 }

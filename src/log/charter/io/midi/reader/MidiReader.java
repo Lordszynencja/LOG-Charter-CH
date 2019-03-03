@@ -17,6 +17,7 @@ import log.charter.io.TickMsConverter;
 import log.charter.io.midi.MidTrack;
 import log.charter.song.Instrument.InstrumentType;
 import log.charter.song.Song;
+import log.charter.song.TempoMap;
 
 public final class MidiReader {
 
@@ -50,7 +51,8 @@ public final class MidiReader {
 		for (final MidTrack t : tracks) {
 			switch (t.type) {
 			case TEMPO:
-				s.tempos = TempoReader.read(t);
+				s.tempoMap = new TempoMap(TempoReader.read(t));
+				s.tempoMap.join();
 				break;
 			case GUITAR:
 				s.g = InstrumentReader.read(t, InstrumentType.GUITAR);

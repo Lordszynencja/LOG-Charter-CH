@@ -46,6 +46,55 @@ public class ChartData {
 		}
 	}
 
+	public static List<Double> removePostionsCloseToNotes(final List<Double> positions, final List<Note> notes) {
+		final int posSize = positions.size();
+		final List<Double> newPositions = new ArrayList<>(posSize);
+		if (posSize == 0) {
+			return newPositions;
+		}
+
+		final int notesSize = notes.size();
+		if (notesSize == 0) {
+			return positions;
+		}
+
+		int posId = 0;
+		int noteId = 0;
+		double pos = positions.get(posId);
+		double notePos = notes.get(noteId).pos;
+		while (posId < posSize) {
+			if (Math.abs(notePos - pos) < Config.minNoteDistance) {
+				posId++;
+				if (posId >= posSize) {
+					break;
+				}
+				pos = positions.get(posId);
+				continue;
+			}
+			if (notePos < pos) {
+				noteId++;
+				if (noteId >= notesSize) {
+					break;
+				}
+				notePos = notes.get(noteId).pos;
+				continue;
+			}
+
+			newPositions.add(pos);
+			posId++;
+			if (posId >= posSize) {
+				break;
+			}
+			pos = positions.get(posId);
+		}
+
+		for (; posId < posSize; posId++) {
+			newPositions.add(positions.get(posId));
+		}
+
+		return newPositions;
+	}
+
 	public String path = Config.lastPath;
 	public boolean isEmpty = true;
 	public Song s = new Song();
@@ -55,6 +104,7 @@ public class ChartData {
 	public Instrument currentInstrument = s.g;
 	public int currentDiff = 3;
 	public List<Note> currentNotes = s.g.notes.get(currentDiff);
+
 	public List<Integer> selectedNotes = new ArrayList<>();
 	public Integer lastSelectedNote = null;
 	public Tempo draggedTempoPrev = null;
@@ -63,15 +113,12 @@ public class ChartData {
 	public List<UndoEvent> draggedTempoUndo = null;
 	public int mousePressX = -1;
 	public int mousePressY = -1;
-	public int dragStartX = -1;
-	public int dragStartY = -1;
 	public int mx = -1;
 	public int my = -1;
 
 	public int t = 0;
 	public double nextT = 0;
 	public double zoom = 1;
-	public int markerOffset = 300;
 	public boolean drawAudio = false;
 	public boolean changed = false;
 	public int gridSize = 2;
@@ -96,6 +143,21 @@ public class ChartData {
 		setZoomLevel(Config.zoomLvl + change);
 	}
 
+	public void changeNoteLength(final int grids) {
+		// TODO
+		final List<UndoEvent> undoEvents = new ArrayList<>(selectedNotes.size());
+		for (final int id : selectedNotes) {
+			final Note note = currentNotes.get(id);
+			undoEvents.add(new NoteChange(id, note));
+			note.length += 100;// TODO actual length based on kbpm and grid size
+			if ((id + 1) < currentNotes.size()) {
+				final Note nextNote = currentNotes.get(id + 1);
+				fixNoteLength(note, id, nextNote, undoEvents);
+			}
+		}
+
+	}
+
 	public void clear() {
 		path = "C:/";
 		s = new Song();
@@ -107,14 +169,31 @@ public class ChartData {
 
 		selectedNotes.clear();
 		lastSelectedNote = null;
-		dragStartX = -1;
-		dragStartY = -1;
+		draggedTempoPrev = null;
+		draggedTempo = null;
+		draggedTempoNext = null;
+		draggedTempoUndo = null;
+		mousePressX = -1;
+		mousePressY = -1;
 		mx = -1;
 		my = -1;
 
 		t = 0;
+		nextT = 0;
 		drawAudio = false;
 		changed = false;
+		gridSize = 2;
+		useGrid = true;
+	}
+
+	public void endNoteAdding() {// TODO
+		if ((mousePressX >= 0) && (mousePressY >= 0)) {
+			final int color = ChartPanel.yToLane(mousePressY) + 1;
+			// toggleNote(findClosestIdOrPosForX(mousePressX), color);
+		}
+
+		mousePressX = -1;
+		mousePressY = -1;
 	}
 
 	public int findCloseNoteForTime(final double time) {
@@ -173,6 +252,23 @@ public class ChartData {
 		return 0;
 	}
 
+	public List<Note> findNotesFromTo(final int firstNoteId, final double end) {
+		final List<Note> notes = new ArrayList<>();
+		int nextId = firstNoteId;
+		Note n = currentNotes.get(nextId);
+		nextId++;
+		while (n.pos <= end) {
+			notes.add(n);
+			n = currentNotes.get(nextId);
+			nextId++;
+			if (nextId >= currentNotes.size()) {
+				break;
+			}
+		}
+
+		return notes;
+	}
+
 	public Section findOrCreateSectionCloseTo(final double time) {// TODO binary
 																					  // search
 		for (int i = 0; i < s.sections.size(); i++) {
@@ -190,6 +286,17 @@ public class ChartData {
 		final Section newSection = new Section("", time);
 		s.sections.add(newSection);
 		return newSection;
+	}
+
+	private void fixNoteLength(final Note n, final int nId, final Note next, final List<UndoEvent> events) {
+		if ((next.pos < (Config.minLongNoteDistance + n.pos + n.length))//
+				&& (!next.crazy || ((next.notes & n.notes) > 0) || (next.notes == 0) || (n.notes == 0))) {
+			events.add(new NoteChange(nId, n));
+			n.length = next.pos - Config.minLongNoteDistance - n.pos;
+			if (n.length < Config.minTailLength) {
+				n.length = 0;
+			}
+		}
 	}
 
 	private boolean isInSection(final Note n, final List<Event> sections) {
@@ -234,6 +341,11 @@ public class ChartData {
 		resetZoom();
 	}
 
+	public void startNoteAdding(final int x, final int y) {
+		mousePressX = x;
+		mousePressY = y;
+	}
+
 	public void startTempoDrag(final Tempo prevTmp, final Tempo tmp, final Tempo nextTmp, final boolean isNew) {
 		draggedTempoPrev = prevTmp;
 		draggedTempo = tmp;
@@ -256,7 +368,7 @@ public class ChartData {
 	}
 
 	public int timeToX(final double pos) {
-		return (int) ((pos - t) * zoom) + markerOffset;
+		return (int) ((pos - t) * zoom) + Config.markerOffset;
 	}
 
 	public int timeToXLength(final double length) {
@@ -280,14 +392,7 @@ public class ChartData {
 
 			for (int i = insertPos - 1; (i > 0) && (i > (insertPos - 100)); i--) {
 				final Note prevNote = currentNotes.get(i);
-				if (((n.pos - prevNote.pos - prevNote.length) < Config.minNoteDistance)//
-						&& (!n.crazy || ((n.notes & prevNote.notes) > 0) || (n.notes == 0) || (prevNote.notes == 0))) {
-					undoEvents.add(new NoteChange(i, prevNote));
-					prevNote.length = n.pos - Config.minNoteDistance - prevNote.pos;
-					if (prevNote.length < Config.minTailLength) {
-						prevNote.length = 0;
-					}
-				}
+				fixNoteLength(prevNote, i, n, undoEvents);
 			}
 
 			addUndo(new UndoGroup(undoEvents));
@@ -313,7 +418,7 @@ public class ChartData {
 	}
 
 	public double xToTime(final int x) {
-		return ((x - markerOffset) / zoom) + t;
+		return ((x - Config.markerOffset) / zoom) + t;
 	}
 
 	public double xToTimeLength(final int x) {

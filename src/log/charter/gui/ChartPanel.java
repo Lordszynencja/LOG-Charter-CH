@@ -72,12 +72,16 @@ public class ChartPanel extends JPanel {
 	private static final Color[] NOTE_TAIL_COLORS = { new Color(20, 200, 20), new Color(200, 20, 20),
 			new Color(200, 200, 20), new Color(20, 20, 200), new Color(200, 100, 20), new Color(155, 20, 155) };
 
+	private static int clamp(final double y) {
+		return colorToY(yToLane(y));
+	}
+
 	private static int colorToY(final int i) {
 		return (lane0Y + (laneDistY * i));
 	}
 
-	public static int yToLane(final int y) {
-		return (((y - ChartPanel.lane0Y) + (ChartPanel.laneDistY / 2)) / ChartPanel.laneDistY);
+	public static int yToLane(final double y) {
+		return (int) (((y - ChartPanel.lane0Y) + (ChartPanel.laneDistY / 2)) / ChartPanel.laneDistY);
 	}
 
 	private final ChartData data;
@@ -305,13 +309,46 @@ public class ChartPanel extends JPanel {
 			return;
 		} else if (data.my < (lane0Y + ((laneDistY * 9) / 2))) {
 			final IdOrPos idOrPos = data.findClosestIdOrPosForX(data.mx);
-			final int y = colorToY(yToLane(data.my));
-			final int x = idOrPos.isId() ? data.timeToX(data.currentNotes.get(idOrPos.id).pos)//
-					: idOrPos.isPos() ? data.timeToX(idOrPos.pos) : -1;
 
-			if (x >= 0) {
-				g.setColor(Color.RED);
-				g.drawRect(x - (noteW / 2), y - (noteH / 2), noteW, noteH);
+			g.setColor(Color.RED);
+			if ((data.mousePressX <= data.mx) && (data.mousePressX >= 0)) {
+				g.drawLine(data.mousePressX, data.mousePressY, data.mx, data.my);
+				final IdOrPos startIdOrPos = data.findClosestIdOrPosForX(data.mousePressX);
+
+				final double firstNotePos = startIdOrPos.isId() ? data.currentNotes.get(startIdOrPos.id).pos
+						: startIdOrPos.pos;
+				final double lastNotePos = idOrPos.isId() ? data.currentNotes.get(idOrPos.id).pos : idOrPos.pos;
+
+				if (firstNotePos != lastNotePos) {
+					final double length = lastNotePos - firstNotePos;
+
+					final List<Note> notes = data.findNotesFromTo(startIdOrPos.isId() ? startIdOrPos.id
+							: data.findFirstNoteAfterTime(firstNotePos), lastNotePos);
+
+					// TODO draw expected added notes
+					for (final Note note : notes) {
+						final double part = (note.pos - firstNotePos) / length;
+						final double y = (data.mousePressY * (1 - part)) + (part * data.my);
+						g.drawRect(data.timeToX(note.pos) - (noteW / 2), clamp(y) - (noteH / 2), noteW, noteH);
+					}
+
+					final List<Double> allGridPositions = data.s.tempoMap.getGridPositionsFromTo(1, firstNotePos,
+							lastNotePos);
+					final List<Double> gridPositions = ChartData.removePostionsCloseToNotes(allGridPositions, notes);
+					for (final Double pos : gridPositions) {
+						final double part = (pos - firstNotePos) / length;
+						final double y = (data.mousePressY * (1 - part)) + (part * data.my);
+						g.drawRect(data.timeToX(pos) - (noteW / 2), clamp(y) - (noteH / 2), noteW, noteH);
+					}
+				}
+			} else if (data.mousePressX < 0) {
+				final int x = idOrPos.isId() ? data.timeToX(data.currentNotes.get(idOrPos.id).pos)//
+						: idOrPos.isPos() ? data.timeToX(idOrPos.pos) : -1;
+
+				if (x >= 0) {
+					g.drawRect(x - (noteW / 2), clamp(data.my) - (noteH / 2), noteW, noteH);
+				}
+
 			}
 		} else {
 			return;
@@ -335,7 +372,7 @@ public class ChartPanel extends JPanel {
 		drawSpecial(g);
 
 		g.setColor(MARKER_COLOR);
-		g.drawLine(data.markerOffset, lane0Y - 50, data.markerOffset, lane0Y + (laneDistY * 4) + 50);
+		g.drawLine(Config.markerOffset, lane0Y - 50, Config.markerOffset, lane0Y + (laneDistY * 4) + 50);
 	}
 
 	private int tempoX(final double lastPos, final int id, final int lastId, final int lastKBPM) {

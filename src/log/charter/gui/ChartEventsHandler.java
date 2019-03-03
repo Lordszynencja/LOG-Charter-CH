@@ -365,13 +365,6 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 				}
 			}
 		} else if (e.getButton() == MouseEvent.BUTTON2) {
-		} else if (e.getButton() == MouseEvent.BUTTON3) {
-			if ((y >= (ChartPanel.lane0Y - (ChartPanel.laneDistY / 2))) && (y <= (ChartPanel.lane0Y
-					+ ((ChartPanel.laneDistY * 9) / 2)))) {
-				stopMusic();
-				final int color = ChartPanel.yToLane(y) + 1;
-				data.toggleNote(data.findClosestIdOrPosForX(x), color);
-			}
 		}
 	}
 
@@ -412,14 +405,15 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 	}
 
 	@Override
-	public void mousePressed(final MouseEvent e) {// TODO start note drag/ tempo
-																 // drag
+	public void mousePressed(final MouseEvent e) {// TODO start note drag
 		data.mx = e.getX();
 		data.my = e.getY();
 
 		final int x = e.getX();
 		final int y = e.getY();
 		if (e.getButton() == MouseEvent.BUTTON1) {
+			data.mousePressX = -1;
+			data.mousePressY = -1;
 			if (y < ChartPanel.spY) {
 				return;
 			} else if (y < (ChartPanel.lane0Y - (ChartPanel.laneDistY / 2))) {
@@ -440,29 +434,35 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 					// TODO clear, select single note
 				}
 			}
+		} else if (e.getButton() == MouseEvent.BUTTON3) {
+			if ((y >= (ChartPanel.lane0Y - (ChartPanel.laneDistY / 2))) && (y <= (ChartPanel.lane0Y
+					+ ((ChartPanel.laneDistY * 9) / 2)))) {
+				stopMusic();
+				data.startNoteAdding(x, y);
+			}
 		}
 	}
 
 	@Override
 	public void mouseReleased(final MouseEvent e) {
+		data.mx = e.getX();
+		data.my = e.getY();
 		data.stopTempoDrag();
-		data.mousePressX = -1;
-		data.mousePressY = -1;
-		System.out.println("release");
-		// TODO ending drag
-
+		data.endNoteAdding();
+		// TODO end drag
 	}
 
 	@Override
 	public void mouseWheelMoved(final MouseWheelEvent e) {
+		final int rot = e.getWheelRotation();
 		if (ctrl) {
-			data.addZoom(e.getWheelRotation() * (shift ? 10 : 1));
+			data.addZoom(rot * (shift ? 10 : 1));
 		} else {
-			// TODO add selected note length change
+			data.changeNoteLength(rot);
 		}
 	}
 
-	public void newSong() {// TODO
+	public void newSong() {
 		final JFileChooser chooser = new JFileChooser(new File(Config.musicPath));
 		chooser.setFileFilter(new FileFilter() {
 

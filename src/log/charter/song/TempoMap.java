@@ -286,6 +286,11 @@ public class TempoMap {
 		return result;
 	}
 
+	public List<Double> getGridPositionsFromTo(final int gridSize, final double start, final double end) {// TODO
+		final List<Double> grids = new ArrayList<>();
+		return grids;
+	}
+
 	public Tempo getTempoById(final int id) {
 		return tempos.get(id);
 	}

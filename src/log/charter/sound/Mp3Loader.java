@@ -6,14 +6,12 @@ import static log.charter.io.Logger.error;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioFormat.Encoding;
 import javax.sound.sampled.AudioInputStream;
-import javax.sound.sampled.UnsupportedAudioFileException;
 
 import log.charter.util.RW;
 
@@ -48,7 +46,7 @@ public class Mp3Loader {
 			}
 
 			return new MusicData(buffer, rate);
-		} catch (final IOException | UnsupportedAudioFileException e) {
+		} catch (final Exception e) {
 			error("Couldnt load mp3 file " + path, e);
 		}
 		return null;

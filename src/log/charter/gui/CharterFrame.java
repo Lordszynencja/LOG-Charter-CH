@@ -13,13 +13,15 @@ public class CharterFrame extends JFrame {
 		setDefaultCloseOperation(EXIT_ON_CLOSE);
 		setLocationByPlatform(true);
 		setVisible(true);
-		this.setSize(800, 600);
+		setSize(Config.windowWidth, Config.windowHeight);
+		setLocation(Config.windowPosX, Config.windowPosY);
 		setJMenuBar(new CharterMenuBar(handler));
 		getContentPane().add(new ChartPanel(handler));
 
 		addKeyListener(handler);
 		addMouseWheelListener(handler);
 		addWindowFocusListener(handler);
+		addComponentListener(handler);
 		validate();
 	}
 

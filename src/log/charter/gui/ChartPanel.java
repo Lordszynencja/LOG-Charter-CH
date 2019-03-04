@@ -34,6 +34,29 @@ public class ChartPanel extends JPanel {
 			g.setColor(c);
 			int i = 0;
 			while (i < id) {
+				g.drawRect(positions[i++], positions[i++], positions[i++], positions[i++]);
+			}
+		}
+	}
+
+	private static class FillList {
+		private int[] positions = new int[1024];
+		private int id = 0;
+
+		public void addPositions(final int x, final int y, final int w, final int h) {
+			if (id >= positions.length) {
+				positions = Arrays.copyOf(positions, positions.length * 2);
+			}
+			positions[id++] = x;
+			positions[id++] = y;
+			positions[id++] = w;
+			positions[id++] = h;
+		}
+
+		public void draw(final Graphics g, final Color c) {
+			g.setColor(c);
+			int i = 0;
+			while (i < id) {
 				g.fillRect(positions[i++], positions[i++], positions[i++], positions[i++]);
 			}
 		}
@@ -44,28 +67,32 @@ public class ChartPanel extends JPanel {
 	public static final int sectionNamesY = 10;
 
 	public static final int spY = 30;
+
 	public static final int tapY = 35;
 	public static final int lane0Y = 100;
-
 	public static final int laneDistY = 50;
+
 	public static final int tempoMarkerY1 = 30;
-
 	public static final int tempoMarkerY2 = lane0Y + (4 * laneDistY) + (laneDistY / 2);
-	public static final int noteH = 30;
 
+	public static final int noteH = 30;
 	public static final int noteW = 15;
+
 	public static final int tailSize = 15;
 	private static final Color BG_COLOR = new Color(160, 160, 160);
-
 	private static final Color SP_COLOR = new Color(180, 200, 255);
+
+	private static final Color HIGHLIGHT_COLOR = new Color(255, 0, 0);
+	private static final Color SELECT_COLOR = new Color(0, 255, 255);
 	private static final Color TAP_COLOR = new Color(200, 0, 200);
 	private static final Color SOLO_COLOR = new Color(50, 50, 180);
 	private static final Color LANE_COLOR = new Color(0, 0, 0);
 	private static final Color MAIN_BEAT_COLOR = new Color(255, 255, 255);
 	private static final Color SECONDARY_BEAT_COLOR = new Color(200, 200, 200);
 	private static final Color MARKER_COLOR = new Color(255, 0, 0);
-	private static final Color OPEN_NOTE_COLOR = new Color(230, 20, 230);
 
+	private static final Color HOPO_COLOR = new Color(255, 255, 255);
+	private static final Color OPEN_NOTE_COLOR = new Color(230, 20, 230);
 	private static final Color OPEN_NOTE_TAIL_COLOR = new Color(200, 20, 200);
 	private static final Color[] NOTE_COLORS = { new Color(20, 230, 20), new Color(230, 20, 20),
 			new Color(230, 230, 20), new Color(20, 20, 230), new Color(230, 115, 20), new Color(155, 20, 155) };
@@ -78,6 +105,10 @@ public class ChartPanel extends JPanel {
 
 	private static int colorToY(final int i) {
 		return (lane0Y + (laneDistY * i));
+	}
+
+	public static boolean isInNotes(final int y) {
+		return (y >= (lane0Y - (laneDistY / 2))) && (y <= (lane0Y + ((laneDistY * 9) / 2)));
 	}
 
 	public static int yToLane(final double y) {
@@ -159,7 +190,9 @@ public class ChartPanel extends JPanel {
 		final Tempo tmp = tempos.get(tempos.size() - 1);
 		lastKBPM = tmp.kbpm;
 		beatsPerMeasure = tmp.beats;
-		beatInMeasure = 0;
+		if (beatsPerMeasure != tmp.beats) {
+			beatInMeasure = 0;
+		}
 
 		int id = tmp.id;
 		while (id < 9999) {
@@ -178,15 +211,15 @@ public class ChartPanel extends JPanel {
 
 	private void drawGuitarNotes(final Graphics g) {
 		if (data.s != null) {
-			final DrawList openNoteTails = new DrawList();
-			final DrawList openNotes = new DrawList();
-			final DrawList[] noteTails = new DrawList[6];
-			final DrawList[] notes = new DrawList[6];
+			final FillList openNoteTails = new FillList();
+			final FillList openNotes = new FillList();
+			final FillList[] noteTails = new FillList[6];
+			final FillList[] notes = new FillList[6];
 			for (int i = 0; i < 6; i++) {
-				noteTails[i] = new DrawList();
-				notes[i] = new DrawList();
+				noteTails[i] = new FillList();
+				notes[i] = new FillList();
 			}
-			final DrawList hopos = new DrawList();
+			final FillList hopos = new FillList();
 
 			for (final Note n : data.currentInstrument.notes.get(data.currentDiff)) {
 				final int x = data.timeToX(n.pos);
@@ -226,7 +259,7 @@ public class ChartPanel extends JPanel {
 				notes[i].draw(g, NOTE_COLORS[i]);
 			}
 
-			hopos.draw(g, Color.WHITE);
+			hopos.draw(g, HOPO_COLOR);
 		}
 	}
 
@@ -261,7 +294,7 @@ public class ChartPanel extends JPanel {
 			g.drawString(s.name, x, sectionNamesY + 10);
 		}
 
-		final DrawList sp = new DrawList();
+		final FillList sp = new FillList();
 		for (final Event e : data.currentInstrument.sp) {
 			final int x = data.timeToX(e.pos);
 			final int l = data.timeToXLength(e.length);
@@ -275,7 +308,7 @@ public class ChartPanel extends JPanel {
 		}
 		sp.draw(g, SP_COLOR);
 
-		final DrawList tap = new DrawList();
+		final FillList tap = new FillList();
 		for (final Event e : data.currentInstrument.tap) {
 			final int x = data.timeToX(e.pos);
 			final int l = data.timeToXLength(e.length);
@@ -289,7 +322,7 @@ public class ChartPanel extends JPanel {
 		}
 		tap.draw(g, TAP_COLOR);
 
-		final DrawList solos = new DrawList();
+		final FillList solos = new FillList();
 		for (final Event e : data.currentInstrument.solo) {
 			final int x = data.timeToX(e.pos);
 			final int l = data.timeToXLength(e.length);
@@ -304,16 +337,54 @@ public class ChartPanel extends JPanel {
 		solos.draw(g, SOLO_COLOR);
 	}
 
-	private void drawSpecial(final Graphics g) {
-		if (data.my < (lane0Y - (laneDistY / 2))) {
-			return;
-		} else if (data.my < (lane0Y + ((laneDistY * 9) / 2))) {
-			final IdOrPos idOrPos = data.findClosestIdOrPosForX(data.mx);
+	private void drawSelectedNotes(final Graphics g) {
+		final DrawList selects = new DrawList();
 
+		for (final int id : data.selectedNotes) {
+			final Note n = data.currentNotes.get(id);
+			final int x = data.timeToX(n.pos);
+			final int length = (int) (n.length * data.zoom);
+			if (x > (getWidth() + (noteW / 2))) {
+				break;
+			}
+			if ((x + length) > 0) {
+				if (n.notes == 0) {
+					selects.addPositions(x - (noteW / 2) - 1, lane0Y - (noteH / 2) - 1, noteW + 1, (4 * laneDistY)
+							+ noteH + 1);
+				} else {
+					for (int c = 0; c < 5; c++) {
+						if ((n.notes & (1 << c)) > 0) {
+							selects.addPositions(x - (noteW / 2) - 1, colorToY(c) - (noteH / 2) - 1, noteW + 1, noteH + 1);
+						}
+					}
+				}
+			}
+		}
+
+		selects.draw(g, SELECT_COLOR);
+	}
+
+	private void drawSpecial(final Graphics g) {
+		if (ChartPanel.isInNotes(data.my)) {
+			final DrawList highlighted = new DrawList();
 			g.setColor(Color.RED);
-			if ((data.mousePressX <= data.mx) && (data.mousePressX >= 0)) {
-				g.drawLine(data.mousePressX, data.mousePressY, data.mx, data.my);
-				final IdOrPos startIdOrPos = data.findClosestIdOrPosForX(data.mousePressX);
+			if (ChartPanel.isInNotes(data.mousePressY)) {
+				int x0, x1;
+				int y0, y1;
+				if (data.mx < data.mousePressX) {
+					x0 = data.mx;
+					y0 = data.my;
+					x1 = data.mousePressX;
+					y1 = data.mousePressY;
+				} else {
+					x0 = data.mousePressX;
+					y0 = data.mousePressY;
+					x1 = data.mx;
+					y1 = data.my;
+				}
+				g.drawLine(x0, y0, x1, y1);
+				final IdOrPos idOrPos = data.findClosestIdOrPosForX(x1);
+				final IdOrPos startIdOrPos = data.findClosestIdOrPosForX(x0);
 
 				final double firstNotePos = startIdOrPos.isId() ? data.currentNotes.get(startIdOrPos.id).pos
 						: startIdOrPos.pos;
@@ -325,33 +396,41 @@ public class ChartPanel extends JPanel {
 					final List<Note> notes = data.findNotesFromTo(startIdOrPos.isId() ? startIdOrPos.id
 							: data.findFirstNoteAfterTime(firstNotePos), lastNotePos);
 
-					// TODO draw expected added notes
 					for (final Note note : notes) {
 						final double part = (note.pos - firstNotePos) / length;
-						final double y = (data.mousePressY * (1 - part)) + (part * data.my);
-						g.drawRect(data.timeToX(note.pos) - (noteW / 2), clamp(y) - (noteH / 2), noteW, noteH);
+						final double y = (y0 * (1 - part)) + (part * y1);
+						highlighted.addPositions(data.timeToX(note.pos) - (noteW / 2), clamp(y) - (noteH / 2), noteW - 1,
+								noteH - 1);
 					}
 
-					final List<Double> allGridPositions = data.s.tempoMap.getGridPositionsFromTo(1, firstNotePos,
+					final List<Double> allGridPositions = data.s.tempoMap.getGridPositionsFromTo(data.gridSize, firstNotePos,
 							lastNotePos);
 					final List<Double> gridPositions = ChartData.removePostionsCloseToNotes(allGridPositions, notes);
 					for (final Double pos : gridPositions) {
 						final double part = (pos - firstNotePos) / length;
-						final double y = (data.mousePressY * (1 - part)) + (part * data.my);
-						g.drawRect(data.timeToX(pos) - (noteW / 2), clamp(y) - (noteH / 2), noteW, noteH);
+						final double y = (y0 * (1 - part)) + (part * y1);
+						highlighted.addPositions(data.timeToX(pos) - (noteW / 2), clamp(y) - (noteH / 2), noteW - 1, noteH
+								- 1);
+					}
+				} else {
+					final int x = idOrPos.isId() ? data.timeToX(data.currentNotes.get(idOrPos.id).pos)//
+							: idOrPos.isPos() ? data.timeToX(idOrPos.pos) : -1;
+
+					if (x >= 0) {
+						highlighted.addPositions(x - (noteW / 2), clamp(y0) - (noteH / 2), noteW - 1, noteH - 1);
 					}
 				}
-			} else if (data.mousePressX < 0) {
+			} else {
+				final IdOrPos idOrPos = data.findClosestIdOrPosForX(data.mx);
 				final int x = idOrPos.isId() ? data.timeToX(data.currentNotes.get(idOrPos.id).pos)//
 						: idOrPos.isPos() ? data.timeToX(idOrPos.pos) : -1;
 
 				if (x >= 0) {
-					g.drawRect(x - (noteW / 2), clamp(data.my) - (noteH / 2), noteW, noteH);
+					highlighted.addPositions(x - (noteW / 2), clamp(data.my) - (noteH / 2), noteW - 1, noteH - 1);
 				}
-
 			}
-		} else {
-			return;
+
+			highlighted.draw(g, HIGHLIGHT_COLOR);
 		}
 	}
 
@@ -369,6 +448,7 @@ public class ChartPanel extends JPanel {
 		drawLanes(g);
 		drawBeats(g);
 		drawInstrument(g);
+		drawSelectedNotes(g);
 		drawSpecial(g);
 
 		g.setColor(MARKER_COLOR);

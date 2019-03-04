@@ -30,7 +30,7 @@ public class TempoMap {
 			this.tempos.add(new Tempo(tmp));
 		}
 		if (this.tempos.isEmpty()) {
-			this.tempos.add(new Tempo(0, 0, 120000, true));
+			this.tempos.add(new Tempo(0, 0, 120000, 4));
 		}
 		sort();
 	}
@@ -78,8 +78,7 @@ public class TempoMap {
 		double lastPos = tempos.get(0).pos;
 		for (int i = 1; i < tempos.size(); i++) {
 			final Tempo t0 = tempos.get(i);
-			double newLastPos = lastPos;
-			newLastPos = t0.pos;
+			final double newLastPos = t0.pos;
 			t0.pos = prev.pos + (((t0.pos - lastPos) * 60000000.0) / prev.kbpm / TickMsConverter.ticksPerBeat);
 
 			prev = t0;
@@ -87,41 +86,6 @@ public class TempoMap {
 		}
 		isMs = true;
 	}
-
-	/*
-	 * public Tempo findOrCreateClosestBeatForTime(final double time) {//TODO if
-	 * (s.tempos.isEmpty()) { throw new IllegalArgumentException(); }
-	 *
-	 * int l = 0; int r = currentNotes.size() - 1;
-	 *
-	 * while ((r - l) > 1) { final int mid = (l + r) / 2;
-	 *
-	 * if (currentNotes.get(mid).pos > time) { r = mid; } else { l = mid; } }
-	 *
-	 * return (abs(currentNotes.get(l).pos - time) > abs(currentNotes.get(r).pos
-	 * - time)) ? r : l; }
-	 */
-	/*
-	 * public Tempo findOrCreateTempoCloseTo(final double time) {// TODO binary
-	 * // search final double tDiff = xToTimeLength(10); int lastKbpm = 120000;
-	 *
-	 * Tempo tmp = s.tempos.get(s.tempos.size()-1); if (time > tmp.pos-tDiff ) {
-	 * if (time<tmp.pos + tDiff)return tmp; double closestBeatTime = tmp.pos +
-	 * btt(Math.floor(ttb(time - tmp.pos, lastKbpm)), lastKbpm); }
-	 *
-	 * for (int i = 0; i < s.tempos.size()-1; i++) { tmp = s.tempos.get(i); if
-	 * (tmp.sync) { lastKbpm = tmp.kbpm; } if ((tmp.pos + tDiff) < time) {
-	 * continue; }
-	 *
-	 *
-	 *
-	 * if ((tmp.pos - tDiff) > time) {//TODO this tempo is after tempo to make
-	 * final int id = (int) (tmp.id + ttb((time - tmp.pos) + 1, lastKbpm) + 1);
-	 * if (s.tempos.get(i + 1).id <= id) { return s.tempos.get(i + 1).pos; }
-	 * return tmp.pos + btt(id - tmp.id, lastKbpm); final Tempo new Tempo = new
-	 * Tempo(); s.sections.add(i, newSection); return newSection; } return tmp; }
-	 * throw new IllegalArgumentException(); }
-	 */
 
 	public void convertToTick() {
 		if (!isMs) {
@@ -131,12 +95,9 @@ public class TempoMap {
 			System.err.println("first beat is not on zero: " + tempos.get(0));
 		}
 
-		Tempo prev = tempos.get(0);
 		for (int i = 1; i < tempos.size(); i++) {
 			final Tempo tmp = tempos.get(i);
-			tmp.pos = prev.pos + (((tmp.pos - tmp.pos) * prev.kbpm * TickMsConverter.ticksPerBeat) / 60000000.0);
-
-			prev = tmp;
+			tmp.pos = (tmp.id * TickMsConverter.ticksPerBeat);
 		}
 		isMs = false;
 	}
@@ -288,6 +249,30 @@ public class TempoMap {
 
 	public List<Double> getGridPositionsFromTo(final int gridSize, final double start, final double end) {// TODO
 		final List<Double> grids = new ArrayList<>();
+
+		int tmpId = findTempoId(start);
+		final int endTmpId = findTempoId(end);
+		Tempo tmp = tempos.get(tmpId);
+		final Tempo endTmp = tempos.get(endTmpId);
+		int gridPoint = (int) round(ttb(start - tmp.pos, tmp.kbpm) * gridSize) + (tmp.id * gridSize);
+		final int lastGridPoint = (int) round(ttb(end - endTmp.pos, endTmp.kbpm) * gridSize) + (endTmp.id * gridSize);
+		int nextTmpGrid = tmpId < (tempos.size() - 1) ? tempos.get(tmpId + 1).id * gridSize : -1;
+		double gridDist = btt(1.0 / gridSize, tmp.kbpm);
+		double pos = tmp.pos + (gridDist * (gridPoint - (tmp.id * gridSize)));
+
+		while (gridPoint <= lastGridPoint) {
+			if (gridPoint == nextTmpGrid) {
+				tmpId++;
+				tmp = tempos.get(tmpId);
+				nextTmpGrid = tmpId < (tempos.size() - 1) ? tempos.get(tmpId + 1).id * gridSize : -1;
+				pos = tmp.pos;
+				gridDist = btt(1.0 / gridSize, tmp.kbpm);
+			}
+			grids.add(pos);
+			pos += gridDist;
+			gridPoint++;
+		}
+
 		return grids;
 	}
 

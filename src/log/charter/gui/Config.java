@@ -13,7 +13,12 @@ public class Config {
 	public static String musicPath = System.getProperty("user.home") + "/Music";
 	public static String songsPath = System.getProperty("user.home") + "/Documents";
 
+	public static int windowPosX = 100;
+	public static int windowPosY = 100;
+	public static int windowWidth = 800;
+	public static int windowHeight = 600;
 	public static int zoomLvl = 0;
+
 	public static int minNoteDistance = 5;
 	public static int minLongNoteDistance = 30;
 	public static int minTailLength = 30;
@@ -40,6 +45,18 @@ public class Config {
 						break;
 					case "songsPath":
 						songsPath = val;
+						break;
+					case "windowPosX":
+						windowPosX = Integer.valueOf(val);
+						break;
+					case "windowPosY":
+						windowPosY = Integer.valueOf(val);
+						break;
+					case "windowWidth":
+						windowWidth = Integer.valueOf(val);
+						break;
+					case "windowHeight":
+						windowHeight = Integer.valueOf(val);
 						break;
 					case "zoomLvl":
 						zoomLvl = Integer.valueOf(val);
@@ -78,6 +95,10 @@ public class Config {
 		adder.accept("lastPath", lastPath);
 		adder.accept("musicPath", musicPath);
 		adder.accept("songsPath", songsPath);
+		adder.accept("windowPosX", windowPosX + "");
+		adder.accept("windowPosY", windowPosY + "");
+		adder.accept("windowWidth", windowWidth + "");
+		adder.accept("windowHeight", windowHeight + "");
 		adder.accept("zoomLvl", zoomLvl + "");
 		adder.accept("minNoteDistance", minNoteDistance + "");
 		adder.accept("minLongNoteDistance", minLongNoteDistance + "");

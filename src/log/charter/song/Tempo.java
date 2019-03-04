@@ -12,6 +12,13 @@ public class Tempo extends Position {
 		beats = sync ? -1 : kbpm;
 	}
 
+	public Tempo(final int id, final double pos, final int kbpm, final int beats) {
+		super(pos);
+		this.id = id;
+		this.kbpm = kbpm;
+		this.beats = beats;
+	}
+
 	public Tempo(final Tempo t) {
 		super(t);
 		id = t.id;
@@ -21,6 +28,6 @@ public class Tempo extends Position {
 
 	@Override
 	public String toString() {
-		return "Tempo{pos: " + pos + ", kbpm: " + kbpm + ", beats: " + beats + "}";
+		return "Tempo{id: " + id + ", pos: " + pos + ", kbpm: " + kbpm + ", beats: " + beats + "}";
 	}
 }

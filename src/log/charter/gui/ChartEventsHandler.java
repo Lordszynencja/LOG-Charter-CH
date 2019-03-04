@@ -2,6 +2,8 @@ package log.charter.gui;
 
 import static log.charter.io.Logger.error;
 
+import java.awt.event.ComponentEvent;
+import java.awt.event.ComponentListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
@@ -17,6 +19,7 @@ import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import javax.swing.filechooser.FileFilter;
 
+import log.charter.gui.ChartData.IdOrPos;
 import log.charter.io.IniWriter;
 import log.charter.io.Logger;
 import log.charter.io.midi.reader.MidiReader;
@@ -32,14 +35,14 @@ import log.charter.sound.SoundPlayer.Player;
 import log.charter.util.RW;
 
 public class ChartEventsHandler implements KeyListener, MouseListener, MouseMotionListener, MouseWheelListener,
-		WindowFocusListener {
+		WindowFocusListener, ComponentListener {
 	public static final int FL = 10;
 
 	private static final MusicData tick = MusicData.generateSound(4000, 0.01, 1);
 	private static final MusicData note = MusicData.generateSound(1000, 0.02, 0.8);
 
 	public final ChartData data;
-	private final CharterFrame frame;
+	public final CharterFrame frame;
 
 	private int currentFrame = 0;
 	private int framesDone = 0;
@@ -86,6 +89,34 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 				e.printStackTrace();
 			}
 		}).start();
+	}
+
+	@Override
+	public void componentHidden(final ComponentEvent e) {
+	}
+
+	@Override
+	public void componentMoved(final ComponentEvent e) {
+		Config.windowPosX = e.getComponent().getX();
+		Config.windowPosY = e.getComponent().getY();
+	}
+
+	@Override
+	public void componentResized(final ComponentEvent e) {
+		Config.windowHeight = e.getComponent().getHeight();
+		Config.windowWidth = e.getComponent().getWidth();
+	}
+
+	@Override
+	public void componentShown(final ComponentEvent e) {
+	}
+
+	public void exit() {
+		if (JOptionPane.YES_OPTION == JOptionPane.showConfirmDialog(frame, "Are you sure you want to exit?", "Exit",
+				JOptionPane.YES_NO_OPTION)) {
+			frame.dispose();
+			System.exit(0);
+		}
 	}
 
 	private void frame() {
@@ -182,11 +213,7 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 			break;
 		case KeyEvent.VK_ESCAPE:
 			stopMusic();
-			if (JOptionPane.YES_OPTION == JOptionPane.showConfirmDialog(frame, "Are you sure you want to exit?", "Exit",
-					JOptionPane.YES_NO_OPTION)) {
-				frame.dispose();
-				System.exit(0);
-			}
+			exit();
 			break;
 		case KeyEvent.VK_F5:
 			data.drawAudio = !data.drawAudio;
@@ -250,6 +277,12 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 			break;
 		case KeyEvent.VK_G:
 			data.useGrid = !data.useGrid;
+			gPressed = true;
+			break;
+		case KeyEvent.VK_H:
+			for (final int id : data.selectedNotes) {
+				data.currentNotes.get(id).hopo ^= true;
+			}
 			break;
 		case KeyEvent.VK_M:
 			metronome = !metronome;
@@ -353,18 +386,7 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 				}
 			} else if (y < (ChartPanel.lane0Y - (ChartPanel.laneDistY / 2))) {
 				return;
-			} else if (y < (ChartPanel.lane0Y + ((ChartPanel.laneDistY * 9) / 2))) {
-				stopMusic();
-				if (shift) {
-					// TODO select note streak from data.lastNoteSelected to this
-					// note
-				} else if (ctrl) {
-					// TODO select single note
-				} else {
-					// TODO clear, select single note
-				}
 			}
-		} else if (e.getButton() == MouseEvent.BUTTON2) {
 		}
 	}
 
@@ -375,7 +397,6 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 		data.my = e.getY();
 
 		if (data.draggedTempo != null) {
-			System.out.println("Dragged tempo " + data.draggedTempo);
 			data.draggedTempo.pos = data.xToTime(data.mx);
 			if (data.draggedTempo.pos < (data.draggedTempoPrev.pos + 1)) {
 				data.draggedTempo.pos = data.draggedTempoPrev.pos + 1;
@@ -386,6 +407,8 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 					data.draggedTempo.pos = data.draggedTempoNext.pos - 1;
 				}
 				TempoMap.calcBPM(data.draggedTempo, data.draggedTempoNext);
+			} else {
+				data.draggedTempo.kbpm = data.draggedTempoPrev.kbpm;
 			}
 		}
 	}
@@ -425,19 +448,33 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 				return;
 			} else if (y < (ChartPanel.lane0Y + ((ChartPanel.laneDistY * 9) / 2))) {
 				stopMusic();
+				final IdOrPos idOrPos = data.findClosestIdOrPosForX(x);
 				if (shift) {
 					// TODO select note streak from data.lastNoteSelected to this
 					// note
 				} else if (ctrl) {
-					// TODO select single note
+					if (idOrPos.isId()) {
+						if (!data.selectedNotes.remove((Integer) idOrPos.id)) {
+							data.lastSelectedNote = idOrPos.id;
+							data.selectedNotes.add(idOrPos.id);
+							data.selectedNotes.sort(null);
+						}
+					}
 				} else {
-					// TODO clear, select single note
+					data.selectedNotes.clear();
+					data.lastSelectedNote = null;
+					if (idOrPos.isId()) {
+						data.lastSelectedNote = idOrPos.id;
+						data.selectedNotes.add(idOrPos.id);
+					}
 				}
 			}
 		} else if (e.getButton() == MouseEvent.BUTTON3) {
 			if ((y >= (ChartPanel.lane0Y - (ChartPanel.laneDistY / 2))) && (y <= (ChartPanel.lane0Y
 					+ ((ChartPanel.laneDistY * 9) / 2)))) {
 				stopMusic();
+				data.selectedNotes.clear();
+				data.lastSelectedNote = null;
 				data.startNoteAdding(x, y);
 			}
 		}
@@ -491,10 +528,17 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 
 			folderName = JOptionPane.showInputDialog(frame, "Choose folder name",
 					folderName);
+			if (folderName == null) {
+				return;
+			}
+
 			File f = new File(Config.songsPath + "/" + folderName);
 			while (f.exists()) {
 				folderName = JOptionPane.showInputDialog(frame, "Given folder already exists, choose different name",
 						folderName);
+				if (folderName == null) {
+					return;
+				}
 				f = new File(Config.songsPath + "/" + folderName);
 			}
 			f.mkdir();
@@ -565,7 +609,7 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 				iniData = new IniData(iniFile);
 			} else {
 				iniData = new IniData();
-				Logger.error("No ini file found on path " + iniFile.getAbsolutePath());
+				error("No ini file found on path " + iniFile.getAbsolutePath());
 			}
 
 			if ((s != null) && (musicData != null) && (iniData != null)) {

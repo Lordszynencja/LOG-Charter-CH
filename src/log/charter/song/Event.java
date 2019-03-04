@@ -5,7 +5,7 @@ public class Event extends Position {
 	/**
 	 * length in ms
 	 */
-	public double length = -1;
+	public double length = 0;
 
 	public Event(final double pos) {
 		super(pos);

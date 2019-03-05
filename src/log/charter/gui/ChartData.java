@@ -9,6 +9,9 @@ import java.util.List;
 import log.charter.gui.undoEvents.NoteAdd;
 import log.charter.gui.undoEvents.NoteChange;
 import log.charter.gui.undoEvents.NoteRemove;
+import log.charter.gui.undoEvents.SPSectionsChange;
+import log.charter.gui.undoEvents.SoloSectionsChange;
+import log.charter.gui.undoEvents.TapSectionsChange;
 import log.charter.gui.undoEvents.TempoAdd;
 import log.charter.gui.undoEvents.TempoChange;
 import log.charter.gui.undoEvents.UndoEvent;
@@ -17,7 +20,6 @@ import log.charter.song.Event;
 import log.charter.song.IniData;
 import log.charter.song.Instrument;
 import log.charter.song.Note;
-import log.charter.song.Section;
 import log.charter.song.Song;
 import log.charter.song.Tempo;
 import log.charter.sound.MusicData;
@@ -96,16 +98,17 @@ public class ChartData {
 	}
 
 	public String path = Config.lastPath;
+
 	public boolean isEmpty = true;
 	public Song s = new Song();
 	public IniData ini = new IniData();
-
 	public MusicData music = new MusicData(new byte[0], 44100);
+
 	public Instrument currentInstrument = s.g;
 	public int currentDiff = 3;
 	public List<Note> currentNotes = s.g.notes.get(currentDiff);
-
 	public List<Integer> selectedNotes = new ArrayList<>();
+
 	public Integer lastSelectedNote = null;
 	public Tempo draggedTempoPrev = null;
 	public Tempo draggedTempo = null;
@@ -115,16 +118,16 @@ public class ChartData {
 	public int mousePressY = -1;
 	public int mx = -1;
 	public int my = -1;
-
 	public int t = 0;
+
 	public double nextT = 0;
 	public double zoom = 1;
 	public boolean drawAudio = false;
 	public boolean changed = false;
 	public int gridSize = 2;
 	public boolean useGrid = true;
-
 	private final LinkedList<UndoEvent> undo = new LinkedList<>();
+
 	private final LinkedList<UndoEvent> redo = new LinkedList<>();
 
 	public ChartData() {
@@ -148,15 +151,131 @@ public class ChartData {
 		for (final int id : selectedNotes) {
 			final Note note = currentNotes.get(id);
 			undoEvents.add(new NoteChange(id, note));
-			note.length -= 100 * grids;// TODO actual length based on kbpm and grid
-												// size
+			if (useGrid) {
+				if (grids < 0) {
+					note.length = s.tempoMap.findNextGridPositionForTime(note.pos + note.length, gridSize) - note.pos;
+				} else {
+					note.length = s.tempoMap.findPreviousGridPositionForTime(note.pos + note.length, gridSize) - note.pos;
+				}
+			} else {
+				note.length -= 100 * grids;
+			}
 			if ((id + 1) < currentNotes.size()) {
 				fixNoteLength(note, id, currentNotes.get(id + 1), undoEvents);
 			} else {
 				fixNoteLength(note, id, null, undoEvents);
 			}
 		}
+	}
 
+	public void changeSoloSections() {
+		if (selectedNotes.isEmpty()) {
+			return;
+		}
+		selectedNotes.sort(null);
+		final double start = currentNotes.get(selectedNotes.get(0)).pos;
+		final double end = currentNotes.get(selectedNotes.get(selectedNotes.size() - 1)).pos;
+
+		addUndo(new SoloSectionsChange(currentInstrument.solo));
+
+		int id = 0;
+		while (id < currentInstrument.solo.size()) {
+			final Event solo = currentInstrument.solo.get(id);
+			if ((solo.pos + solo.length) < start) {
+				id++;
+				continue;
+			}
+			if (solo.pos > end) {
+				break;
+			}
+			currentInstrument.solo.remove(id);
+		}
+
+		currentInstrument.solo.add(new Event(start, end - start));
+	}
+
+	public void changeSPSections() {
+		if (selectedNotes.isEmpty()) {
+			return;
+		}
+		selectedNotes.sort(null);
+		final double start = currentNotes.get(selectedNotes.get(0)).pos;
+		final double end = currentNotes.get(selectedNotes.get(selectedNotes.size() - 1)).pos;
+
+		addUndo(new SPSectionsChange(currentInstrument.sp));
+
+		int id = 0;
+		while (id < currentInstrument.sp.size()) {
+			final Event sp = currentInstrument.sp.get(id);
+			if ((sp.pos + sp.length) < start) {
+				id++;
+				continue;
+			}
+			if (sp.pos > end) {
+				break;
+			}
+			currentInstrument.sp.remove(id);
+		}
+
+		currentInstrument.sp.add(new Event(start, end - start));
+	}
+
+	public void changeTapSections() {
+		if (selectedNotes.isEmpty()) {
+			return;
+		}
+		selectedNotes.sort(null);
+		final int startId = selectedNotes.get(0);
+		final int endId = selectedNotes.get(selectedNotes.size() - 1);
+
+		final double start = currentNotes.get(startId).pos;
+		final double end = currentNotes.get(endId).pos;
+		final List<UndoEvent> undoEvents = new ArrayList<>((endId - startId) + 2);
+		undoEvents.add(new TapSectionsChange(currentInstrument.tap));
+
+		int id = 0;
+		int firstChangedNote = -1;
+		int lastChangedNote = -1;
+		while (id < currentInstrument.tap.size()) {
+			final Event tap = currentInstrument.tap.get(id);
+			if ((tap.pos + tap.length) < start) {
+				id++;
+				continue;
+			}
+			if (tap.pos > end) {
+				break;
+			}
+			if (firstChangedNote < 0) {
+				firstChangedNote = findFirstNoteAfterTime(tap.pos);
+			}
+			if ((tap.pos + tap.length) > end) {
+				lastChangedNote = findLastNoteBeforeTime(tap.pos + tap.length);
+			}
+			currentInstrument.tap.remove(id);
+		}
+
+		if (firstChangedNote >= 0) {
+			for (int i = firstChangedNote; i < startId; i++) {
+				final Note n = currentNotes.get(i);
+				undoEvents.add(new NoteChange(i, n));
+				n.tap = false;
+			}
+		}
+		for (int i = startId; i <= endId; i++) {
+			final Note n = currentNotes.get(i);
+			undoEvents.add(new NoteChange(i, n));
+			n.tap = true;
+		}
+		if (lastChangedNote >= 0) {
+			for (int i = endId + 1; i <= lastChangedNote; i++) {
+				final Note n = currentNotes.get(i);
+				undoEvents.add(new NoteChange(i, n));
+				n.tap = false;
+			}
+		}
+
+		currentInstrument.tap.add(new Event(start, end - start));
+		addUndo(new UndoGroup(undoEvents));
 	}
 
 	public void clear() {
@@ -187,7 +306,13 @@ public class ChartData {
 		useGrid = true;
 	}
 
+	public void deselect() {
+		selectedNotes.clear();
+		lastSelectedNote = null;
+	}
+
 	public void endNoteAdding() {
+		deselect();
 		if (ChartPanel.isInNotes(my) && ChartPanel.isInNotes(mousePressY)) {
 			int x0, x1;
 			int y0, y1;
@@ -214,15 +339,16 @@ public class ChartData {
 				int id = startIdOrPos.isId() ? startIdOrPos.id : findFirstNoteAfterTime(firstNotePos);
 
 				final List<Note> notes = findNotesFromTo(id, lastNotePos);
-				final List<Double> allGridPositions = s.tempoMap.getGridPositionsFromTo(gridSize, firstNotePos,
-						lastNotePos);
+				final List<Double> allGridPositions = s.tempoMap.getGridPositionsFromTo(gridSize, xToTime(x0), xToTime(x1));
 				final List<Double> gridPositions = ChartData.removePostionsCloseToNotes(allGridPositions, notes);
 				final List<UndoEvent> undoEvents = new ArrayList<>(notes.size() + gridPositions.size());
 
 				for (final Note note : notes) {
 					final double part = (note.pos - firstNotePos) / length;
 					final int colorBit = ChartPanel.yToLane((y0 * (1 - part)) + (part * y1)) + 1;
-					this.toggleNote(id, colorBit, undoEvents);
+					if ((colorBit >= 0) && (colorBit <= 5)) {
+						this.toggleNote(id, colorBit, undoEvents);
+					}
 					if ((currentNotes.size() > id) && (currentNotes.get(id) == note)) {
 						id++;
 					}
@@ -231,7 +357,9 @@ public class ChartData {
 				for (final Double pos : gridPositions) {
 					final double part = (pos - firstNotePos) / length;
 					final int colorBit = ChartPanel.yToLane((y0 * (1 - part)) + (part * y1)) + 1;
-					this.toggleNote(pos, colorBit, undoEvents);
+					if ((colorBit >= 0) && (colorBit <= 5)) {
+						this.toggleNote(pos, colorBit, undoEvents);
+					}
 				}
 
 				addUndo(new UndoGroup(undoEvents));
@@ -306,7 +434,7 @@ public class ChartData {
 		}
 
 		for (int i = currentNotes.size() - 1; i >= 0; i--) {
-			if (currentNotes.get(i).pos < time) {
+			if (currentNotes.get(i).pos <= time) {
 				return i;
 			}
 		}
@@ -341,25 +469,6 @@ public class ChartData {
 		return notes;
 	}
 
-	public Section findOrCreateSectionCloseTo(final double time) {// TODO binary
-																					  // search
-		for (int i = 0; i < s.sections.size(); i++) {
-			final Section section = s.sections.get(i);
-			if ((section.pos) < time) {
-				continue;
-			}
-			if ((section.pos) > time) {
-				final Section newSection = new Section("", time);
-				s.sections.add(i, newSection);
-				return newSection;
-			}
-			return section;
-		}
-		final Section newSection = new Section("", time);
-		s.sections.add(newSection);
-		return newSection;
-	}
-
 	private void fixNoteLength(final Note n, final int nId, final Note next, final List<UndoEvent> events) {
 		if (n.length < Config.minTailLength) {
 			n.length = 0;
@@ -368,7 +477,6 @@ public class ChartData {
 				&& (!next.crazy || ((next.notes & n.notes) > 0) || (next.notes == 0) || (n.notes == 0))) {
 			events.add(new NoteChange(nId, n));
 			n.length = next.pos - Config.minLongNoteDistance - n.pos;
-
 		}
 	}
 
@@ -385,7 +493,67 @@ public class ChartData {
 		return false;
 	}
 
+	public void moveSelectedDownWithOpen() {
+		final List<Note> notes = new ArrayList<>(selectedNotes.size());
+		for (final int id : selectedNotes) {
+			final Note n = currentNotes.get(id);
+			if ((n.notes & 16) > 0) {
+				return;
+			}
+			notes.add(n);
+		}
+		for (final Note n : notes) {
+			n.notes *= 2;
+			if (n.notes == 0) {
+				n.notes = 1;
+			}
+		}
+	}
+
+	public void moveSelectedDownWithoutOpen() {
+		final List<Note> notes = new ArrayList<>(selectedNotes.size());
+		for (final int id : selectedNotes) {
+			final Note n = currentNotes.get(id);
+			if ((n.notes == 0) || ((n.notes & 16) > 0)) {
+				return;
+			}
+			notes.add(n);
+		}
+		for (final Note n : notes) {
+			n.notes *= 2;
+		}
+	}
+
+	public void moveSelectedUpWithOpen() {
+		final List<Note> notes = new ArrayList<>(selectedNotes.size());
+		for (final int id : selectedNotes) {
+			final Note n = currentNotes.get(id);
+			if (n.notes == 0) {
+				return;
+			}
+			notes.add(n);
+		}
+		for (final Note n : notes) {
+			n.notes = (n.notes & 1) > 0 ? 0 : n.notes / 2;
+		}
+	}
+
+	public void moveSelectedUpWithoutOpen() {
+		final List<Note> notes = new ArrayList<>(selectedNotes.size());
+		for (final int id : selectedNotes) {
+			final Note n = currentNotes.get(id);
+			if ((n.notes == 0) || ((n.notes & 1) > 0)) {
+				return;
+			}
+			notes.add(n);
+		}
+		for (final Note n : notes) {
+			n.notes /= 2;
+		}
+	}
+
 	public void redo() {
+		deselect();
 		if (!redo.isEmpty()) {
 			undo.add(redo.removeLast().go(this));
 		}
@@ -466,6 +634,7 @@ public class ChartData {
 			final Note prevNote = currentNotes.get(i);
 			fixNoteLength(prevNote, i, n, undoEvents);
 		}
+		selectedNotes.add(insertPos);
 	}
 
 	public void toggleNote(final IdOrPos idOrPos, final int colorBit) {
@@ -496,6 +665,7 @@ public class ChartData {
 	}
 
 	public void undo() {
+		deselect();
 		if (!undo.isEmpty()) {
 			redo.add(undo.removeLast().go(this));
 		}

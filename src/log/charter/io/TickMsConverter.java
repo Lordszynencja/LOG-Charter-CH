@@ -4,7 +4,6 @@ import java.util.List;
 
 import log.charter.song.Event;
 import log.charter.song.Instrument;
-import log.charter.song.Position;
 import log.charter.song.Song;
 import log.charter.song.Tempo;
 
@@ -68,33 +67,30 @@ public class TickMsConverter {
 	}
 
 	private static Song convert(final Song copy, final List<Tempo> oldTempos, final Converter c) {
-		final double[][] data = new double[22][];
-		data[0] = positionListToArray(copy.sections);
+		final double[][] data = new double[21][];
 
 		Instrument[] instruments = copy.instruments();
 		for (int i = 0; i < 3; i++) {
-			data[1 + (i * 7)] = eventListToArray(instruments[i].notes.get(0));
-			data[2 + (i * 7)] = eventListToArray(instruments[i].notes.get(1));
-			data[3 + (i * 7)] = eventListToArray(instruments[i].notes.get(2));
-			data[4 + (i * 7)] = eventListToArray(instruments[i].notes.get(3));
-			data[5 + (i * 7)] = eventListToArray(instruments[i].sp);
-			data[6 + (i * 7)] = eventListToArray(instruments[i].tap);
-			data[7 + (i * 7)] = eventListToArray(instruments[i].solo);
+			data[(i * 7)] = eventListToArray(instruments[i].notes.get(0));
+			data[1 + (i * 7)] = eventListToArray(instruments[i].notes.get(1));
+			data[2 + (i * 7)] = eventListToArray(instruments[i].notes.get(2));
+			data[3 + (i * 7)] = eventListToArray(instruments[i].notes.get(3));
+			data[4 + (i * 7)] = eventListToArray(instruments[i].sp);
+			data[5 + (i * 7)] = eventListToArray(instruments[i].tap);
+			data[6 + (i * 7)] = eventListToArray(instruments[i].solo);
 		}
 
 		final double[][] convData = convert(data, copy.tempoMap.tempos, oldTempos, c);
 
-		replacePositionsTime(copy.sections, convData[0]);
-
 		instruments = copy.instruments();
 		for (int i = 0; i < 3; i++) {
-			replaceEventsTime(instruments[i].notes.get(0), convData[1 + (i * 7)]);
-			replaceEventsTime(instruments[i].notes.get(1), convData[2 + (i * 7)]);
-			replaceEventsTime(instruments[i].notes.get(2), convData[3 + (i * 7)]);
-			replaceEventsTime(instruments[i].notes.get(3), convData[4 + (i * 7)]);
-			replaceEventsTime(instruments[i].sp, convData[5 + (i * 7)]);
-			replaceEventsTime(instruments[i].tap, convData[6 + (i * 7)]);
-			replaceEventsTime(instruments[i].solo, convData[7 + (i * 7)]);
+			replaceEventsTime(instruments[i].notes.get(0), convData[(i * 7)]);
+			replaceEventsTime(instruments[i].notes.get(1), convData[1 + (i * 7)]);
+			replaceEventsTime(instruments[i].notes.get(2), convData[2 + (i * 7)]);
+			replaceEventsTime(instruments[i].notes.get(3), convData[3 + (i * 7)]);
+			replaceEventsTime(instruments[i].sp, convData[4 + (i * 7)]);
+			replaceEventsTime(instruments[i].tap, convData[5 + (i * 7)]);
+			replaceEventsTime(instruments[i].solo, convData[6 + (i * 7)]);
 		}
 
 		return copy;
@@ -129,28 +125,11 @@ public class TickMsConverter {
 		return start < tempos.size() ? start : tempos.size();
 	}
 
-	private static double[] positionListToArray(final List<? extends Position> positions) {
-		final int n = positions.size();
-		final double[] data = new double[n];
-
-		for (int i = 0; i < n; i++) {
-			data[i] = positions.get(i).pos;
-		}
-
-		return data;
-	}
-
 	private static void replaceEventsTime(final List<? extends Event> events, final double[] data) {
 		for (int i = 0; i < (data.length / 2); i++) {
 			final Event e = events.get(i);
 			e.pos = data[2 * i];
 			e.length = data[(2 * i) + 1] - e.pos;
-		}
-	}
-
-	private static void replacePositionsTime(final List<? extends Position> events, final double[] data) {
-		for (int i = 0; i < data.length; i++) {
-			events.get(i).pos = data[i];
 		}
 	}
 }

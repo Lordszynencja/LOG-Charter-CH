@@ -13,18 +13,18 @@ import javax.sound.midi.Track;
 
 import log.charter.song.Event;
 import log.charter.song.Instrument;
-import log.charter.song.Note;
 import log.charter.song.Instrument.InstrumentType;
+import log.charter.song.Note;
 
 public class InstrumentWriter {
-	private static void addNote(final int note, final double pos, final double l, final Track track)
+	private static void addNote(final int note, final double pos, final double end, final Track track)
 			throws InvalidMidiDataException {
 		final ShortMessage msgStart = new ShortMessage();
 		msgStart.setMessage(-112, note, 100);
 		track.add(new MidiEvent(msgStart, Math.round(pos)));
 		final ShortMessage msgEnd = new ShortMessage();
 		msgEnd.setMessage(-112, note, 0);
-		track.add(new MidiEvent(msgEnd, Math.round(l)));
+		track.add(new MidiEvent(msgEnd, Math.round(end)));
 	}
 
 	public static void write(final Instrument instr, final InstrumentType type, final Track track)

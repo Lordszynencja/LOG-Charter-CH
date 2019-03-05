@@ -1,7 +1,10 @@
 package log.charter.song;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import log.charter.song.Instrument.InstrumentType;
 
@@ -23,7 +26,7 @@ public class Song {
 	public Instrument b;
 	public Instrument k;
 
-	public List<Section> sections = new ArrayList<>();
+	public Map<Integer, String> sections = new HashMap<>();
 	public TempoMap tempoMap;
 
 	public Song() {
@@ -37,9 +40,7 @@ public class Song {
 		g = new Instrument(s.g);
 		b = new Instrument(s.b);
 		k = new Instrument(s.k);
-		for (final Section sec : s.sections) {
-			sections.add(new Section(sec));
-		}
+		s.sections.forEach((id, sec) -> sections.put(id, sec));
 
 		tempoMap = new TempoMap(s.tempoMap);
 	}
@@ -56,8 +57,8 @@ public class Song {
 				.append(",\n\tsections: [");
 
 		boolean first = true;
-		for (final Section s : sections) {
-			sb.append(first ? "" : ",\n\t\t").append(s);
+		for (final Entry<Integer, String> pair : sections.entrySet()) {
+			sb.append(first ? "" : ",\n\t\t").append("(" + pair.getKey() + "," + pair.getValue() + ")");
 			first = false;
 		}
 		sb.append("],\n\ttempoMap: ").append(tempoMap.toString().replaceAll("\n\t", "\n\t\t\t")).append("}");

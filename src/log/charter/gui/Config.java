@@ -12,6 +12,7 @@ public class Config {
 	public static String lastPath = "C:/";
 	public static String musicPath = System.getProperty("user.home") + "/Music";
 	public static String songsPath = System.getProperty("user.home") + "/Documents";
+	public static String charter = "Jurgen Gunterschwarzhaffenstrasen";
 
 	public static int windowPosX = 100;
 	public static int windowPosY = 100;
@@ -42,6 +43,9 @@ public class Config {
 						break;
 					case "musicPath":
 						musicPath = val;
+						break;
+					case "charter":
+						charter = val;
 						break;
 					case "songsPath":
 						songsPath = val;
@@ -95,6 +99,7 @@ public class Config {
 		adder.accept("lastPath", lastPath);
 		adder.accept("musicPath", musicPath);
 		adder.accept("songsPath", songsPath);
+		adder.accept("charter", charter);
 		adder.accept("windowPosX", windowPosX + "");
 		adder.accept("windowPosY", windowPosY + "");
 		adder.accept("windowWidth", windowWidth + "");

@@ -12,7 +12,6 @@ import log.charter.gui.ChartData.IdOrPos;
 import log.charter.song.Event;
 import log.charter.song.Instrument.InstrumentType;
 import log.charter.song.Note;
-import log.charter.song.Section;
 import log.charter.song.Tempo;
 
 public class ChartPanel extends JPanel {
@@ -166,23 +165,33 @@ public class ChartPanel extends JPanel {
 		int beatInMeasure = 0;
 		int beatsPerMeasure = 9999;
 
+		g.setFont(new Font(Font.DIALOG, Font.PLAIN, 15));
 		for (int i = 0; i < (tempos.size() - 1); i++) {
 			final Tempo tmp = tempos.get(i);
 			final Tempo nextTempo = tempos.get(i + 1);
 			if (beatsPerMeasure != tmp.beats) {
 				beatInMeasure = 0;
+				beatsPerMeasure = tmp.beats;
 			}
 			lastKBPM = tmp.kbpm;
-			beatsPerMeasure = tmp.beats;
+			final boolean drawing = data.timeToX(nextTempo.pos) >= -20;
 
 			for (int id = tmp.id; id < nextTempo.id; id++) {
-				final int x = tempoX(tmp.pos, id, tmp.id, lastKBPM);
-				if (x > getWidth()) {
-					return;
-				}
-				if (x >= 0) {
-					g.setColor(beatInMeasure == 0 ? MAIN_BEAT_COLOR : SECONDARY_BEAT_COLOR);
-					g.drawLine(x, tempoMarkerY1, x, tempoMarkerY2);
+				if (drawing) {
+					final int x = tempoX(tmp.pos, id, tmp.id, lastKBPM);
+					if (x > getWidth()) {
+						return;
+					}
+					if (x >= -100) {
+						g.setColor(beatInMeasure == 0 ? MAIN_BEAT_COLOR : SECONDARY_BEAT_COLOR);
+						g.drawLine(x, tempoMarkerY1, x, tempoMarkerY2);
+						g.drawString("" + id, x + 3, tempoMarkerY1 + 10);
+						final String sectionName = data.s.sections.get(id);
+						if (sectionName != null) {
+							g.setColor(Color.WHITE);
+							g.drawString("[" + sectionName + "]", x, sectionNamesY + 10);
+						}
+					}
 				}
 				beatInMeasure = (beatInMeasure + 1) % beatsPerMeasure;
 			}
@@ -281,19 +290,6 @@ public class ChartPanel extends JPanel {
 	}
 
 	private void drawSections(final Graphics g) {
-		g.setFont(new Font(Font.DIALOG, Font.PLAIN, 15));
-		g.setColor(Color.WHITE);
-		for (final Section s : data.s.sections) {
-			final int x = data.timeToX(s.pos);
-			if (x < -g.getFontMetrics().stringWidth(s.name)) {
-				continue;
-			}
-			if (x >= getWidth()) {
-				break;
-			}
-			g.drawString(s.name, x, sectionNamesY + 10);
-		}
-
 		final FillList sp = new FillList();
 		for (final Event e : data.currentInstrument.sp) {
 			final int x = data.timeToX(e.pos);
@@ -398,13 +394,15 @@ public class ChartPanel extends JPanel {
 
 					for (final Note note : notes) {
 						final double part = (note.pos - firstNotePos) / length;
-						final double y = (y0 * (1 - part)) + (part * y1);
-						highlighted.addPositions(data.timeToX(note.pos) - (noteW / 2), clamp(y) - (noteH / 2), noteW - 1,
-								noteH - 1);
+						final int y = clamp((y0 * (1 - part)) + (part * y1));
+						if ((y >= lane0Y) && (y <= (lane0Y + (laneDistY * 4)))) {
+							highlighted.addPositions(data.timeToX(note.pos) - (noteW / 2), y - (noteH / 2), noteW - 1,
+									noteH - 1);
+						}
 					}
 
-					final List<Double> allGridPositions = data.s.tempoMap.getGridPositionsFromTo(data.gridSize, firstNotePos,
-							lastNotePos);
+					final List<Double> allGridPositions = data.s.tempoMap.getGridPositionsFromTo(data.gridSize, data.xToTime(
+							x0), data.xToTime(x1));
 					final List<Double> gridPositions = ChartData.removePostionsCloseToNotes(allGridPositions, notes);
 					for (final Double pos : gridPositions) {
 						final double part = (pos - firstNotePos) / length;

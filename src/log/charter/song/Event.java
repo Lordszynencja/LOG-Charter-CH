@@ -11,6 +11,11 @@ public class Event extends Position {
 		super(pos);
 	}
 
+	public Event(final double pos, final double length) {
+		super(pos);
+		this.length = length;
+	}
+
 	public Event(final Event e) {
 		super(e);
 		length = e.length;

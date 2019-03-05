@@ -33,7 +33,8 @@ public class CharterMenuBar extends JMenuBar {
 
 	private JMenu prepareConfigMenu() {
 		final JMenu menu = new JMenu("Config");
-		menu.add(createItem("Options", e -> new OptionPane(handler.frame)));
+		menu.add(createItem("Options", e -> new ConfigPane(handler.frame)));
+		menu.add(createItem("Song options", e -> new SongOptionsPane(handler.frame)));
 
 		return menu;
 	}

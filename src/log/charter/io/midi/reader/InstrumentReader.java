@@ -73,7 +73,7 @@ public class InstrumentReader {
 			diff = -1;
 			color = -1;
 		}
-		if ((diff != -1) && (color < 8)) {
+		if ((diff >= 0) && (diff < 4) && (color < 8)) {
 			final List<Note> colorNotes = notes.get(diff).get(color);
 
 			if (colorNotes.isEmpty()) {
@@ -149,8 +149,24 @@ public class InstrumentReader {
 				break;
 			}
 		}
-		debug("changing map to list");
 
+		debug("joining notes start and end");
+		for (final List<List<Note>> diffNotes : notes) {
+			for (final List<Note> laneNotes : diffNotes) {
+				final int n = laneNotes.size();
+				final List<Note> newNotes = new ArrayList<>(n / 2);
+				for (int j = 0; j < n;) {
+					final Note nStart = laneNotes.get(j++);
+					final Note nEnd = laneNotes.get(j++);
+					nStart.length = nEnd.pos - nStart.pos;
+					newNotes.add(nStart);
+				}
+				laneNotes.clear();
+				laneNotes.addAll(newNotes);
+			}
+		}
+
+		debug("joining note lanes");
 		for (int i = 0; i < 4; i++) {
 			final Map<Long, Note> notesMap = new HashMap<>();
 			final List<List<Note>> diffNotes = notes.get(i);
@@ -162,7 +178,7 @@ public class InstrumentReader {
 				}
 			});
 			for (int j = 1; j < 6; j++) {
-				for (final Note note : notes.get(i).get(j)) {
+				for (final Note note : diffNotes.get(j)) {
 					final Note n = notesMap.get((long) note.pos);
 					if (n == null) {
 						note.notes = (1 << (j - 1));

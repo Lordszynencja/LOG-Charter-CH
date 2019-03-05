@@ -1,5 +1,7 @@
 package log.charter.song;
 
+import static java.lang.Math.ceil;
+import static java.lang.Math.floor;
 import static java.lang.Math.round;
 
 import java.util.ArrayList;
@@ -53,9 +55,13 @@ public class TempoMap {
 		tempos.add(id, tmp);
 	}
 
+	private int closestGridPoint(final double time, final Tempo tmp, final int gridSize) {
+		return (int) round(ttb(time - tmp.pos, tmp.kbpm) * gridSize) + (tmp.id * gridSize);
+	}
+
 	public double closestGridTime(final double time, final int tmpId, final int gridSize) {
 		final Tempo tmp = tempos.get(tmpId);
-		final long gridPoint = round(ttb(time - tmp.pos, tmp.kbpm) * gridSize);
+		final long gridPoint = closestGridPoint(time, tmp, gridSize) - (tmp.id * gridSize);
 
 		if (tmpId < (tempos.size() - 1)) {
 			final Tempo nextTmp = tempos.get(tmpId + 1);
@@ -102,7 +108,7 @@ public class TempoMap {
 		isMs = false;
 	}
 
-	public int findBeatId(final int time) {// TODO binary search
+	public int findBeatId(final double time) {// TODO binary search
 		if (time <= 0) {
 			return 0;
 		}
@@ -200,6 +206,21 @@ public class TempoMap {
 		return tmp.pos + btt(id - tmp.id, lastKbpm);
 	}
 
+	public double findNextGridPositionForTime(final double time, final int gridSize) {
+		final int tmpId = findTempoId(time);
+
+		final Tempo tmp = tempos.get(tmpId);
+		final long gridPoint = (long) ceil(ttb((time + 0.001) - tmp.pos, tmp.kbpm) * gridSize);
+
+		if (tmpId < (tempos.size() - 1)) {
+			final Tempo nextTmp = tempos.get(tmpId + 1);
+			if (gridPoint == ((nextTmp.id - tmp.id) * gridSize)) {
+				return nextTmp.pos;
+			}
+		}
+		return tmp.pos + (btt(gridPoint, tmp.kbpm) / gridSize);
+	}
+
 	public Object[] findOrCreateClosestTempo(final double time) {// TODO
 		final int tmpId = findTempoId(time);
 		final Tempo tmp = tempos.get(tmpId);
@@ -223,6 +244,21 @@ public class TempoMap {
 
 		this.addTempo(newTempo, true);
 		return new Object[] { tmp, newTempo, nextTmp, true };
+	}
+
+	public double findPreviousGridPositionForTime(final double time, final int gridSize) {
+		final int tmpId = findTempoId(time - 0.001);
+
+		final Tempo tmp = tempos.get(tmpId);
+		final long gridPoint = (long) floor(ttb((time - 0.001) - tmp.pos, tmp.kbpm) * gridSize);
+
+		if (tmpId < (tempos.size() - 1)) {
+			final Tempo nextTmp = tempos.get(tmpId + 1);
+			if (gridPoint == ((nextTmp.id - tmp.id) * gridSize)) {
+				return nextTmp.pos;
+			}
+		}
+		return tmp.pos + (btt(gridPoint, tmp.kbpm) / gridSize);
 	}
 
 	public Tempo findTempo(final double time) {
@@ -254,8 +290,8 @@ public class TempoMap {
 		final int endTmpId = findTempoId(end);
 		Tempo tmp = tempos.get(tmpId);
 		final Tempo endTmp = tempos.get(endTmpId);
-		int gridPoint = (int) round(ttb(start - tmp.pos, tmp.kbpm) * gridSize) + (tmp.id * gridSize);
-		final int lastGridPoint = (int) round(ttb(end - endTmp.pos, endTmp.kbpm) * gridSize) + (endTmp.id * gridSize);
+		int gridPoint = closestGridPoint(start, tmp, gridSize);
+		final int lastGridPoint = closestGridPoint(end, endTmp, gridSize);
 		int nextTmpGrid = tmpId < (tempos.size() - 1) ? tempos.get(tmpId + 1).id * gridSize : -1;
 		double gridDist = btt(1.0 / gridSize, tmp.kbpm);
 		double pos = tmp.pos + (gridDist * (gridPoint - (tmp.id * gridSize)));

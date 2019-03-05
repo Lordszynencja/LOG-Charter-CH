@@ -39,3 +39,5 @@ $RECYCLE.BIN/
 # Windows shortcuts
 *.lnk
 logs/log-2019-03-03.txt
+config.ini
+config.ini

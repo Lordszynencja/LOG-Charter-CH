@@ -25,7 +25,6 @@ import log.charter.io.Logger;
 import log.charter.io.midi.reader.MidiReader;
 import log.charter.io.midi.writer.MidiWriter;
 import log.charter.song.IniData;
-import log.charter.song.Section;
 import log.charter.song.Song;
 import log.charter.song.Tempo;
 import log.charter.song.TempoMap;
@@ -151,7 +150,13 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 
 	@Override
 	public void keyPressed(final KeyEvent e) {
-		switch (e.getKeyCode()) {
+		final int keyCode = e.getKeyCode();
+		if ((keyCode != KeyEvent.VK_CONTROL) && (keyCode != KeyEvent.VK_ALT) && (keyCode != KeyEvent.VK_SHIFT)
+				&& (keyCode != KeyEvent.VK_F5) && (keyCode != KeyEvent.VK_C) && (keyCode != KeyEvent.VK_M)
+				&& (keyCode != KeyEvent.VK_SPACE)) {
+			stopMusic();
+		}
+		switch (keyCode) {
 		case KeyEvent.VK_SPACE:
 			if (!data.isEmpty && (player == null) && !left && !right) {
 				nextNoteId = data.findClosestNoteForTime(data.nextT);
@@ -177,17 +182,14 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 			}
 			break;
 		case KeyEvent.VK_HOME:
-			stopMusic();
 			data.nextT = ctrl ? (int) (data.currentNotes.isEmpty() ? 0 : data.currentNotes.get(0).pos)
 					: 0;
 			break;
 		case KeyEvent.VK_END:
-			stopMusic();
 			data.nextT = ctrl ? (int) (data.currentNotes.isEmpty() ? 0
 					: data.currentNotes.get(data.currentNotes.size() - 1).pos) : data.music.msLength();
 			break;
 		case KeyEvent.VK_LEFT:
-			stopMusic();
 			if (alt) {
 				data.t = (int) data.s.tempoMap.findBeatTime(data.t - 1);
 			} else {
@@ -195,7 +197,6 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 			}
 			break;
 		case KeyEvent.VK_RIGHT:
-			stopMusic();
 			if (alt) {
 				data.t = (int) data.s.tempoMap.findNextBeatTime(data.t);
 			} else {
@@ -272,6 +273,20 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 				data.useGrid = true;
 			}
 			break;
+		case KeyEvent.VK_DOWN:
+			if (ctrl) {
+				data.moveSelectedUpWithOpen();
+			} else {
+				data.moveSelectedUpWithoutOpen();
+			}
+			break;
+		case KeyEvent.VK_UP:
+			if (ctrl) {
+				data.moveSelectedDownWithOpen();
+			} else {
+				data.moveSelectedDownWithoutOpen();
+			}
+			break;
 		case KeyEvent.VK_C:
 			claps = !claps;
 			break;
@@ -288,40 +303,47 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 			metronome = !metronome;
 			break;
 		case KeyEvent.VK_N:
-			stopMusic();
 			if (e.isControlDown()) {
 				newSong();
 			}
 			break;
 		case KeyEvent.VK_O:
-			stopMusic();
 			if (e.isControlDown()) {
 				open();
 			}
 			break;
 		case KeyEvent.VK_R:
-			stopMusic();
 			if (e.isControlDown()) {
 				data.redo();
 			}
 			break;
 		case KeyEvent.VK_S:
-			stopMusic();
 			if (e.isControlDown()) {
 				save();
 			}
 			break;
 		case KeyEvent.VK_T:
-			if ((player == null) && (data.my >= (ChartPanel.lane0Y - (ChartPanel.laneDistY / 2)))
-					&& (data.my <= (ChartPanel.lane0Y
-							+ ((ChartPanel.laneDistY * 9) / 2)))) {
+			if (ctrl && shift) {
+				data.changeTapSections();
+			} else if ((data.my >= (ChartPanel.lane0Y - (ChartPanel.laneDistY / 2)))
+					&& (data.my <= (ChartPanel.lane0Y + ((ChartPanel.laneDistY * 9) / 2)))) {
+				data.deselect();
 				data.toggleNote(data.findClosestIdOrPosForX(data.mx), 0);
 			}
 			break;
+		case KeyEvent.VK_W:
+			if (ctrl) {
+				data.changeSPSections();
+			}
+			break;
 		case KeyEvent.VK_Z:
-			stopMusic();
-			if (e.isControlDown()) {
+			if (ctrl) {
 				data.undo();
+			}
+			break;
+		case KeyEvent.VK_Y:
+			if (ctrl) {
+				data.changeSoloSections();
 			}
 			break;
 		case KeyEvent.VK_COMMA:
@@ -335,7 +357,9 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 		default:
 			break;
 		}
-		gPressed = false;
+		if (e.getKeyCode() != KeyEvent.VK_G) {
+			gPressed = false;
+		}
 	}
 
 	@Override
@@ -377,12 +401,15 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 				return;
 			} else if (y < ChartPanel.spY) {
 				stopMusic();
-				final Section s = data.findOrCreateSectionCloseTo(data.s.tempoMap.findBeatTime(data.xToTime(x + 10)));
-				final String newSectionName = JOptionPane.showInputDialog(frame, "Section name:", s.name);
-				if ((newSectionName == null) || newSectionName.trim().equals("")) {
-					data.s.sections.remove(s);
+				final int id = data.s.tempoMap.findBeatId(data.xToTime(x + 10));
+				final String newSectionName = JOptionPane.showInputDialog(frame, "Section name:", data.s.sections.get(id));
+				if (newSectionName == null) {
+					return;
+				}
+				if (newSectionName.trim().equals("")) {
+					data.s.sections.remove(id);
 				} else {
-					s.name = newSectionName;
+					data.s.sections.put(id, newSectionName);
 				}
 			} else if (y < (ChartPanel.lane0Y - (ChartPanel.laneDistY / 2))) {
 				return;
@@ -392,7 +419,7 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 
 	@Override
 	public void mouseDragged(final MouseEvent e) {
-		// TODO moving notes / adding notes
+		// TODO moving notes
 		data.mx = e.getX();
 		data.my = e.getY();
 
@@ -449,25 +476,48 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 			} else if (y < (ChartPanel.lane0Y + ((ChartPanel.laneDistY * 9) / 2))) {
 				stopMusic();
 				final IdOrPos idOrPos = data.findClosestIdOrPosForX(x);
+
+				final int[] newSelectedNotes;
+				final Integer last;
 				if (shift) {
-					// TODO select note streak from data.lastNoteSelected to this
-					// note
-				} else if (ctrl) {
-					if (idOrPos.isId()) {
-						if (!data.selectedNotes.remove((Integer) idOrPos.id)) {
-							data.lastSelectedNote = idOrPos.id;
-							data.selectedNotes.add(idOrPos.id);
-							data.selectedNotes.sort(null);
+					if (idOrPos.isId() && (data.lastSelectedNote != null)) {
+						last = idOrPos.id;
+						final int start;
+						final int n;
+						if (data.lastSelectedNote < idOrPos.id) {
+							start = data.lastSelectedNote;
+							n = (idOrPos.id - data.lastSelectedNote) + 1;
+						} else {
+							start = idOrPos.id;
+							n = (data.lastSelectedNote - idOrPos.id) + 1;
 						}
+						newSelectedNotes = new int[n];
+						for (int i = 0; i < n; i++) {
+							newSelectedNotes[i] = start + i;
+						}
+					} else {
+						last = null;
+						newSelectedNotes = new int[0];
 					}
 				} else {
-					data.selectedNotes.clear();
-					data.lastSelectedNote = null;
 					if (idOrPos.isId()) {
-						data.lastSelectedNote = idOrPos.id;
-						data.selectedNotes.add(idOrPos.id);
+						last = idOrPos.id;
+						newSelectedNotes = new int[] { idOrPos.id };
+					} else {
+						last = null;
+						newSelectedNotes = new int[0];
 					}
 				}
+				if (!ctrl) {
+					data.deselect();
+				}
+				data.lastSelectedNote = last;
+				for (final Integer id : newSelectedNotes) {
+					if (!data.selectedNotes.remove(id)) {
+						data.selectedNotes.add(id);
+					}
+				}
+				data.selectedNotes.sort(null);
 			}
 		} else if (e.getButton() == MouseEvent.BUTTON3) {
 			if ((y >= (ChartPanel.lane0Y - (ChartPanel.laneDistY / 2))) && (y <= (ChartPanel.lane0Y
@@ -484,9 +534,18 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 	public void mouseReleased(final MouseEvent e) {
 		data.mx = e.getX();
 		data.my = e.getY();
-		data.stopTempoDrag();
-		data.endNoteAdding();
-		// TODO end drag
+		// TODO end note drag
+
+		switch (e.getButton()) {
+		case MouseEvent.BUTTON1:
+			if (data.draggedTempo != null) {
+				data.stopTempoDrag();
+			}
+			break;
+		case MouseEvent.BUTTON3:
+			data.endNoteAdding();
+			break;
+		}
 	}
 
 	@Override
@@ -497,6 +556,7 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 		} else {
 			data.changeNoteLength(rot);
 		}
+		e.consume();
 	}
 
 	public void newSong() {
@@ -552,6 +612,7 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 			}
 
 			data.setSong(songDir, new Song(), new IniData(), musicData);
+			data.ini.charter = Config.charter;
 			save();
 		}
 	}
@@ -639,7 +700,7 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 		if (data.isEmpty) {
 			return;
 		}
-		Logger.info("saveAs");// TODO
+		Logger.error("saveAs not implemented!");// TODO
 		Config.save();
 	}
 

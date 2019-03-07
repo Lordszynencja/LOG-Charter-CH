@@ -657,7 +657,6 @@ public class ChartData {
 	}
 
 	public void paste() throws HeadlessException, IOException, UnsupportedFlavorException {
-		// TODO
 		final Transferable t = Toolkit.getDefaultToolkit().getSystemClipboard().getContents(null);
 
 		byte[] notesData = null;
@@ -668,8 +667,8 @@ public class ChartData {
 				break;
 			}
 		}
-		if ((notesData == null) || (notesData.length < 5) || (notesData[0] != 'n') || (notesData[1] != 'o')
-				|| (notesData[2] != 't') || (notesData[3] != 'e') || (notesData[4] != 's')) {
+		if ((notesData == null) || (notesData.length < 5) || (((notesData.length - 5) % 18) != 0) || (notesData[0] != 'n')
+				|| (notesData[1] != 'o') || (notesData[2] != 't') || (notesData[3] != 'e') || (notesData[4] != 's')) {
 			return;
 		}
 		deselect();

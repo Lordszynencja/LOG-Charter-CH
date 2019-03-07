@@ -25,6 +25,7 @@ public class Config {
 	public static int minTailLength = 30;
 	public static int delay = 15;
 	public static int markerOffset = 300;
+	public static double lastMaxHOPODist = 100;
 
 	static {
 		read();
@@ -80,6 +81,9 @@ public class Config {
 					case "markerOffset":
 						markerOffset = Integer.valueOf(val);
 						break;
+					case "lastMaxHOPODist":
+						lastMaxHOPODist = Double.valueOf(val);
+						break;
 					default:
 						error("Unknown config line " + line);
 						break;
@@ -110,6 +114,7 @@ public class Config {
 		adder.accept("minTailLength", minTailLength + "");
 		adder.accept("delay", delay + "");
 		adder.accept("markerOffset", markerOffset + "");
+		adder.accept("lastMaxHOPODist", lastMaxHOPODist + "");
 
 		RW.write(configName, b.toString());
 	}

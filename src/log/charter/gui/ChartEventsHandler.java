@@ -123,7 +123,7 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 			data.nextT = (playStartT + (((System.nanoTime() - player.startTime) * data.music.slowMultiplier()) / 1000000))
 					- Config.delay;
 
-			while ((nextNoteId != -1) && (data.currentNotes.get(nextNoteId).pos < (data.nextT - Config.delay))) {
+			while ((nextNoteId != -1) && (data.currentNotes.get(nextNoteId).pos < data.nextT)) {
 				nextNoteId++;
 				if (nextNoteId >= data.currentNotes.size()) {
 					nextNoteId = -1;
@@ -133,8 +133,8 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 				}
 			}
 
-			while ((nextTempoTime >= 0) && (nextTempoTime < (data.nextT - Config.delay))) {
-				nextTempoTime = data.s.tempoMap.findNextBeatTime((int) (data.nextT - Config.delay));
+			while ((nextTempoTime >= 0) && (nextTempoTime < data.nextT)) {
+				nextTempoTime = data.s.tempoMap.findNextBeatTime((int) data.nextT);
 				if (metronome) {
 					SoundPlayer.play(tick, 0);
 				}
@@ -188,6 +188,9 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 		case KeyEvent.VK_END:
 			data.nextT = ctrl ? (int) (data.currentNotes.isEmpty() ? 0
 					: data.currentNotes.get(data.currentNotes.size() - 1).pos) : data.music.msLength();
+			break;
+		case KeyEvent.VK_DELETE:
+			data.deleteSelected();
 			break;
 		case KeyEvent.VK_LEFT:
 			if (alt) {
@@ -287,16 +290,37 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 				data.moveSelectedDownWithoutOpen();
 			}
 			break;
+		case KeyEvent.VK_A:
+			if (ctrl) {
+				data.selectAll();
+			}
+			break;
 		case KeyEvent.VK_C:
 			claps = !claps;
+			break;
+		case KeyEvent.VK_F:
+			if (ctrl) {
+				data.snapSelectedNotes();
+			}
 			break;
 		case KeyEvent.VK_G:
 			data.useGrid = !data.useGrid;
 			gPressed = true;
 			break;
 		case KeyEvent.VK_H:
-			for (final int id : data.selectedNotes) {
-				data.currentNotes.get(id).hopo ^= true;
+			if (ctrl) {
+				double maxHOPODist = -1;
+				while ((maxHOPODist < 0) || (maxHOPODist > 10000)) {
+					try {
+						maxHOPODist = Double.parseDouble(JOptionPane.showInputDialog(
+								"Max distance between notes to make HOPO", "" + Config.lastMaxHOPODist));
+					} catch (final Exception exception) {
+					}
+				}
+				Config.lastMaxHOPODist = maxHOPODist;
+				data.toggleSelectedHopo(true, maxHOPODist);
+			} else {
+				data.toggleSelectedHopo(false, -1);
 			}
 			break;
 		case KeyEvent.VK_M:

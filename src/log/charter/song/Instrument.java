@@ -77,12 +77,12 @@ public class Instrument {
 				Event tapSection = tap.get(0);
 				for (int j = 0; j < size; j++) {
 					final Note n = diffNotes.get(j);
-					if (tapSection.pos > n.pos) {
-						continue;
-					}
 					while ((nextTapId < tap.size()) && ((tapSection.pos + tapSection.length) < n.pos)) {
 						tapSection = tap.get(nextTapId);
 						nextTapId++;
+					}
+					if (tapSection.pos > n.pos) {
+						continue;
 					}
 					if ((nextTapId == tap.size()) && ((tapSection.pos + tapSection.length) < n.pos)) {
 						break;

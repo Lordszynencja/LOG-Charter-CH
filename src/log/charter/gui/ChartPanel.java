@@ -64,9 +64,7 @@ public class ChartPanel extends JPanel {
 	private static final long serialVersionUID = -3439446235287039031L;
 
 	public static final int sectionNamesY = 10;
-
 	public static final int spY = 30;
-
 	public static final int tapY = 35;
 	public static final int lane0Y = 100;
 	public static final int laneDistY = 50;
@@ -76,16 +74,17 @@ public class ChartPanel extends JPanel {
 
 	public static final int noteH = 30;
 	public static final int noteW = 15;
-
 	public static final int tailSize = 15;
+
 	private static final Color BG_COLOR = new Color(160, 160, 160);
+	private static final Color NOTE_BG_COLOR = new Color(16, 16, 16);
 	private static final Color SP_COLOR = new Color(180, 200, 255);
 
 	private static final Color HIGHLIGHT_COLOR = new Color(255, 0, 0);
 	private static final Color SELECT_COLOR = new Color(0, 255, 255);
 	private static final Color TAP_COLOR = new Color(200, 0, 200);
 	private static final Color SOLO_COLOR = new Color(50, 50, 180);
-	private static final Color LANE_COLOR = new Color(0, 0, 0);
+	private static final Color LANE_COLOR = new Color(128, 128, 128);
 	private static final Color MAIN_BEAT_COLOR = new Color(255, 255, 255);
 	private static final Color SECONDARY_BEAT_COLOR = new Color(200, 200, 200);
 	private static final Color MARKER_COLOR = new Color(255, 0, 0);
@@ -437,10 +436,13 @@ public class ChartPanel extends JPanel {
 		data.t = (int) data.nextT;
 		g.setColor(BG_COLOR);
 		g.fillRect(0, 0, getWidth(), getHeight());
-
 		if (data.isEmpty) {
 			return;
 		}
+
+		g.setColor(NOTE_BG_COLOR);
+		g.fillRect(0, lane0Y - (laneDistY / 2), getWidth(), laneDistY * 5);
+
 		drawSections(g);
 		drawAudio(g);
 		drawLanes(g);

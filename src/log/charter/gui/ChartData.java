@@ -188,10 +188,16 @@ public class ChartData {
 			if (solo.pos > end) {
 				break;
 			}
+			if ((solo.pos == start) && ((solo.pos + solo.length) == end)) {
+				currentInstrument.solo.remove(id);
+				break;
+			}
+
 			currentInstrument.solo.remove(id);
 		}
 
 		currentInstrument.solo.add(new Event(start, end - start));
+		currentInstrument.solo.sort(null);
 	}
 
 	public void changeSPSections() {
@@ -214,10 +220,15 @@ public class ChartData {
 			if (sp.pos > end) {
 				break;
 			}
+			if ((sp.pos == start) && ((sp.pos + sp.length) == end)) {
+				currentInstrument.sp.remove(id);
+				break;
+			}
 			currentInstrument.sp.remove(id);
 		}
 
 		currentInstrument.sp.add(new Event(start, end - start));
+		currentInstrument.sp.sort(null);
 	}
 
 	public void changeTapSections() {
@@ -236,6 +247,7 @@ public class ChartData {
 		int id = 0;
 		int firstChangedNote = -1;
 		int lastChangedNote = -1;
+		boolean isRemoval = false;
 		while (id < currentInstrument.tap.size()) {
 			final Event tap = currentInstrument.tap.get(id);
 			if ((tap.pos + tap.length) < start) {
@@ -245,6 +257,12 @@ public class ChartData {
 			if (tap.pos > end) {
 				break;
 			}
+			if ((tap.pos == start) && ((tap.pos + tap.length) == end)) {
+				isRemoval = true;
+				currentInstrument.tap.remove(id);
+				break;
+			}
+
 			if (firstChangedNote < 0) {
 				firstChangedNote = findFirstNoteAfterTime(tap.pos);
 			}
@@ -259,22 +277,27 @@ public class ChartData {
 				final Note n = currentNotes.get(i);
 				undoEvents.add(new NoteChange(i, n));
 				n.tap = false;
+				n.hopo = false;
 			}
 		}
 		for (int i = startId; i <= endId; i++) {
 			final Note n = currentNotes.get(i);
 			undoEvents.add(new NoteChange(i, n));
-			n.tap = true;
+			n.tap = !isRemoval;
+			n.hopo = n.tap;
 		}
 		if (lastChangedNote >= 0) {
 			for (int i = endId + 1; i <= lastChangedNote; i++) {
 				final Note n = currentNotes.get(i);
 				undoEvents.add(new NoteChange(i, n));
 				n.tap = false;
+				n.hopo = false;
 			}
 		}
-
-		currentInstrument.tap.add(new Event(start, end - start));
+		if (!isRemoval) {
+			currentInstrument.tap.add(new Event(start, end - start));
+		}
+		currentInstrument.tap.sort(null);
 		addUndo(new UndoGroup(undoEvents));
 	}
 
@@ -304,6 +327,20 @@ public class ChartData {
 		changed = false;
 		gridSize = 2;
 		useGrid = true;
+	}
+
+	public void deleteSelected() {
+		final List<UndoEvent> undoEvents = new ArrayList<>(selectedNotes.size());
+
+		for (int i = selectedNotes.size() - 1; i >= 0; i--) {
+			final int id = selectedNotes.get(i);
+			final Note n = currentNotes.get(id);
+			undoEvents.add(new NoteRemove(id, n));
+			currentNotes.remove(id);
+		}
+
+		addUndo(new UndoGroup(undoEvents));
+		deselect();
 	}
 
 	public void deselect() {
@@ -563,6 +600,13 @@ public class ChartData {
 		zoom = Math.pow(0.99, Config.zoomLvl);
 	}
 
+	public void selectAll() {
+		deselect();
+		for (int i = 0; i < currentNotes.size(); i++) {
+			selectedNotes.add(i);
+		}
+	}
+
 	public void setSong(final String dir, final Song song, final IniData iniData, final MusicData musicData) {
 		clear();
 		isEmpty = false;
@@ -580,6 +624,42 @@ public class ChartData {
 	public void setZoomLevel(final int newZoomLevel) {
 		Config.zoomLvl = newZoomLevel;
 		resetZoom();
+	}
+
+	public void snapSelectedNotes() {
+		final List<UndoEvent> undoEvents = new ArrayList<>(selectedNotes.size());
+
+		for (int i = 0; i < selectedNotes.size(); i++) {
+			final int id = selectedNotes.get(i);
+			final Note n = currentNotes.get(id);
+			final double newPos = s.tempoMap.findClosestGridPositionForTime(n.pos, useGrid, gridSize);
+			if (((id > 0) && (newPos <= currentNotes.get(id - 1).pos))//
+					|| (((id + 1) < currentNotes.size()) && (newPos >= currentNotes.get(id + 1).pos))) {
+				undoEvents.add(new NoteRemove(id, n));
+				selectedNotes.remove(i);
+				for (int j = i; j < selectedNotes.size(); j++) {
+					selectedNotes.add(j, selectedNotes.remove(j) - 1);
+				}
+				currentNotes.remove(id);
+			} else {
+				undoEvents.add(new NoteChange(id, n));
+				final double newLength = s.tempoMap.findClosestGridPositionForTime(n.pos + n.length, useGrid, gridSize)
+						- newPos;
+				n.pos = newPos;
+				n.length = newLength;
+
+				if ((id + 1) < currentNotes.size()) {
+					fixNoteLength(n, id, currentNotes.get(id + 1), undoEvents);
+				}
+
+				for (int j = id - 1; (j >= 0) && (j > (id - 100)); j--) {
+					final Note prevNote = currentNotes.get(j);
+					fixNoteLength(prevNote, j, n, undoEvents);
+				}
+			}
+		}
+
+		addUndo(new UndoGroup(undoEvents));
 	}
 
 	public void startNoteAdding(final int x, final int y) {
@@ -658,10 +738,40 @@ public class ChartData {
 		} else if (color == 0) {
 			n.notes = 0;
 			undoEvents.add(new NoteChange(id, n));
+			if (!selectedNotes.contains(id)) {
+				selectedNotes.add(id);
+				selectedNotes.sort(null);
+			}
 		} else {
 			undoEvents.add(new NoteChange(id, n));
 			n.notes ^= color;
+			if (!selectedNotes.contains(id)) {
+				selectedNotes.add(id);
+				selectedNotes.sort(null);
+			}
 		}
+	}
+
+	public void toggleSelectedHopo(final boolean ctrl, final double maxDistance) {
+		final List<UndoEvent> undoEvents = new ArrayList<>(selectedNotes.size());
+
+		for (final int id : selectedNotes) {
+			final Note n = currentNotes.get(id);
+			undoEvents.add(new NoteChange(id, n));
+			if (ctrl) {
+				if (id == 0) {
+					n.hopo = n.tap;
+				} else {
+					final Note prev = currentNotes.get(id - 1);
+					final double distance = n.pos - prev.pos;
+					n.hopo = n.tap || ((distance <= maxDistance) && (n.notes != prev.notes));
+				}
+			} else {
+				n.hopo = n.tap || (n.hopo ^ true);
+			}
+		}
+
+		addUndo(new UndoGroup(undoEvents));
 	}
 
 	public void undo() {

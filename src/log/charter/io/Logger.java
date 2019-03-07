@@ -38,6 +38,7 @@ public class Logger {
 	public static void error(final String msg, final Exception e) {
 		out.println("[ERROR] " + msg);
 		e.printStackTrace(out);
+		e.printStackTrace(System.out);
 	}
 
 	public static void info(final String msg) {

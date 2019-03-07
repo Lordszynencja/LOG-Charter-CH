@@ -192,16 +192,30 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 		case KeyEvent.VK_DELETE:
 			data.deleteSelected();
 			break;
+		case KeyEvent.VK_UP:
+			if (ctrl) {
+				data.moveSelectedDownWithOpen();
+			} else {
+				data.moveSelectedDownWithoutOpen();
+			}
+			break;
+		case KeyEvent.VK_DOWN:
+			if (ctrl) {
+				data.moveSelectedUpWithOpen();
+			} else {
+				data.moveSelectedUpWithoutOpen();
+			}
+			break;
 		case KeyEvent.VK_LEFT:
 			if (alt) {
-				data.t = (int) data.s.tempoMap.findBeatTime(data.t - 1);
+				data.nextT = (int) data.s.tempoMap.findBeatTime(data.t - 1);
 			} else {
 				left = true;
 			}
 			break;
 		case KeyEvent.VK_RIGHT:
 			if (alt) {
-				data.t = (int) data.s.tempoMap.findNextBeatTime(data.t);
+				data.nextT = (int) data.s.tempoMap.findNextBeatTime(data.t);
 			} else {
 				right = true;
 			}
@@ -276,27 +290,17 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 				data.useGrid = true;
 			}
 			break;
-		case KeyEvent.VK_DOWN:
-			if (ctrl) {
-				data.moveSelectedUpWithOpen();
-			} else {
-				data.moveSelectedUpWithoutOpen();
-			}
-			break;
-		case KeyEvent.VK_UP:
-			if (ctrl) {
-				data.moveSelectedDownWithOpen();
-			} else {
-				data.moveSelectedDownWithoutOpen();
-			}
-			break;
 		case KeyEvent.VK_A:
 			if (ctrl) {
 				data.selectAll();
 			}
 			break;
 		case KeyEvent.VK_C:
-			claps = !claps;
+			if (ctrl) {
+				data.copy();
+			} else {
+				claps = !claps;
+			}
 			break;
 		case KeyEvent.VK_F:
 			if (ctrl) {
@@ -353,6 +357,15 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 					&& (data.my <= (ChartPanel.lane0Y + ((ChartPanel.laneDistY * 9) / 2)))) {
 				data.deselect();
 				data.toggleNote(data.findClosestIdOrPosForX(data.mx), 0);
+			}
+			break;
+		case KeyEvent.VK_V:
+			if (ctrl) {
+				try {
+					data.paste();
+				} catch (final Exception exception) {
+					Logger.error("Couldn't paste notes", exception);
+				}
 			}
 			break;
 		case KeyEvent.VK_W:

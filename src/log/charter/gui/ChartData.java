@@ -2,9 +2,18 @@ package log.charter.gui;
 
 import static java.lang.Math.abs;
 
+import java.awt.HeadlessException;
+import java.awt.Toolkit;
+import java.awt.datatransfer.DataFlavor;
+import java.awt.datatransfer.Transferable;
+import java.awt.datatransfer.UnsupportedFlavorException;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
+
+import javax.activation.DataHandler;
 
 import log.charter.gui.undoEvents.NoteAdd;
 import log.charter.gui.undoEvents.NoteChange;
@@ -46,6 +55,31 @@ public class ChartData {
 		public String toString() {
 			return "IdOrPos{" + (id >= 0 ? "id:" + id + "}" : "pos:" + pos + "}");
 		}
+	}
+
+	private static double bytesToDouble(final byte[] bytes) {
+		final long l = (((long) bytes[0]) & 255)//
+				| ((((long) bytes[1]) & 255) << 8) //
+				| (((((long) bytes[2])) & 255) << 16)//
+				| ((((long) bytes[3]) & 255) << 24)//
+				| ((((long) bytes[4]) & 255) << 32)//
+				| ((((long) bytes[5]) & 255) << 40)//
+				| ((((long) bytes[6]) & 255) << 48)//
+				| ((((long) bytes[7]) & 255) << 56);
+		return Double.longBitsToDouble(l);
+	}
+
+	private static byte[] doubleToBytes(final double d) {
+		final long l = Double.doubleToLongBits(d);
+		return new byte[] {
+				(byte) (l & 255), //
+				(byte) ((l >> 8) & 255), //
+				(byte) ((l >> 16) & 255), //
+				(byte) ((l >> 24) & 255), //
+				(byte) ((l >> 32) & 255), //
+				(byte) ((l >> 40) & 255), //
+				(byte) ((l >> 48) & 255), //
+				(byte) ((l >> 56) & 255) };
 	}
 
 	public static List<Double> removePostionsCloseToNotes(final List<Double> positions, final List<Note> notes) {
@@ -329,6 +363,28 @@ public class ChartData {
 		useGrid = true;
 	}
 
+	public void copy() {
+		final double firstNotePos = currentNotes.get(selectedNotes.get(0)).pos;
+		final byte[] copiedNotesData = new byte[(selectedNotes.size() * 18) + 5];
+		copiedNotesData[0] = 'n';
+		copiedNotesData[1] = 'o';
+		copiedNotesData[2] = 't';
+		copiedNotesData[3] = 'e';
+		copiedNotesData[4] = 's';
+
+		for (int i = 0; i < selectedNotes.size(); i++) {
+			final Note n = currentNotes.get(selectedNotes.get(i));
+			copiedNotesData[(18 * i) + 5] = (byte) n.notes;
+			copiedNotesData[(18 * i) + 6] = (byte) ((n.crazy ? 4 : 0) + (n.hopo ? 2 : 0) + (n.tap ? 1 : 0));
+			final double pos = n.pos - firstNotePos;
+
+			System.arraycopy(doubleToBytes(pos), 0, copiedNotesData, (18 * i) + 7, 8);
+			System.arraycopy(doubleToBytes(n.length), 0, copiedNotesData, (18 * i) + 15, 8);
+		}
+		final DataHandler dataHandler = new DataHandler(copiedNotesData, "application/octet-stream");
+		Toolkit.getDefaultToolkit().getSystemClipboard().setContents(dataHandler, null);
+	}
+
 	public void deleteSelected() {
 		final List<UndoEvent> undoEvents = new ArrayList<>(selectedNotes.size());
 
@@ -517,6 +573,17 @@ public class ChartData {
 		}
 	}
 
+	private void fixNotesLength(final Note n, final int id, final List<UndoEvent> undoEvents) {
+		for (int i = id - 1; (i >= 0) && (i > (id - 100)); i--) {
+			final Note prevNote = currentNotes.get(i);
+			fixNoteLength(prevNote, i, n, undoEvents);
+		}
+		for (int i = id + 1; (i < currentNotes.size()) && (i < (id + 100)); i++) {
+			final Note nextNote = currentNotes.get(i);
+			fixNoteLength(n, id, nextNote, undoEvents);
+		}
+	}
+
 	private boolean isInSection(final Note n, final List<Event> sections) {
 		for (final Event e : currentInstrument.tap) {
 			if ((e.pos + e.length) < n.pos) {
@@ -587,6 +654,62 @@ public class ChartData {
 		for (final Note n : notes) {
 			n.notes /= 2;
 		}
+	}
+
+	public void paste() throws HeadlessException, IOException, UnsupportedFlavorException {
+		// TODO
+		final Transferable t = Toolkit.getDefaultToolkit().getSystemClipboard().getContents(null);
+
+		byte[] notesData = null;
+		for (final DataFlavor f : t.getTransferDataFlavors()) {
+			final Object o = t.getTransferData(f);
+			if (o instanceof byte[]) {
+				notesData = (byte[]) o;
+				break;
+			}
+		}
+		if ((notesData == null) || (notesData.length < 5) || (notesData[0] != 'n') || (notesData[1] != 'o')
+				|| (notesData[2] != 't') || (notesData[3] != 'e') || (notesData[4] != 's')) {
+			return;
+		}
+		deselect();
+
+		final int n = (notesData.length - 5) / 18;
+		final List<UndoEvent> undoEvents = new ArrayList<>(n);
+		final double markerPos = nextT;
+		int noteId = findFirstNoteAfterTime(markerPos);
+		if (noteId < 0) {
+			noteId = currentNotes.size();
+		}
+		for (int i = 0; i < n; i++) {
+			final double pos = bytesToDouble(Arrays.copyOfRange(notesData, (18 * i) + 7, (18 * i) + 15));
+			final double length = bytesToDouble(Arrays.copyOfRange(notesData, (18 * i) + 15, (18 * i) + 23));
+			final Note note = new Note(markerPos + pos, notesData[(18 * i) + 5]);
+			note.length = length;
+			note.crazy = (notesData[(18 * i) + 6] & 4) > 0;
+			note.hopo = (notesData[(18 * i) + 6] & 2) > 0;
+			note.tap = (notesData[(18 * i) + 6] & 1) > 0;
+
+			while ((noteId < currentNotes.size()) && (currentNotes.get(noteId).pos < pos)) {
+				noteId++;
+			}
+
+			if (noteId < currentNotes.size()) {// is inside
+				if (currentNotes.get(noteId).pos != pos) {
+					undoEvents.add(new NoteAdd(noteId));
+					currentNotes.add(noteId, note);
+					fixNotesLength(note, noteId, undoEvents);
+				}
+			} else {// is last
+				undoEvents.add(new NoteAdd(noteId));
+				currentNotes.add(note);
+				fixNotesLength(note, noteId, undoEvents);
+			}
+			selectedNotes.add(noteId);
+			noteId++;
+		}
+
+		addUndo(new UndoGroup(undoEvents));
 	}
 
 	public void redo() {
@@ -710,10 +833,7 @@ public class ChartData {
 		n.tap = isInSection(n, currentInstrument.tap);
 		undoEvents.add(new NoteAdd(insertPos));
 
-		for (int i = insertPos - 1; (i >= 0) && (i > (insertPos - 100)); i--) {
-			final Note prevNote = currentNotes.get(i);
-			fixNoteLength(prevNote, i, n, undoEvents);
-		}
+		fixNotesLength(n, insertPos, undoEvents);
 		selectedNotes.add(insertPos);
 	}
 

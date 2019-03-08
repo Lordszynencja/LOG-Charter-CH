@@ -14,6 +14,7 @@ import java.awt.event.MouseWheelListener;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowFocusListener;
 import java.io.File;
+import java.util.List;
 
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
@@ -24,7 +25,9 @@ import log.charter.io.IniWriter;
 import log.charter.io.Logger;
 import log.charter.io.midi.reader.MidiReader;
 import log.charter.io.midi.writer.MidiWriter;
+import log.charter.song.Event;
 import log.charter.song.IniData;
+import log.charter.song.Instrument.InstrumentType;
 import log.charter.song.Song;
 import log.charter.song.Tempo;
 import log.charter.song.TempoMap;
@@ -62,6 +65,7 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 	public ChartEventsHandler(final CharterFrame frame) {
 		this.frame = frame;
 		data = new ChartData();
+		data.handler = this;
 
 		new Thread(() -> {
 			try {
@@ -123,9 +127,11 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 			data.nextT = (playStartT + (((System.nanoTime() - player.startTime) * data.music.slowMultiplier()) / 1000000))
 					- Config.delay;
 
-			while ((nextNoteId != -1) && (data.currentNotes.get(nextNoteId).pos < data.nextT)) {
+			final List<? extends Event> notes = data.vocalsEditing ? data.s.v.lyrics : data.currentNotes;
+
+			while ((nextNoteId != -1) && (notes.get(nextNoteId).pos < data.nextT)) {
 				nextNoteId++;
-				if (nextNoteId >= data.currentNotes.size()) {
+				if (nextNoteId >= notes.size()) {
 					nextNoteId = -1;
 				}
 				if (claps) {
@@ -159,13 +165,24 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 		switch (keyCode) {
 		case KeyEvent.VK_SPACE:
 			if (!data.isEmpty && (player == null) && !left && !right) {
-				nextNoteId = data.findClosestNoteForTime(data.nextT);
-				if ((nextNoteId > 0) && (nextNoteId < data.currentNotes.size()) //
-						&& (data.currentNotes.get(nextNoteId).pos < data.nextT)) {
-					nextNoteId++;
-				}
-				if (nextNoteId >= data.currentNotes.size()) {
-					nextNoteId = -1;
+				if (data.vocalsEditing) {
+					nextNoteId = data.findClosestVocalForTime(data.nextT);
+					if ((nextNoteId > 0) && (nextNoteId < data.s.v.lyrics.size()) //
+							&& (data.s.v.lyrics.get(nextNoteId).pos < data.nextT)) {
+						nextNoteId++;
+					}
+					if (nextNoteId >= data.s.v.lyrics.size()) {
+						nextNoteId = -1;
+					}
+				} else {
+					nextNoteId = data.findClosestNoteForTime(data.nextT);
+					if ((nextNoteId > 0) && (nextNoteId < data.currentNotes.size()) //
+							&& (data.currentNotes.get(nextNoteId).pos < data.nextT)) {
+						nextNoteId++;
+					}
+					if (nextNoteId >= data.currentNotes.size()) {
+						nextNoteId = -1;
+					}
 				}
 
 				nextTempoTime = data.s.tempoMap.findNextBeatTime((int) (data.nextT - Config.delay));
@@ -182,28 +199,40 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 			}
 			break;
 		case KeyEvent.VK_HOME:
-			data.nextT = ctrl ? (int) (data.currentNotes.isEmpty() ? 0 : data.currentNotes.get(0).pos)
-					: 0;
+			if (data.vocalsEditing) {
+				data.nextT = ctrl ? (int) (data.s.v.lyrics.isEmpty() ? 0 : data.s.v.lyrics.get(0).pos) : 0;
+			} else {
+				data.nextT = ctrl ? (int) (data.currentNotes.isEmpty() ? 0 : data.currentNotes.get(0).pos) : 0;
+			}
 			break;
 		case KeyEvent.VK_END:
-			data.nextT = ctrl ? (int) (data.currentNotes.isEmpty() ? 0
-					: data.currentNotes.get(data.currentNotes.size() - 1).pos) : data.music.msLength();
+			if (data.vocalsEditing) {
+				data.nextT = ctrl ? (int) (data.s.v.lyrics.isEmpty() ? 0
+						: data.s.v.lyrics.get(data.s.v.lyrics.size() - 1).pos) : data.music.msLength();
+			} else {
+				data.nextT = ctrl ? (int) (data.currentNotes.isEmpty() ? 0
+						: data.currentNotes.get(data.currentNotes.size() - 1).pos) : data.music.msLength();
+			}
 			break;
 		case KeyEvent.VK_DELETE:
 			data.deleteSelected();
 			break;
 		case KeyEvent.VK_UP:
-			if (ctrl) {
-				data.moveSelectedDownWithOpen();
-			} else {
-				data.moveSelectedDownWithoutOpen();
+			if (!data.vocalsEditing) {
+				if (ctrl) {
+					data.moveSelectedDownWithOpen();
+				} else {
+					data.moveSelectedDownWithoutOpen();
+				}
 			}
 			break;
 		case KeyEvent.VK_DOWN:
-			if (ctrl) {
-				data.moveSelectedUpWithOpen();
-			} else {
-				data.moveSelectedUpWithoutOpen();
+			if (!data.vocalsEditing) {
+				if (ctrl) {
+					data.moveSelectedUpWithOpen();
+				} else {
+					data.moveSelectedUpWithoutOpen();
+				}
 			}
 			break;
 		case KeyEvent.VK_LEFT:
@@ -312,19 +341,21 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 			gPressed = true;
 			break;
 		case KeyEvent.VK_H:
-			if (ctrl) {
-				double maxHOPODist = -1;
-				while ((maxHOPODist < 0) || (maxHOPODist > 10000)) {
-					try {
-						maxHOPODist = Double.parseDouble(JOptionPane.showInputDialog(
-								"Max distance between notes to make HOPO", "" + Config.lastMaxHOPODist));
-					} catch (final Exception exception) {
+			if (!data.vocalsEditing && (data.currentInstrument.type != InstrumentType.KEYS)) {
+				if (ctrl) {
+					double maxHOPODist = -1;
+					while ((maxHOPODist < 0) || (maxHOPODist > 10000)) {
+						try {
+							maxHOPODist = Double.parseDouble(JOptionPane.showInputDialog(
+									"Max distance between notes to make HOPO", "" + Config.lastMaxHOPODist));
+						} catch (final Exception exception) {
+						}
 					}
+					Config.lastMaxHOPODist = maxHOPODist;
+					data.toggleSelectedHopo(true, maxHOPODist);
+				} else {
+					data.toggleSelectedHopo(false, -1);
 				}
-				Config.lastMaxHOPODist = maxHOPODist;
-				data.toggleSelectedHopo(true, maxHOPODist);
-			} else {
-				data.toggleSelectedHopo(false, -1);
 			}
 			break;
 		case KeyEvent.VK_M:
@@ -351,12 +382,14 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 			}
 			break;
 		case KeyEvent.VK_T:
-			if (ctrl && shift) {
-				data.changeTapSections();
-			} else if ((data.my >= (ChartPanel.lane0Y - (ChartPanel.laneDistY / 2)))
-					&& (data.my <= (ChartPanel.lane0Y + ((ChartPanel.laneDistY * 9) / 2)))) {
-				data.deselect();
-				data.toggleNote(data.findClosestIdOrPosForX(data.mx), 0);
+			if (!data.vocalsEditing && (data.currentInstrument.type != InstrumentType.KEYS)) {
+				if (ctrl && shift) {
+					data.changeTapSections();
+				} else if ((data.my >= (ChartPanel.lane0Y - (ChartPanel.laneDistY / 2)))
+						&& (data.my <= (ChartPanel.lane0Y + ((ChartPanel.laneDistY * 9) / 2)))) {
+					data.deselect();
+					data.toggleNote(data.findClosestIdOrPosForX(data.mx), 0);
+				}
 			}
 			break;
 		case KeyEvent.VK_V:
@@ -369,7 +402,7 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 			}
 			break;
 		case KeyEvent.VK_W:
-			if (ctrl) {
+			if (!data.vocalsEditing && ctrl) {
 				data.changeSPSections();
 			}
 			break;
@@ -379,7 +412,7 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 			}
 			break;
 		case KeyEvent.VK_Y:
-			if (ctrl) {
+			if (!data.vocalsEditing && ctrl) {
 				data.changeSoloSections();
 			}
 			break;
@@ -434,9 +467,7 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 		final int x = e.getX();
 		final int y = e.getY();
 		if (e.getButton() == MouseEvent.BUTTON1) {
-			if (y < (ChartPanel.sectionNamesY - 5)) {
-				return;
-			} else if (y < ChartPanel.spY) {
+			if ((y > (ChartPanel.sectionNamesY - 5)) && (y < ChartPanel.spY)) {
 				stopMusic();
 				final int id = data.s.tempoMap.findBeatId(data.xToTime(x + 10));
 				final String newSectionName = JOptionPane.showInputDialog(frame, "Section name:", data.s.sections.get(id));
@@ -448,8 +479,6 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 				} else {
 					data.s.sections.put(id, newSectionName);
 				}
-			} else if (y < (ChartPanel.lane0Y - (ChartPanel.laneDistY / 2))) {
-				return;
 			}
 		}
 	}
@@ -512,7 +541,8 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 				return;
 			} else if (y < (ChartPanel.lane0Y + ((ChartPanel.laneDistY * 9) / 2))) {
 				stopMusic();
-				final IdOrPos idOrPos = data.findClosestIdOrPosForX(x);
+				final IdOrPos idOrPos = data.vocalsEditing ? data.findClosestVocalIdOrPosForX(x)
+						: data.findClosestIdOrPosForX(x);
 
 				final int[] newSelectedNotes;
 				final Integer last;
@@ -555,14 +585,19 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 					}
 				}
 				data.selectedNotes.sort(null);
+
 			}
 		} else if (e.getButton() == MouseEvent.BUTTON3) {
 			if ((y >= (ChartPanel.lane0Y - (ChartPanel.laneDistY / 2))) && (y <= (ChartPanel.lane0Y
 					+ ((ChartPanel.laneDistY * 9) / 2)))) {
-				stopMusic();
-				data.selectedNotes.clear();
-				data.lastSelectedNote = null;
-				data.startNoteAdding(x, y);
+				if (data.vocalsEditing) {
+					// TODO start vocals note adding
+				} else {
+					stopMusic();
+					data.selectedNotes.clear();
+					data.lastSelectedNote = null;
+					data.startNoteAdding(x, y);
+				}
 			}
 		}
 	}
@@ -745,7 +780,7 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 		JOptionPane.showMessageDialog(frame, msg);
 	}
 
-	private void stopMusic() {
+	public void stopMusic() {
 		if (player != null) {
 			final Player p = player;
 			player = null;

@@ -57,11 +57,20 @@ public final class MidiReader {
 			case GUITAR:
 				s.g = InstrumentReader.read(t, InstrumentType.GUITAR);
 				break;
+			case GUITAR_COOP:
+				s.gc = InstrumentReader.read(t, InstrumentType.GUITAR_COOP);
+				break;
+			case GUITAR_RHYTHM:
+				s.gr = InstrumentReader.read(t, InstrumentType.GUITAR_RHYTHM);
+				break;
 			case BASS:
 				s.b = InstrumentReader.read(t, InstrumentType.BASS);
 				break;
 			case KEYS:
 				s.k = InstrumentReader.read(t, InstrumentType.KEYS);
+				break;
+			case VOCALS:
+				s.v = VocalsReader.read(t);
 				break;
 			case EVENTS:
 				s.sections = SectionsReader.read(t);

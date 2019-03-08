@@ -11,6 +11,7 @@ import javax.swing.JPanel;
 import log.charter.gui.ChartData.IdOrPos;
 import log.charter.song.Event;
 import log.charter.song.Instrument.InstrumentType;
+import log.charter.song.Lyric;
 import log.charter.song.Note;
 import log.charter.song.Tempo;
 
@@ -61,11 +62,37 @@ public class ChartPanel extends JPanel {
 		}
 	}
 
+	private static class TextDrawList {
+		private String[] strings = new String[16];
+		private int[] positions = new int[32];
+		private int id = 0;
+
+		public void addString(final String s, final int x, final int y) {
+			if (id >= positions.length) {
+				strings = Arrays.copyOf(strings, strings.length * 2);
+				;
+				positions = Arrays.copyOf(positions, positions.length * 2);
+			}
+			strings[id] = s;
+			positions[id++] = x;
+			positions[id++] = y;
+		}
+
+		public void draw(final Graphics g, final Color c) {
+			g.setColor(c);
+			int i = 0;
+			while (i < id) {
+				g.drawString(strings[i], positions[i++], positions[i++]);
+			}
+		}
+	}
+
 	private static final long serialVersionUID = -3439446235287039031L;
 
 	public static final int sectionNamesY = 10;
 	public static final int spY = 30;
 	public static final int tapY = 35;
+	public static final int textY = 50;
 	public static final int lane0Y = 100;
 	public static final int laneDistY = 50;
 
@@ -76,9 +103,11 @@ public class ChartPanel extends JPanel {
 	public static final int noteW = 15;
 	public static final int tailSize = 15;
 
+	private static final Color TEXT_COLOR = new Color(255, 255, 255);
 	private static final Color BG_COLOR = new Color(160, 160, 160);
 	private static final Color NOTE_BG_COLOR = new Color(16, 16, 16);
 	private static final Color SP_COLOR = new Color(180, 200, 255);
+	private static final Color LYRIC_LINE_COLOR = new Color(180, 200, 255);
 
 	private static final Color HIGHLIGHT_COLOR = new Color(255, 0, 0);
 	private static final Color SELECT_COLOR = new Color(0, 255, 255);
@@ -89,6 +118,9 @@ public class ChartPanel extends JPanel {
 	private static final Color SECONDARY_BEAT_COLOR = new Color(200, 200, 200);
 	private static final Color MARKER_COLOR = new Color(255, 0, 0);
 
+	private static final Color LYRIC_NO_TONE_COLOR = new Color(128, 128, 0);
+	private static final Color LYRIC_CONNECTION_COLOR = new Color(255, 128, 255);
+	private static final Color LYRIC_COLOR = new Color(255, 0, 255);
 	private static final Color HOPO_COLOR = new Color(255, 255, 255);
 	private static final Color OPEN_NOTE_COLOR = new Color(230, 20, 230);
 	private static final Color OPEN_NOTE_TAIL_COLOR = new Color(200, 20, 200);
@@ -187,7 +219,7 @@ public class ChartPanel extends JPanel {
 						g.drawString("" + id, x + 3, tempoMarkerY1 + 10);
 						final String sectionName = data.s.sections.get(id);
 						if (sectionName != null) {
-							g.setColor(Color.WHITE);
+							g.setColor(TEXT_COLOR);
 							g.drawString("[" + sectionName + "]", x, sectionNamesY + 10);
 						}
 					}
@@ -229,9 +261,9 @@ public class ChartPanel extends JPanel {
 			}
 			final FillList hopos = new FillList();
 
-			for (final Note n : data.currentInstrument.notes.get(data.currentDiff)) {
+			for (final Note n : data.currentNotes) {
 				final int x = data.timeToX(n.pos);
-				final int length = (int) (n.length * data.zoom);
+				final int length = data.timeToXLength(n.length);
 				if (x > (getWidth() + (noteW / 2))) {
 					break;
 				}
@@ -272,12 +304,44 @@ public class ChartPanel extends JPanel {
 	}
 
 	private void drawInstrument(final Graphics g) {
-		if (data.currentInstrument.type == InstrumentType.KEYS) {
-			// TODO draw keys
-		} else if (data.currentInstrument.type == InstrumentType.VOCALS) {
-			// TODO draw vocals
+		if (data.vocalsEditing) {
+			drawLyrics(g);
+		} else if (data.currentInstrument.type == InstrumentType.KEYS) {
+			drawKeysNotes(g);
 		} else {
 			drawGuitarNotes(g);
+		}
+	}
+
+	private void drawKeysNotes(final Graphics g) {
+		if (data.s != null) {
+			final FillList[] noteTails = new FillList[5];
+			final FillList[] notes = new FillList[5];
+			for (int i = 0; i < 5; i++) {
+				noteTails[i] = new FillList();
+				notes[i] = new FillList();
+			}
+
+			for (final Note n : data.currentNotes) {
+				final int x = data.timeToX(n.pos);
+				final int length = data.timeToXLength(n.length);
+				if (x > (getWidth() + (noteW / 2))) {
+					break;
+				}
+				if ((x + length) > 0) {
+					for (int c = 0; c < 5; c++) {
+						if ((n.notes & (1 << c)) > 0) {
+							final int y = colorToY(c);
+							notes[c].addPositions(x - (noteW / 2), y - (noteH / 2), noteW, noteH);
+							noteTails[c].addPositions(x, y - (tailSize / 2), length, tailSize);
+						}
+					}
+				}
+			}
+			for (int i = 0; i < 5; i++) {
+				noteTails[i].draw(g, NOTE_TAIL_COLORS[i]);
+				notes[i].draw(g, NOTE_COLORS[i]);
+			}
 		}
 	}
 
@@ -288,79 +352,136 @@ public class ChartPanel extends JPanel {
 		}
 	}
 
+	private void drawLyrics(final Graphics g) {
+		if (data.s != null) {
+			final TextDrawList texts = new TextDrawList();
+			final FillList notes = new FillList();
+			final FillList tonelessNotes = new FillList();
+			final FillList connections = new FillList();
+
+			final List<Lyric> lyrics = data.s.v.lyrics;
+			final int y = colorToY(2) - 4;
+
+			for (int i = 0; i < lyrics.size(); i++) {
+				final Lyric l = lyrics.get(i);
+				final int x = data.timeToX(l.pos);
+				final int length = data.timeToXLength(l.length);
+				if (((x > getWidth()) && !l.connected) //
+						|| ((i > 0) && (data.timeToX(lyrics.get(i - 1).pos) > getWidth()))) {
+					break;
+				}
+				if ((x + length) > 0) {
+					(l.noTone ? tonelessNotes : notes).addPositions(x, y, length, 8);
+				}
+				if (l.connected && (i > 0)) {
+					final Lyric prev = lyrics.get(i - 1);
+					final int prevEnd = data.timeToX(prev.pos + prev.length);
+					connections.addPositions(prevEnd, y, x - prevEnd, 8);
+				}
+				if ((x + g.getFontMetrics().stringWidth(l.lyric)) > 0) {
+					texts.addString(l.lyric, x, textY);
+				}
+			}
+			texts.draw(g, TEXT_COLOR);
+			notes.draw(g, LYRIC_COLOR);
+			tonelessNotes.draw(g, LYRIC_NO_TONE_COLOR);
+			connections.draw(g, LYRIC_CONNECTION_COLOR);
+		}
+	}
+
 	private void drawSections(final Graphics g) {
-		final FillList sp = new FillList();
-		for (final Event e : data.currentInstrument.sp) {
-			final int x = data.timeToX(e.pos);
-			final int l = data.timeToXLength(e.length);
-			if ((x + l) < 0) {
-				continue;
+		if (data.vocalsEditing) {
+			final FillList lines = new FillList();
+			for (final Event e : data.s.v.lyricLines) {
+				final int x = data.timeToX(e.pos);
+				final int l = data.timeToXLength(e.length);
+				if ((x + l) < 0) {
+					continue;
+				}
+				if (x >= getWidth()) {
+					break;
+				}
+				lines.addPositions(x, textY + 10, l, 10);
 			}
-			if (x >= getWidth()) {
-				break;
+			lines.draw(g, LYRIC_LINE_COLOR);
+		} else {
+			final FillList sp = new FillList();
+			for (final Event e : data.currentInstrument.sp) {
+				final int x = data.timeToX(e.pos);
+				final int l = data.timeToXLength(e.length);
+				if ((x + l) < 0) {
+					continue;
+				}
+				if (x >= getWidth()) {
+					break;
+				}
+				sp.addPositions(x, spY, l, 5);
 			}
-			sp.addPositions(x, spY, l, 5);
-		}
-		sp.draw(g, SP_COLOR);
+			sp.draw(g, SP_COLOR);
 
-		final FillList tap = new FillList();
-		for (final Event e : data.currentInstrument.tap) {
-			final int x = data.timeToX(e.pos);
-			final int l = data.timeToXLength(e.length);
-			if ((x + l) < 0) {
-				continue;
+			final FillList tap = new FillList();
+			for (final Event e : data.currentInstrument.tap) {
+				final int x = data.timeToX(e.pos);
+				final int l = data.timeToXLength(e.length);
+				if ((x + l) < 0) {
+					continue;
+				}
+				if (x >= getWidth()) {
+					break;
+				}
+				tap.addPositions(x, tapY, l, 5);
 			}
-			if (x >= getWidth()) {
-				break;
-			}
-			tap.addPositions(x, tapY, l, 5);
-		}
-		tap.draw(g, TAP_COLOR);
+			tap.draw(g, TAP_COLOR);
 
-		final FillList solos = new FillList();
-		for (final Event e : data.currentInstrument.solo) {
-			final int x = data.timeToX(e.pos);
-			final int l = data.timeToXLength(e.length);
-			if ((x + l) < 0) {
-				continue;
+			final FillList solos = new FillList();
+			for (final Event e : data.currentInstrument.solo) {
+				final int x = data.timeToX(e.pos);
+				final int l = data.timeToXLength(e.length);
+				if ((x + l) < 0) {
+					continue;
+				}
+				if (x >= getWidth()) {
+					break;
+				}
+				solos.addPositions(x, lane0Y - (ChartPanel.laneDistY / 2), l, ChartPanel.laneDistY * 5);
 			}
-			if (x >= getWidth()) {
-				break;
-			}
-			solos.addPositions(x, lane0Y - (ChartPanel.laneDistY / 2), l, ChartPanel.laneDistY * 5);
+			solos.draw(g, SOLO_COLOR);
 		}
-		solos.draw(g, SOLO_COLOR);
 	}
 
 	private void drawSelectedNotes(final Graphics g) {
-		final DrawList selects = new DrawList();
+		if (data.vocalsEditing) {
+		} else {
+			final DrawList selects = new DrawList();
 
-		for (final int id : data.selectedNotes) {
-			final Note n = data.currentNotes.get(id);
-			final int x = data.timeToX(n.pos);
-			final int length = (int) (n.length * data.zoom);
-			if (x > (getWidth() + (noteW / 2))) {
-				break;
-			}
-			if ((x + length) > 0) {
-				if (n.notes == 0) {
-					selects.addPositions(x - (noteW / 2) - 1, lane0Y - (noteH / 2) - 1, noteW + 1, (4 * laneDistY)
-							+ noteH + 1);
-				} else {
-					for (int c = 0; c < 5; c++) {
-						if ((n.notes & (1 << c)) > 0) {
-							selects.addPositions(x - (noteW / 2) - 1, colorToY(c) - (noteH / 2) - 1, noteW + 1, noteH + 1);
+			for (final int id : data.selectedNotes) {
+				final Note n = data.currentNotes.get(id);
+				final int x = data.timeToX(n.pos);
+				final int length = (int) (n.length * data.zoom);
+				if (x > (getWidth() + (noteW / 2))) {
+					break;
+				}
+				if ((x + length) > 0) {
+					if (n.notes == 0) {
+						selects.addPositions(x - (noteW / 2) - 1, lane0Y - (noteH / 2) - 1, noteW + 1, (4 * laneDistY)
+								+ noteH + 1);
+					} else {
+						for (int c = 0; c < 5; c++) {
+							if ((n.notes & (1 << c)) > 0) {
+								selects.addPositions(x - (noteW / 2) - 1, colorToY(c) - (noteH / 2) - 1, noteW + 1, noteH + 1);
+							}
 						}
 					}
 				}
 			}
-		}
 
-		selects.draw(g, SELECT_COLOR);
+			selects.draw(g, SELECT_COLOR);
+		}
 	}
 
 	private void drawSpecial(final Graphics g) {
-		if (ChartPanel.isInNotes(data.my)) {
+		if (data.vocalsEditing) {// TODO draw special for vocals editing
+		} else if (ChartPanel.isInNotes(data.my)) {
 			final DrawList highlighted = new DrawList();
 			g.setColor(Color.RED);
 			if (ChartPanel.isInNotes(data.mousePressY)) {

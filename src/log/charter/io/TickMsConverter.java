@@ -67,31 +67,33 @@ public class TickMsConverter {
 	}
 
 	private static Song convert(final Song copy, final List<Tempo> oldTempos, final Converter c) {
-		final double[][] data = new double[21][];
+		final Instrument[] instruments = copy.instruments();
+		final double[][] data = new double[(instruments.length * 7) + 2][];
 
-		Instrument[] instruments = copy.instruments();
-		for (int i = 0; i < 3; i++) {
+		for (int i = 0; i < instruments.length; i++) {
 			data[(i * 7)] = eventListToArray(instruments[i].notes.get(0));
-			data[1 + (i * 7)] = eventListToArray(instruments[i].notes.get(1));
-			data[2 + (i * 7)] = eventListToArray(instruments[i].notes.get(2));
-			data[3 + (i * 7)] = eventListToArray(instruments[i].notes.get(3));
-			data[4 + (i * 7)] = eventListToArray(instruments[i].sp);
-			data[5 + (i * 7)] = eventListToArray(instruments[i].tap);
-			data[6 + (i * 7)] = eventListToArray(instruments[i].solo);
+			data[(i * 7) + 1] = eventListToArray(instruments[i].notes.get(1));
+			data[(i * 7) + 2] = eventListToArray(instruments[i].notes.get(2));
+			data[(i * 7) + 3] = eventListToArray(instruments[i].notes.get(3));
+			data[(i * 7) + 4] = eventListToArray(instruments[i].sp);
+			data[(i * 7) + 5] = eventListToArray(instruments[i].tap);
+			data[(i * 7) + 6] = eventListToArray(instruments[i].solo);
 		}
+		data[instruments.length * 7] = eventListToArray(copy.v.lyrics);
+		data[(instruments.length * 7) + 1] = eventListToArray(copy.v.lyricLines);
 
 		final double[][] convData = convert(data, copy.tempoMap.tempos, oldTempos, c);
-
-		instruments = copy.instruments();
-		for (int i = 0; i < 3; i++) {
+		for (int i = 0; i < instruments.length; i++) {
 			replaceEventsTime(instruments[i].notes.get(0), convData[(i * 7)]);
-			replaceEventsTime(instruments[i].notes.get(1), convData[1 + (i * 7)]);
-			replaceEventsTime(instruments[i].notes.get(2), convData[2 + (i * 7)]);
-			replaceEventsTime(instruments[i].notes.get(3), convData[3 + (i * 7)]);
+			replaceEventsTime(instruments[i].notes.get(1), convData[(i * 7) + 1]);
+			replaceEventsTime(instruments[i].notes.get(2), convData[(i * 7) + 2]);
+			replaceEventsTime(instruments[i].notes.get(3), convData[(i * 7) + 3]);
 			replaceEventsTime(instruments[i].sp, convData[4 + (i * 7)]);
 			replaceEventsTime(instruments[i].tap, convData[5 + (i * 7)]);
 			replaceEventsTime(instruments[i].solo, convData[6 + (i * 7)]);
 		}
+		replaceEventsTime(copy.v.lyrics, convData[instruments.length * 7]);
+		replaceEventsTime(copy.v.lyricLines, convData[(instruments.length * 7) + 1]);
 
 		return copy;
 	}

@@ -5,7 +5,7 @@ import java.util.List;
 
 public class Instrument {
 	public static enum InstrumentType {
-		GUITAR, GUITAR_COOP, GUITAR_RHYTM, BASS, KEYS, VOCALS;
+		GUITAR, GUITAR_COOP, GUITAR_RHYTHM, BASS, KEYS;
 	}
 
 	private static final String[] diffNames = { "Easy", "Medium", "Hard", "Expert" };
@@ -108,6 +108,7 @@ public class Instrument {
 		notes.forEach(diff -> diff.sort(null));
 		sp.sort(null);
 		tap.sort(null);
+		solo.sort(null);
 	}
 
 	@Override

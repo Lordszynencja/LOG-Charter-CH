@@ -15,6 +15,7 @@ import java.util.List;
 
 import javax.activation.DataHandler;
 
+import log.charter.gui.undoEvents.LyricRemove;
 import log.charter.gui.undoEvents.NoteAdd;
 import log.charter.gui.undoEvents.NoteChange;
 import log.charter.gui.undoEvents.NoteRemove;
@@ -28,6 +29,8 @@ import log.charter.gui.undoEvents.UndoGroup;
 import log.charter.song.Event;
 import log.charter.song.IniData;
 import log.charter.song.Instrument;
+import log.charter.song.Instrument.InstrumentType;
+import log.charter.song.Lyric;
 import log.charter.song.Note;
 import log.charter.song.Song;
 import log.charter.song.Tempo;
@@ -132,7 +135,6 @@ public class ChartData {
 	}
 
 	public String path = Config.lastPath;
-
 	public boolean isEmpty = true;
 	public Song s = new Song();
 	public IniData ini = new IniData();
@@ -141,8 +143,8 @@ public class ChartData {
 	public Instrument currentInstrument = s.g;
 	public int currentDiff = 3;
 	public List<Note> currentNotes = s.g.notes.get(currentDiff);
-	public List<Integer> selectedNotes = new ArrayList<>();
 
+	public List<Integer> selectedNotes = new ArrayList<>();
 	public Integer lastSelectedNote = null;
 	public Tempo draggedTempoPrev = null;
 	public Tempo draggedTempo = null;
@@ -152,17 +154,20 @@ public class ChartData {
 	public int mousePressY = -1;
 	public int mx = -1;
 	public int my = -1;
-	public int t = 0;
 
+	public int t = 0;
 	public double nextT = 0;
 	public double zoom = 1;
 	public boolean drawAudio = false;
 	public boolean changed = false;
 	public int gridSize = 2;
 	public boolean useGrid = true;
-	private final LinkedList<UndoEvent> undo = new LinkedList<>();
+	public boolean vocalsEditing = false;
 
+	private final LinkedList<UndoEvent> undo = new LinkedList<>();
 	private final LinkedList<UndoEvent> redo = new LinkedList<>();
+
+	public ChartEventsHandler handler;
 
 	public ChartData() {
 		resetZoom();
@@ -180,7 +185,40 @@ public class ChartData {
 		setZoomLevel(Config.zoomLvl + change);
 	}
 
-	public void changeNoteLength(final int grids) {
+	public void changeDifficulty(final int newDiff) {
+		if (!vocalsEditing) {
+			currentDiff = newDiff;
+			currentNotes = currentInstrument.notes.get(newDiff);
+			softClear();
+		}
+	}
+
+	public void changeInstrument(final InstrumentType type) {
+		handler.stopMusic();
+		vocalsEditing = false;
+		switch (type) {
+		case GUITAR:
+			currentInstrument = s.g;
+			break;
+		case GUITAR_COOP:
+			currentInstrument = s.gc;
+			break;
+		case GUITAR_RHYTHM:
+			currentInstrument = s.gr;
+			break;
+		case BASS:
+			currentInstrument = s.b;
+			break;
+		case KEYS:
+			currentInstrument = s.k;
+			break;
+		default:
+			break;
+		}
+		changeDifficulty(3);
+	}
+
+	public void changeNoteLength(final int grids) {// TODO vocals
 		final List<UndoEvent> undoEvents = new ArrayList<>(selectedNotes.size());
 		for (final int id : selectedNotes) {
 			final Note note = currentNotes.get(id);
@@ -344,8 +382,7 @@ public class ChartData {
 		currentDiff = 3;
 		currentNotes = currentInstrument.notes.get(currentDiff);
 
-		selectedNotes.clear();
-		lastSelectedNote = null;
+		deselect();
 		draggedTempoPrev = null;
 		draggedTempo = null;
 		draggedTempoNext = null;
@@ -363,7 +400,7 @@ public class ChartData {
 		useGrid = true;
 	}
 
-	public void copy() {
+	public void copy() {// TODO vocals
 		final double firstNotePos = currentNotes.get(selectedNotes.get(0)).pos;
 		final byte[] copiedNotesData = new byte[(selectedNotes.size() * 18) + 5];
 		copiedNotesData[0] = 'n';
@@ -390,9 +427,15 @@ public class ChartData {
 
 		for (int i = selectedNotes.size() - 1; i >= 0; i--) {
 			final int id = selectedNotes.get(i);
-			final Note n = currentNotes.get(id);
-			undoEvents.add(new NoteRemove(id, n));
-			currentNotes.remove(id);
+			if (vocalsEditing) {
+				final Lyric l = s.v.lyrics.get(id);
+				undoEvents.add(new LyricRemove(id, l));
+				s.v.lyrics.remove(id);
+			} else {
+				final Note n = currentNotes.get(id);
+				undoEvents.add(new NoteRemove(id, n));
+				currentNotes.remove(id);
+			}
 		}
 
 		addUndo(new UndoGroup(undoEvents));
@@ -404,7 +447,15 @@ public class ChartData {
 		lastSelectedNote = null;
 	}
 
-	public void endNoteAdding() {
+	public void editVocals() {
+		handler.stopMusic();
+		vocalsEditing = true;
+	}
+
+	public void endNoteAdding() {// TODO vocals
+		if (vocalsEditing) {
+			return;
+		}
 		deselect();
 		if (ChartPanel.isInNotes(my) && ChartPanel.isInNotes(mousePressY)) {
 			int x0, x1;
@@ -507,6 +558,37 @@ public class ChartData {
 		return (abs(currentNotes.get(l).pos - time) > abs(currentNotes.get(r).pos - time)) ? r : l;
 	}
 
+	public int findClosestVocalForTime(final double time) {
+		if (s.v.lyrics.isEmpty()) {
+			return -1;
+		}
+
+		int l = 0;
+		int r = s.v.lyrics.size() - 1;
+
+		while ((r - l) > 1) {
+			final int mid = (l + r) / 2;
+
+			if (s.v.lyrics.get(mid).pos > time) {
+				r = mid;
+			} else {
+				l = mid;
+			}
+		}
+
+		return (abs(s.v.lyrics.get(l).pos - time) > abs(s.v.lyrics.get(r).pos - time)) ? r : l;
+	}
+
+	public IdOrPos findClosestVocalIdOrPosForX(final int x) {
+		final double time = xToTime(x);
+		final double closestGridPosition = s.tempoMap.findClosestGridPositionForTime(time, useGrid, gridSize);
+		final int closestNoteId = findClosestVocalForTime(time);
+
+		return (closestNoteId == -1) || (timeToXLength(abs(time - s.v.lyrics.get(closestNoteId).pos)) > //
+		(timeToXLength(abs(closestGridPosition - time))))//
+				? new IdOrPos(-1, closestGridPosition) : new IdOrPos(closestNoteId, -1);
+	}
+
 	public int findFirstNoteAfterTime(final double time) {
 		if (currentNotes.isEmpty() || (currentNotes.get(currentNotes.size() - 1).pos < time)) {
 			return -1;
@@ -562,7 +644,8 @@ public class ChartData {
 		return notes;
 	}
 
-	private void fixNoteLength(final Note n, final int nId, final Note next, final List<UndoEvent> events) {
+	private void fixNoteLength(final Note n, final int nId, final Note next, final List<UndoEvent> events) {// TODO
+																																			  // vocals
 		if (n.length < Config.minTailLength) {
 			n.length = 0;
 		}
@@ -573,7 +656,8 @@ public class ChartData {
 		}
 	}
 
-	private void fixNotesLength(final Note n, final int id, final List<UndoEvent> undoEvents) {
+	private void fixNotesLength(final Note n, final int id, final List<UndoEvent> undoEvents) {// TODO
+																															 // vocals
 		for (int i = id - 1; (i >= 0) && (i > (id - 100)); i--) {
 			final Note prevNote = currentNotes.get(i);
 			fixNoteLength(prevNote, i, n, undoEvents);
@@ -656,7 +740,8 @@ public class ChartData {
 		}
 	}
 
-	public void paste() throws HeadlessException, IOException, UnsupportedFlavorException {
+	public void paste() throws HeadlessException, IOException, UnsupportedFlavorException {// TODO
+																														// vocals
 		final Transferable t = Toolkit.getDefaultToolkit().getSystemClipboard().getContents(null);
 
 		byte[] notesData = null;
@@ -724,7 +809,8 @@ public class ChartData {
 
 	public void selectAll() {
 		deselect();
-		for (int i = 0; i < currentNotes.size(); i++) {
+		final List<? extends Event> events = vocalsEditing ? s.v.lyrics : currentNotes;
+		for (int i = 0; i < events.size(); i++) {
 			selectedNotes.add(i);
 		}
 	}
@@ -748,7 +834,7 @@ public class ChartData {
 		resetZoom();
 	}
 
-	public void snapSelectedNotes() {
+	public void snapSelectedNotes() {// TODO vocals
 		final List<UndoEvent> undoEvents = new ArrayList<>(selectedNotes.size());
 
 		for (int i = 0; i < selectedNotes.size(); i++) {
@@ -782,6 +868,18 @@ public class ChartData {
 		}
 
 		addUndo(new UndoGroup(undoEvents));
+	}
+
+	private void softClear() {
+		deselect();
+		draggedTempoPrev = null;
+		draggedTempo = null;
+		draggedTempoNext = null;
+		draggedTempoUndo = null;
+		mousePressX = -1;
+		mousePressY = -1;
+		mx = -1;
+		my = -1;
 	}
 
 	public void startNoteAdding(final int x, final int y) {

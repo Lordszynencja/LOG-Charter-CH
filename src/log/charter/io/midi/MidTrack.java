@@ -28,26 +28,30 @@ public class MidTrack {
 	}
 
 	public static enum TrackType {
-		GUITAR, BASS, KEYS, EVENTS, TEMPO, UNKNOWN;
+		GUITAR, GUITAR_COOP, GUITAR_RHYTHM, BASS, KEYS, VOCALS, EVENTS, TEMPO, UNKNOWN;
 
 		public static TrackType from(final String s) {
 			if (s == null) {
 				return UNKNOWN;
 			}
-			if (s.equals("EVENTS")) {
+			switch (s) {
+			case "EVENTS":
 				return EVENTS;
-			}
-			if (s.equals("PART GUITAR")) {
+			case "PART GUITAR":
 				return GUITAR;
-			}
-			if (s.equals("PART BASS")) {
+			case "PART GUITAR COOP":
+				return GUITAR_COOP;
+			case "PART RHYTHM":
+				return GUITAR_RHYTHM;
+			case "PART BASS":
 				return BASS;
-			}
-			if (s.equals("PART KEYS")) {
+			case "PART KEYS":
 				return KEYS;
+			case "PART VOCALS":
+				return VOCALS;
+			default:
+				return UNKNOWN;
 			}
-
-			return UNKNOWN;
 		}
 
 	}

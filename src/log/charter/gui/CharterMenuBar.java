@@ -7,6 +7,8 @@ import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 
+import log.charter.song.Instrument.InstrumentType;
+
 public class CharterMenuBar extends JMenuBar {
 
 	private static final long serialVersionUID = -5784270027920161709L;
@@ -29,6 +31,7 @@ public class CharterMenuBar extends JMenuBar {
 
 		this.add(prepareFileMenu());
 		this.add(prepareConfigMenu());
+		this.add(prepareInstrumentMenu());
 	}
 
 	private JMenu prepareConfigMenu() {
@@ -46,6 +49,23 @@ public class CharterMenuBar extends JMenuBar {
 		menu.add(createItem("Save", e -> handler.save()));
 		menu.add(createItem("Save as...", e -> handler.saveAs()));
 		menu.add(createItem("Exit", e -> handler.exit()));
+
+		return menu;
+	}
+
+	private JMenu prepareInstrumentMenu() {
+		final JMenu menu = new JMenu("Instrument");
+		menu.add(createItem("Easy", e -> handler.data.changeDifficulty(0)));
+		menu.add(createItem("Medium", e -> handler.data.changeDifficulty(1)));
+		menu.add(createItem("Hard", e -> handler.data.changeDifficulty(2)));
+		menu.add(createItem("Expert", e -> handler.data.changeDifficulty(3)));
+		menu.addSeparator();
+		menu.add(createItem("Guitar", e -> handler.data.changeInstrument(InstrumentType.GUITAR)));
+		menu.add(createItem("Coop Guitar", e -> handler.data.changeInstrument(InstrumentType.GUITAR_COOP)));
+		menu.add(createItem("Rhytm Guitar", e -> handler.data.changeInstrument(InstrumentType.GUITAR_RHYTHM)));
+		menu.add(createItem("Bass", e -> handler.data.changeInstrument(InstrumentType.BASS)));
+		menu.add(createItem("Keys (TODO better notes)", e -> handler.data.changeInstrument(InstrumentType.KEYS)));
+		menu.add(createItem("Vocals (TODO drawing)", e -> handler.data.editVocals()));
 
 		return menu;
 	}

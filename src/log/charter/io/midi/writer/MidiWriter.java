@@ -9,7 +9,7 @@ import javax.sound.midi.Sequence;
 
 import log.charter.io.Logger;
 import log.charter.io.TickMsConverter;
-import log.charter.song.Instrument.InstrumentType;
+import log.charter.song.Instrument;
 import log.charter.song.Song;
 
 public final class MidiWriter {
@@ -21,15 +21,10 @@ public final class MidiWriter {
 
 			TempoWriter.write(conv.tempoMap, seq.createTrack());
 			SectionsWriter.write(conv.sections, seq.createTrack());
-			if (conv.g.hasNotes()) {
-				InstrumentWriter.write(conv.g, InstrumentType.GUITAR, seq.createTrack());
+			for (final Instrument instr : conv.instruments()) {
+				InstrumentWriter.write(instr, instr.type, seq.createTrack());
 			}
-			if (conv.b.hasNotes()) {
-				InstrumentWriter.write(conv.b, InstrumentType.BASS, seq.createTrack());
-			}
-			if (conv.k.hasNotes()) {
-				InstrumentWriter.write(conv.k, InstrumentType.KEYS, seq.createTrack());
-			}
+			VocalsWriter.write(conv.v, seq.createTrack());
 
 			MidiSystem.write(seq, 1, new File(path));
 		} catch (final Exception e) {

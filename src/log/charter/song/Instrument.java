@@ -5,10 +5,24 @@ import java.util.List;
 
 public class Instrument {
 	public static enum InstrumentType {
-		GUITAR, GUITAR_COOP, GUITAR_RHYTHM, BASS, KEYS;
+		GUITAR("Guitar"), //
+		GUITAR_COOP("Coop Guitar"), //
+		GUITAR_RHYTHM("Rhythm Guitar"), //
+		BASS("Bass"), //
+		KEYS("Keys");
+
+		public static InstrumentType[] sortedValues() {
+			return new InstrumentType[] { GUITAR, GUITAR_COOP, GUITAR_RHYTHM, BASS, KEYS };
+		}
+
+		public final String name;
+
+		private InstrumentType(final String name) {
+			this.name = name;
+		}
 	}
 
-	private static final String[] diffNames = { "Easy", "Medium", "Hard", "Expert" };
+	public static final String[] diffNames = { "Easy", "Medium", "Hard", "Expert" };
 
 	public final InstrumentType type;
 	public final List<List<Note>> notes;

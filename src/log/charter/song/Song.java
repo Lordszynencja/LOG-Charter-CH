@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import log.charter.io.Logger;
 import log.charter.song.Instrument.InstrumentType;
 
 public class Song {
@@ -52,6 +53,24 @@ public class Song {
 		s.sections.forEach((id, sec) -> sections.put(id, sec));
 
 		tempoMap = new TempoMap(s.tempoMap);
+	}
+
+	public Instrument getInstrument(final InstrumentType type) {
+		switch (type) {
+		case GUITAR:
+			return g;
+		case GUITAR_COOP:
+			return gc;
+		case GUITAR_RHYTHM:
+			return gr;
+		case BASS:
+			return b;
+		case KEYS:
+			return k;
+		default:
+			Logger.error("Wrong instrument type: " + type);
+			return null;
+		}
 	}
 
 	public Instrument[] instruments() {

@@ -114,6 +114,10 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 	public void componentShown(final ComponentEvent e) {
 	}
 
+	public void copyFrom(final InstrumentType instrumentType, final int diff) {
+		data.copyFrom(instrumentType, diff);
+	}
+
 	public void exit() {
 		if (JOptionPane.YES_OPTION == JOptionPane.showConfirmDialog(frame, "Are you sure you want to exit?", "Exit",
 				JOptionPane.YES_NO_OPTION)) {

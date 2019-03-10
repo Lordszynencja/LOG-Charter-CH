@@ -135,16 +135,17 @@ public class ChartData {
 	}
 
 	public String path = Config.lastPath;
+
 	public boolean isEmpty = true;
 	public Song s = new Song();
 	public IniData ini = new IniData();
 	public MusicData music = new MusicData(new byte[0], 44100);
-
 	public Instrument currentInstrument = s.g;
+
 	public int currentDiff = 3;
 	public List<Note> currentNotes = s.g.notes.get(currentDiff);
-
 	public List<Integer> selectedNotes = new ArrayList<>();
+
 	public Integer lastSelectedNote = null;
 	public Tempo draggedTempoPrev = null;
 	public Tempo draggedTempo = null;
@@ -154,8 +155,8 @@ public class ChartData {
 	public int mousePressY = -1;
 	public int mx = -1;
 	public int my = -1;
-
 	public int t = 0;
+
 	public double nextT = 0;
 	public double zoom = 1;
 	public boolean drawAudio = false;
@@ -163,10 +164,9 @@ public class ChartData {
 	public int gridSize = 2;
 	public boolean useGrid = true;
 	public boolean vocalsEditing = false;
-
 	private final LinkedList<UndoEvent> undo = new LinkedList<>();
-	private final LinkedList<UndoEvent> redo = new LinkedList<>();
 
+	private final LinkedList<UndoEvent> redo = new LinkedList<>();
 	public ChartEventsHandler handler;
 
 	public ChartData() {
@@ -420,6 +420,23 @@ public class ChartData {
 		}
 		final DataHandler dataHandler = new DataHandler(copiedNotesData, "application/octet-stream");
 		Toolkit.getDefaultToolkit().getSystemClipboard().setContents(dataHandler, null);
+	}
+
+	public void copyFrom(final InstrumentType instrumentType, final int diff) {
+		if ((!isEmpty && (instrumentType != currentInstrument.type)) || (diff != currentDiff)) {
+			final List<Note> from = s.getInstrument(instrumentType).notes.get(diff);
+
+			final List<UndoEvent> undoEvents = new ArrayList<>(from.size() + currentNotes.size());
+			for (int i = currentNotes.size() - 1; i >= 0; i--) {
+				undoEvents.add(new NoteRemove(i, currentNotes.get(i)));
+			}
+			currentNotes.clear();
+			for (int i = 0; i < from.size(); i++) {
+				undoEvents.add(new NoteAdd(i));
+				currentNotes.add(new Note(from.get(i)));
+			}
+			addUndo(new UndoGroup(undoEvents));
+		}
 	}
 
 	public void deleteSelected() {

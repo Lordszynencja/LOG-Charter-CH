@@ -7,6 +7,7 @@ import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 
+import log.charter.song.Instrument;
 import log.charter.song.Instrument.InstrumentType;
 
 public class CharterMenuBar extends JMenuBar {
@@ -32,6 +33,7 @@ public class CharterMenuBar extends JMenuBar {
 		this.add(prepareFileMenu());
 		this.add(prepareConfigMenu());
 		this.add(prepareInstrumentMenu());
+		this.add(prepareNotesMenu());
 	}
 
 	private JMenu prepareConfigMenu() {
@@ -55,17 +57,34 @@ public class CharterMenuBar extends JMenuBar {
 
 	private JMenu prepareInstrumentMenu() {
 		final JMenu menu = new JMenu("Instrument");
-		menu.add(createItem("Easy", e -> handler.data.changeDifficulty(0)));
-		menu.add(createItem("Medium", e -> handler.data.changeDifficulty(1)));
-		menu.add(createItem("Hard", e -> handler.data.changeDifficulty(2)));
-		menu.add(createItem("Expert", e -> handler.data.changeDifficulty(3)));
+		for (int i = 0; i < Instrument.diffNames.length; i++) {
+			final int diff = i;
+			menu.add(createItem(Instrument.diffNames[i], e -> handler.data.changeDifficulty(diff)));
+		}
 		menu.addSeparator();
-		menu.add(createItem("Guitar", e -> handler.data.changeInstrument(InstrumentType.GUITAR)));
-		menu.add(createItem("Coop Guitar", e -> handler.data.changeInstrument(InstrumentType.GUITAR_COOP)));
-		menu.add(createItem("Rhytm Guitar", e -> handler.data.changeInstrument(InstrumentType.GUITAR_RHYTHM)));
-		menu.add(createItem("Bass", e -> handler.data.changeInstrument(InstrumentType.BASS)));
-		menu.add(createItem("Keys (TODO better notes)", e -> handler.data.changeInstrument(InstrumentType.KEYS)));
-		menu.add(createItem("Vocals (TODO drawing)", e -> handler.data.editVocals()));
+		for (final InstrumentType type : InstrumentType.sortedValues()) {
+			menu.add(createItem(type.name, e -> handler.data.changeInstrument(type)));
+		}
+
+		menu.add(createItem("Vocals (TODO editing)", e -> handler.data.editVocals()));
+
+		return menu;
+	}
+
+	private JMenu prepareNotesMenu() {
+		final JMenu menu = new JMenu("Notes");
+		final JMenu copyFromMenu = new JMenu("Copy from");
+
+		for (final InstrumentType type : InstrumentType.sortedValues()) {
+			final JMenu copyFromMenuInstr = new JMenu(type.name);
+			for (int i = 0; i < Instrument.diffNames.length; i++) {
+				final int diff = i;
+				copyFromMenuInstr.add(createItem(Instrument.diffNames[i], e -> handler.copyFrom(type, diff)));
+			}
+			copyFromMenu.add(copyFromMenuInstr);
+		}
+
+		menu.add(copyFromMenu);
 
 		return menu;
 	}

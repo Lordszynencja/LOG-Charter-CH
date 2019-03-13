@@ -2,6 +2,8 @@ package log.charter.gui;
 
 import static log.charter.io.Logger.error;
 
+import java.awt.Component;
+import java.awt.Dimension;
 import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
 import java.awt.event.KeyEvent;
@@ -94,6 +96,18 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 		}).start();
 	}
 
+	private void changeWidth(final Component c, final int w) {
+		final int y = c.getY();
+		final int h = c.getHeight();
+		final Dimension newScrollBarSize = new Dimension(Config.windowWidth, h);
+		c.setMinimumSize(newScrollBarSize);
+		c.setPreferredSize(newScrollBarSize);
+		c.setMaximumSize(newScrollBarSize);
+		c.setBounds(0, y, Config.windowWidth, h);
+		c.validate();
+		c.repaint();
+	}
+
 	@Override
 	public void componentHidden(final ComponentEvent e) {
 	}
@@ -108,6 +122,9 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 	public void componentResized(final ComponentEvent e) {
 		Config.windowHeight = e.getComponent().getHeight();
 		Config.windowWidth = e.getComponent().getWidth();
+
+		changeWidth(frame.scrollBar, Config.windowWidth);
+		changeWidth(frame.chartPanel, Config.windowWidth);
 	}
 
 	@Override
@@ -128,8 +145,8 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 
 	private void frame() {
 		if ((player != null) && (player.startTime > 0)) {
-			data.nextT = (playStartT + (((System.nanoTime() - player.startTime) * data.music.slowMultiplier()) / 1000000))
-					- Config.delay;
+			setNextTime((playStartT + (((System.nanoTime() - player.startTime) * data.music.slowMultiplier()) / 1000000))
+					- Config.delay);
 
 			final List<? extends Event> notes = data.vocalsEditing ? data.s.v.lyrics : data.currentNotes;
 
@@ -151,10 +168,7 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 			}
 		} else {
 			final int speed = (FL * (shift ? 10 : 2)) / (ctrl ? 10 : 1);
-			data.nextT += (left ? -speed : 0) + (right ? speed : 0);
-			if (data.nextT < 0) {
-				data.nextT = 0;
-			}
+			setNextTime((data.nextT - (left ? speed : 0)) + (right ? speed : 0));
 		}
 	}
 
@@ -204,18 +218,18 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 			break;
 		case KeyEvent.VK_HOME:
 			if (data.vocalsEditing) {
-				data.nextT = ctrl ? (int) (data.s.v.lyrics.isEmpty() ? 0 : data.s.v.lyrics.get(0).pos) : 0;
+				setNextTime(ctrl ? (int) (data.s.v.lyrics.isEmpty() ? 0 : data.s.v.lyrics.get(0).pos) : 0);
 			} else {
-				data.nextT = ctrl ? (int) (data.currentNotes.isEmpty() ? 0 : data.currentNotes.get(0).pos) : 0;
+				setNextTime(ctrl ? (int) (data.currentNotes.isEmpty() ? 0 : data.currentNotes.get(0).pos) : 0);
 			}
 			break;
 		case KeyEvent.VK_END:
 			if (data.vocalsEditing) {
-				data.nextT = ctrl ? (int) (data.s.v.lyrics.isEmpty() ? 0
-						: data.s.v.lyrics.get(data.s.v.lyrics.size() - 1).pos) : data.music.msLength();
+				setNextTime(ctrl ? (int) (data.s.v.lyrics.isEmpty() ? 0
+						: data.s.v.lyrics.get(data.s.v.lyrics.size() - 1).pos) : data.music.msLength());
 			} else {
-				data.nextT = ctrl ? (int) (data.currentNotes.isEmpty() ? 0
-						: data.currentNotes.get(data.currentNotes.size() - 1).pos) : data.music.msLength();
+				setNextTime(ctrl ? (int) (data.currentNotes.isEmpty() ? 0
+						: data.currentNotes.get(data.currentNotes.size() - 1).pos) : data.music.msLength());
 			}
 			break;
 		case KeyEvent.VK_DELETE:
@@ -241,14 +255,14 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 			break;
 		case KeyEvent.VK_LEFT:
 			if (alt) {
-				data.nextT = (int) data.s.tempoMap.findBeatTime(data.t - 1);
+				setNextTime(data.s.tempoMap.findBeatTime(data.nextT - 1));
 			} else {
 				left = true;
 			}
 			break;
 		case KeyEvent.VK_RIGHT:
 			if (alt) {
-				data.nextT = (int) data.s.tempoMap.findNextBeatTime(data.t);
+				setNextTime(data.s.tempoMap.findNextBeatTime(data.nextT));
 			} else {
 				right = true;
 			}
@@ -778,6 +792,25 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 		}
 		Logger.error("saveAs not implemented!");// TODO
 		Config.save();
+	}
+
+	public void setNextTime(final double t) {
+		if ((frame != null) && (frame.scrollBar != null)) {
+			final int songLength = data.music.msLength();
+			final double songPart = songLength == 0 ? 0 : t / songLength;
+			frame.scrollBar.setValue((int) (songPart * frame.scrollBar.getMaximum()));
+		}
+		data.nextT = t;
+		if (data.nextT < 0) {
+			data.nextT = 0;
+		}
+	}
+
+	public void setNextTimeWithoutScrolling(final double t) {
+		data.nextT = t;
+		if (data.nextT < 0) {
+			data.nextT = 0;
+		}
 	}
 
 	public void showPopup(final String msg) {

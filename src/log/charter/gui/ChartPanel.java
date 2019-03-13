@@ -129,6 +129,8 @@ public class ChartPanel extends JPanel {
 	private static final Color[] NOTE_TAIL_COLORS = { new Color(20, 200, 20), new Color(200, 20, 20),
 			new Color(200, 200, 20), new Color(20, 20, 200), new Color(200, 100, 20), new Color(155, 20, 155) };
 
+	public static final int HEIGHT = tempoMarkerY2;
+
 	private static int clamp(final double y) {
 		return colorToY(yToLane(y));
 	}

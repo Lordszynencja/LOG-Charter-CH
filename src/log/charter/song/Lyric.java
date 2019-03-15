@@ -13,6 +13,16 @@ public class Lyric extends Event {
 		lyric = null;
 	}
 
+	public Lyric(final double pos, final int tone, final String lyric, final boolean noTone, final boolean wordPart,
+			final boolean connected) {
+		super(pos);
+		this.tone = tone;
+		this.lyric = lyric;
+		this.noTone = noTone;
+		this.wordPart = wordPart;
+		this.connected = connected;
+	}
+
 	public Lyric(final double pos, final String lyric) {
 		super(pos);
 		tone = -1;

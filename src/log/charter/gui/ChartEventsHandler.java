@@ -351,7 +351,11 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 			break;
 		case KeyEvent.VK_F:
 			if (ctrl) {
-				data.snapSelectedNotes();
+				if (data.vocalsEditing) {
+					data.snapSelectedVocals();
+				} else {
+					data.snapSelectedNotes();
+				}
 			}
 			break;
 		case KeyEvent.VK_G:
@@ -389,6 +393,11 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 				open();
 			}
 			break;
+		case KeyEvent.VK_Q:
+			if (data.vocalsEditing) {
+				data.toggleSelectedLyricConnected();
+			}
+			break;
 		case KeyEvent.VK_R:
 			if (e.isControlDown()) {
 				data.redo();
@@ -408,6 +417,8 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 					data.deselect();
 					data.toggleNote(data.findClosestIdOrPosForX(data.mx), 0);
 				}
+			} else if (data.vocalsEditing) {
+				data.toggleSelectedLyricToneless();
 			}
 			break;
 		case KeyEvent.VK_V:
@@ -422,6 +433,8 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 		case KeyEvent.VK_W:
 			if (!data.vocalsEditing && ctrl) {
 				data.changeSPSections();
+			} else if (data.vocalsEditing) {
+				data.toggleSelectedVocalsWordPart();
 			}
 			break;
 		case KeyEvent.VK_Z:
@@ -496,6 +509,21 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 					data.s.sections.remove(id);
 				} else {
 					data.s.sections.put(id, newSectionName);
+				}
+			}
+		} else if (e.getButton() == MouseEvent.BUTTON3) {
+			if (data.vocalsEditing) {
+				final IdOrPos idOrPos = data.findClosestVocalIdOrPosForX(x);
+				if (idOrPos.isId()) {
+					data.removeVocalNote(idOrPos.id);
+				} else {
+					// TODO show vocal edit
+					final int tone = 0;
+					final String text = "test";
+					final boolean noTone = true;
+					final boolean wordPart = false;
+					final boolean connected = false;
+					data.addVocalNote(idOrPos.pos, tone, text, noTone, wordPart, connected);
 				}
 			}
 		}
@@ -608,9 +636,7 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 		} else if (e.getButton() == MouseEvent.BUTTON3) {
 			if ((y >= (ChartPanel.lane0Y - (ChartPanel.laneDistY / 2))) && (y <= (ChartPanel.lane0Y
 					+ ((ChartPanel.laneDistY * 9) / 2)))) {
-				if (data.vocalsEditing) {
-					// TODO start vocals note adding
-				} else {
+				if (!data.vocalsEditing) {
 					stopMusic();
 					data.selectedNotes.clear();
 					data.lastSelectedNote = null;
@@ -644,7 +670,11 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 		if (ctrl) {
 			data.addZoom(rot * (shift ? 10 : 1));
 		} else {
-			data.changeNoteLength(rot);
+			if (data.vocalsEditing) {
+				data.changeLyricLength(rot);
+			} else {
+				data.changeNoteLength(rot);
+			}
 		}
 		e.consume();
 	}

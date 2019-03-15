@@ -68,12 +68,14 @@ public class ChartPanel extends JPanel {
 		private int id = 0;
 
 		public void addString(final String s, final int x, final int y) {
+			if (s == null) {
+				return;
+			}
 			if (id >= positions.length) {
 				strings = Arrays.copyOf(strings, strings.length * 2);
-				;
 				positions = Arrays.copyOf(positions, positions.length * 2);
 			}
-			strings[id] = s;
+			strings[id / 2] = s;
 			positions[id++] = x;
 			positions[id++] = y;
 		}
@@ -82,7 +84,7 @@ public class ChartPanel extends JPanel {
 			g.setColor(c);
 			int i = 0;
 			while (i < id) {
-				g.drawString(strings[i], positions[i++], positions[i++]);
+				g.drawString(strings[i / 2], positions[i++], positions[i++]);
 			}
 		}
 	}
@@ -367,7 +369,10 @@ public class ChartPanel extends JPanel {
 			for (int i = 0; i < lyrics.size(); i++) {
 				final Lyric l = lyrics.get(i);
 				final int x = data.timeToX(l.pos);
-				final int length = data.timeToXLength(l.length);
+				int length = data.timeToXLength(l.length);
+				if (length < 1) {
+					length = 1;
+				}
 				if (((x > getWidth()) && !l.connected) //
 						|| ((i > 0) && (data.timeToX(lyrics.get(i - 1).pos) > getWidth()))) {
 					break;
@@ -453,13 +458,35 @@ public class ChartPanel extends JPanel {
 
 	private void drawSelectedNotes(final Graphics g) {
 		if (data.vocalsEditing) {
+			final DrawList selects = new DrawList();
+
+			for (final int id : data.selectedNotes) {
+				final Lyric l = data.s.v.lyrics.get(id);
+				final int x = data.timeToX(l.pos);
+				final int y = colorToY(2) - 5;
+				int length = data.timeToXLength(l.length) + 1;
+				if (length < 3) {
+					length = 3;
+				}
+				if (x > (getWidth() + (noteW / 2))) {
+					break;
+				}
+				if ((x + length) > 0) {
+					for (int c = 0; c < 5; c++) {
+						selects.addPositions(x - 1, y, length, 9);
+
+					}
+				}
+			}
+
+			selects.draw(g, SELECT_COLOR);
 		} else {
 			final DrawList selects = new DrawList();
 
 			for (final int id : data.selectedNotes) {
 				final Note n = data.currentNotes.get(id);
 				final int x = data.timeToX(n.pos);
-				final int length = (int) (n.length * data.zoom);
+				final int length = data.timeToXLength(n.length);
 				if (x > (getWidth() + (noteW / 2))) {
 					break;
 				}
@@ -483,6 +510,16 @@ public class ChartPanel extends JPanel {
 
 	private void drawSpecial(final Graphics g) {
 		if (data.vocalsEditing) {// TODO draw special for vocals editing
+			final IdOrPos idOrPos = data.findClosestVocalIdOrPosForX(data.mx);
+			final int x = data.timeToX(idOrPos.isId() ? data.s.v.lyrics.get(idOrPos.id).pos : idOrPos.pos);
+			int xLength = idOrPos.isId() ? data.timeToXLength(data.s.v.lyrics.get(idOrPos.id).length) - 1 : 10;
+			if (xLength < 1) {
+				xLength = 1;
+			}
+			final int y = colorToY(2) - 4;
+
+			g.setColor(HIGHLIGHT_COLOR);
+			g.drawRect(x, y, xLength, 7);
 		} else if (ChartPanel.isInNotes(data.my)) {
 			final DrawList highlighted = new DrawList();
 			g.setColor(Color.RED);

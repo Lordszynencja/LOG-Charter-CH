@@ -293,10 +293,10 @@ public class ChartData {
 		}
 		addUndo(new LyricLinesChange(s.v.lyricLines));
 
-		final double start = s.v.lyrics.get(selectedNotes.get(0)).pos;
-		final double end = s.v.lyrics.get(selectedNotes.get(selectedNotes.size() - 1)).pos;
+		final Lyric first = s.v.lyrics.get(selectedNotes.get(0));
+		final Lyric last = s.v.lyrics.get(selectedNotes.get(selectedNotes.size() - 1));
 
-		changeEventList(s.v.lyricLines, start, end);
+		changeEventList(s.v.lyricLines, first.pos, last.pos + last.length);
 	}
 
 	public void changeNoteLength(final int grids) {
@@ -327,10 +327,10 @@ public class ChartData {
 		}
 		addUndo(new SoloSectionsChange(currentInstrument.solo));
 
-		final double start = currentNotes.get(selectedNotes.get(0)).pos;
-		final double end = currentNotes.get(selectedNotes.get(selectedNotes.size() - 1)).pos;
+		final Note first = currentNotes.get(selectedNotes.get(0));
+		final Note last = currentNotes.get(selectedNotes.get(selectedNotes.size() - 1));
 
-		changeEventList(currentInstrument.solo, start, end);
+		changeEventList(currentInstrument.solo, first.pos, last.pos + last.length);
 	}
 
 	public void changeSPSections() {
@@ -339,10 +339,10 @@ public class ChartData {
 		}
 		addUndo(new SPSectionsChange(currentInstrument.sp));
 
-		final double start = currentNotes.get(selectedNotes.get(0)).pos;
-		final double end = currentNotes.get(selectedNotes.get(selectedNotes.size() - 1)).pos;
+		final Note first = currentNotes.get(selectedNotes.get(0));
+		final Note last = currentNotes.get(selectedNotes.get(selectedNotes.size() - 1));
 
-		changeEventList(currentInstrument.sp, start, end);
+		changeEventList(currentInstrument.sp, first.pos, last.pos + last.length);
 	}
 
 	public void changeTapSections() {
@@ -352,10 +352,10 @@ public class ChartData {
 		final List<UndoEvent> undoEvents = new ArrayList<>();
 		undoEvents.add(new TapSectionsChange(currentInstrument.tap));
 
-		final double start = currentNotes.get(selectedNotes.get(0)).pos;
-		final double end = currentNotes.get(selectedNotes.get(selectedNotes.size() - 1)).pos;
+		final Note first = currentNotes.get(selectedNotes.get(0));
+		final Note last = currentNotes.get(selectedNotes.get(selectedNotes.size() - 1));
 
-		changeEventList(currentInstrument.tap, start, end);
+		changeEventList(currentInstrument.tap, first.pos, last.pos + last.length);
 
 		for (int diff = 0; diff < 4; diff++) {
 			final List<Note> diffNotes = currentInstrument.notes.get(diff);
@@ -363,12 +363,13 @@ public class ChartData {
 				final Note n = diffNotes.get(i);
 				if (currentInstrument.tap.size() == 0) {
 					n.tap = false;
-				}
-				for (final Event e : currentInstrument.tap) {
-					final boolean newTap = (n.pos >= e.pos) && (n.pos <= (e.pos + e.length));
-					if (newTap != n.tap) {
-						undoEvents.add(new NoteChange(i, n));
-						n.tap = newTap;
+				} else {
+					for (final Event e : currentInstrument.tap) {
+						final boolean newTap = (n.pos >= e.pos) && (n.pos <= (e.pos + e.length));
+						if (newTap != n.tap) {
+							undoEvents.add(new NoteChange(i, n));
+							n.tap = newTap;
+						}
 					}
 				}
 			}

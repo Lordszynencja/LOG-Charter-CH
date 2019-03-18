@@ -11,6 +11,8 @@ import java.util.List;
 import javax.sound.midi.MidiEvent;
 import javax.sound.midi.Track;
 
+import log.charter.song.Instrument.InstrumentType;
+
 public class MidTrack {
 	public static class MidEvent {
 		public final long t;
@@ -28,32 +30,52 @@ public class MidTrack {
 	}
 
 	public static enum TrackType {
-		GUITAR, GUITAR_COOP, GUITAR_RHYTHM, BASS, KEYS, VOCALS, EVENTS, TEMPO, UNKNOWN;
+		GUITAR("PART GUITAR"), //
+		GUITAR_COOP("PART GUITAR COOP"), //
+		GUITAR_RHYTHM("PART RHYTHM"), //
+		BASS("PART BASS"), //
+		KEYS("PART KEYS"), //
+		VOCALS("PART VOCALS"), //
+		EVENTS("EVENTS"), //
+		TEMPO("TEMPO"), //
+		UNKNOWN("");
 
 		public static TrackType from(final String s) {
 			if (s == null) {
 				return UNKNOWN;
 			}
-			switch (s) {
-			case "EVENTS":
-				return EVENTS;
-			case "PART GUITAR":
+
+			for (final TrackType type : values()) {
+				if (type.partName.equals(s)) {
+					return type;
+				}
+			}
+
+			return UNKNOWN;
+		}
+
+		public static TrackType fromInstrumentType(final InstrumentType instrumentType) {
+			switch (instrumentType) {
+			case GUITAR:
 				return GUITAR;
-			case "PART GUITAR COOP":
+			case GUITAR_COOP:
 				return GUITAR_COOP;
-			case "PART RHYTHM":
+			case GUITAR_RHYTHM:
 				return GUITAR_RHYTHM;
-			case "PART BASS":
+			case BASS:
 				return BASS;
-			case "PART KEYS":
+			case KEYS:
 				return KEYS;
-			case "PART VOCALS":
-				return VOCALS;
 			default:
-				return UNKNOWN;
+				return null;
 			}
 		}
 
+		public final String partName;
+
+		private TrackType(final String partName) {
+			this.partName = partName;
+		}
 	}
 
 	public final TrackType type;

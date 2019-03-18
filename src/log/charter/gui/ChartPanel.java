@@ -92,8 +92,8 @@ public class ChartPanel extends JPanel {
 	private static final long serialVersionUID = -3439446235287039031L;
 
 	public static final int sectionNamesY = 10;
-	public static final int spY = 30;
-	public static final int tapY = 35;
+	public static final int spY = 60;
+	public static final int tapY = 65;
 	public static final int textY = 50;
 	public static final int lane0Y = 100;
 	public static final int laneDistY = 50;
@@ -143,6 +143,10 @@ public class ChartPanel extends JPanel {
 
 	public static boolean isInNotes(final int y) {
 		return (y >= (lane0Y - (laneDistY / 2))) && (y <= (lane0Y + ((laneDistY * 9) / 2)));
+	}
+
+	public static boolean isInTempos(final int y) {
+		return (y >= tempoMarkerY1) && (y < (ChartPanel.lane0Y - (ChartPanel.laneDistY / 2)));
 	}
 
 	public static int yToLane(final double y) {
@@ -220,7 +224,10 @@ public class ChartPanel extends JPanel {
 					if (x >= -100) {
 						g.setColor(beatInMeasure == 0 ? MAIN_BEAT_COLOR : SECONDARY_BEAT_COLOR);
 						g.drawLine(x, tempoMarkerY1, x, tempoMarkerY2);
-						g.drawString("" + id, x + 3, tempoMarkerY1 + 10);
+						g.drawString("" + id, x + 3, tempoMarkerY1 + 8);
+						if (id == tmp.id) {
+							g.drawString("" + tmp.beats, x + 3, tempoMarkerY1 + 21);
+						}
 						final String sectionName = data.s.sections.get(id);
 						if (sectionName != null) {
 							g.setColor(TEXT_COLOR);
@@ -509,7 +516,7 @@ public class ChartPanel extends JPanel {
 	}
 
 	private void drawSpecial(final Graphics g) {
-		if (data.vocalsEditing) {// TODO draw special for vocals editing
+		if (data.vocalsEditing) {
 			final IdOrPos idOrPos = data.findClosestVocalIdOrPosForX(data.mx);
 			final int x = data.timeToX(idOrPos.isId() ? data.s.v.lyrics.get(idOrPos.id).pos : idOrPos.pos);
 			int xLength = idOrPos.isId() ? data.timeToXLength(data.s.v.lyrics.get(idOrPos.id).length) - 1 : 10;

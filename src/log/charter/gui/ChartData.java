@@ -233,7 +233,7 @@ public class ChartData {
 			}
 			if ((e.pos == start) && ((e.pos + e.length) == end)) {
 				events.remove(id);
-				break;
+				return;
 			}
 			events.remove(id);
 		}
@@ -361,6 +361,9 @@ public class ChartData {
 			final List<Note> diffNotes = currentInstrument.notes.get(diff);
 			for (int i = 0; i < diffNotes.size(); i++) {
 				final Note n = diffNotes.get(i);
+				if (currentInstrument.tap.size() == 0) {
+					n.tap = false;
+				}
 				for (final Event e : currentInstrument.tap) {
 					final boolean newTap = (n.pos >= e.pos) && (n.pos <= (e.pos + e.length));
 					if (newTap != n.tap) {
@@ -371,6 +374,15 @@ public class ChartData {
 			}
 		}
 		addUndo(new UndoGroup(undoEvents));
+	}
+
+	public void changeTempoBeatsInMeasure(final Tempo tmp, final boolean isNew, final int beats) {
+		if (isNew) {
+			addUndo(new TempoAdd(tmp));
+		} else {
+			addUndo(new TempoChange(tmp));
+		}
+		tmp.beats = beats;
 	}
 
 	public void clear() {

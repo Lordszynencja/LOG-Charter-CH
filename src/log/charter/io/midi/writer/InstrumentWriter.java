@@ -11,6 +11,7 @@ import javax.sound.midi.ShortMessage;
 import javax.sound.midi.SysexMessage;
 import javax.sound.midi.Track;
 
+import log.charter.io.midi.MidTrack.TrackType;
 import log.charter.song.Event;
 import log.charter.song.Instrument;
 import log.charter.song.Instrument.InstrumentType;
@@ -31,7 +32,7 @@ public class InstrumentWriter {
 			throws InvalidMidiDataException {
 		debug("Writing " + type);
 
-		final byte[] bytes = "PART GUITAR".getBytes();
+		final byte[] bytes = TrackType.fromInstrumentType(type).partName.getBytes();
 		final MetaMessage msg = new MetaMessage();
 		msg.setMessage(3, bytes, bytes.length);
 		track.add(new MidiEvent(msg, 0));

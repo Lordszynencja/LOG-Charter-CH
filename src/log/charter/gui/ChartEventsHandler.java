@@ -1,5 +1,6 @@
 package log.charter.gui;
 
+import static log.charter.gui.ChartPanel.isInTempos;
 import static log.charter.io.Logger.error;
 
 import java.awt.Component;
@@ -284,58 +285,31 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 			data.drawAudio = !data.drawAudio;
 			break;
 		case KeyEvent.VK_1:
-			if (gPressed) {
-				data.gridSize = 1;
-				data.useGrid = true;
-			}
+			numberPressed(1);
 			break;
 		case KeyEvent.VK_2:
-			if (gPressed) {
-				data.gridSize = 2;
-				data.useGrid = true;
-			}
+			numberPressed(2);
 			break;
 		case KeyEvent.VK_3:
-			if (gPressed) {
-				data.gridSize = 3;
-				data.useGrid = true;
-			}
+			numberPressed(3);
 			break;
 		case KeyEvent.VK_4:
-			if (gPressed) {
-				data.gridSize = 4;
-				data.useGrid = true;
-			}
+			numberPressed(4);
 			break;
 		case KeyEvent.VK_5:
-			if (gPressed) {
-				data.gridSize = 5;
-				data.useGrid = true;
-			}
+			numberPressed(5);
 			break;
 		case KeyEvent.VK_6:
-			if (gPressed) {
-				data.gridSize = 6;
-				data.useGrid = true;
-			}
+			numberPressed(6);
 			break;
 		case KeyEvent.VK_7:
-			if (gPressed) {
-				data.gridSize = 7;
-				data.useGrid = true;
-			}
+			numberPressed(7);
 			break;
 		case KeyEvent.VK_8:
-			if (gPressed) {
-				data.gridSize = 8;
-				data.useGrid = true;
-			}
+			numberPressed(8);
 			break;
 		case KeyEvent.VK_9:
-			if (gPressed) {
-				data.gridSize = 9;
-				data.useGrid = true;
-			}
+			numberPressed(9);
 			break;
 		case KeyEvent.VK_A:
 			if (ctrl) {
@@ -380,6 +354,15 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 				}
 			}
 			break;
+		case KeyEvent.VK_L:
+			if (data.vocalsEditing) {
+				if (ctrl) {
+					data.changeLyricLines();
+				} else {
+					// TODO vocals editing popup
+				}
+			}
+			break;
 		case KeyEvent.VK_M:
 			metronome = !metronome;
 			break;
@@ -409,16 +392,16 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 			}
 			break;
 		case KeyEvent.VK_T:
-			if (!data.vocalsEditing && (data.currentInstrument.type != InstrumentType.KEYS)) {
-				if (ctrl && shift) {
+			if (data.vocalsEditing) {
+				data.toggleSelectedLyricToneless();
+			} else if (data.currentInstrument.type != InstrumentType.KEYS) {
+				if (ctrl) {
 					data.changeTapSections();
 				} else if ((data.my >= (ChartPanel.lane0Y - (ChartPanel.laneDistY / 2)))
 						&& (data.my <= (ChartPanel.lane0Y + ((ChartPanel.laneDistY * 9) / 2)))) {
 					data.deselect();
 					data.toggleNote(data.findClosestIdOrPosForX(data.mx), 0);
 				}
-			} else if (data.vocalsEditing) {
-				data.toggleSelectedLyricToneless();
 			}
 			break;
 		case KeyEvent.VK_V:
@@ -576,16 +559,14 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 		if (e.getButton() == MouseEvent.BUTTON1) {
 			data.mousePressX = -1;
 			data.mousePressY = -1;
-			if (y < ChartPanel.spY) {
-				return;
-			} else if (y < (ChartPanel.lane0Y - (ChartPanel.laneDistY / 2))) {
+			if (ChartPanel.isInTempos(y)) {
 				final Object[] tempoData = data.s.tempoMap.findOrCreateClosestTempo(data.xToTime(x));
 				if (tempoData != null) {
 					data.startTempoDrag((Tempo) tempoData[0], (Tempo) tempoData[1], (Tempo) tempoData[2],
 							(boolean) tempoData[3]);
 				}
 				return;
-			} else if (y < (ChartPanel.lane0Y + ((ChartPanel.laneDistY * 9) / 2))) {
+			} else if (ChartPanel.isInNotes(y)) {
 				stopMusic();
 				final IdOrPos idOrPos = data.vocalsEditing ? data.findClosestVocalIdOrPosForX(x)
 						: data.findClosestIdOrPosForX(x);
@@ -734,6 +715,18 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 			data.setSong(songDir, new Song(), new IniData(), musicData);
 			data.ini.charter = Config.charter;
 			save();
+		}
+	}
+
+	private void numberPressed(final int num) {
+		if (gPressed) {
+			data.gridSize = num;
+			data.useGrid = true;
+		} else if (isInTempos(data.my)) {
+			final Object[] tempoData = data.s.tempoMap.findOrCreateClosestTempo(data.xToTime(data.mx));
+			if (tempoData != null) {
+				data.changeTempoBeatsInMeasure((Tempo) tempoData[1], (boolean) tempoData[3], num);
+			}
 		}
 	}
 

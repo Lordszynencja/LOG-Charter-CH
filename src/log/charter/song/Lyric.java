@@ -3,7 +3,7 @@ package log.charter.song;
 public class Lyric extends Event {
 	public int tone;
 	public String lyric;
-	public boolean noTone = false;
+	public boolean toneless = false;
 	public boolean wordPart = false;
 	public boolean connected = false;
 
@@ -13,12 +13,12 @@ public class Lyric extends Event {
 		lyric = null;
 	}
 
-	public Lyric(final double pos, final int tone, final String lyric, final boolean noTone, final boolean wordPart,
+	public Lyric(final double pos, final int tone, final String lyric, final boolean toneless, final boolean wordPart,
 			final boolean connected) {
 		super(pos);
 		this.tone = tone;
 		this.lyric = lyric;
-		this.noTone = noTone;
+		this.toneless = toneless;
 		this.wordPart = wordPart;
 		this.connected = connected;
 	}
@@ -33,7 +33,7 @@ public class Lyric extends Event {
 		super(l);
 		tone = l.tone;
 		lyric = l.lyric;
-		noTone = l.noTone;
+		toneless = l.toneless;
 		wordPart = l.wordPart;
 		connected = l.connected;
 	}

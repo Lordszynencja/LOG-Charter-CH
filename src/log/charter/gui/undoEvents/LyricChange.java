@@ -10,7 +10,7 @@ public class LyricChange implements UndoEvent {
 	private final double length;
 	private final int tone;
 
-	private final boolean noTone;
+	private final boolean toneless;
 	private final boolean wordPart;
 	private final boolean connected;
 
@@ -21,7 +21,7 @@ public class LyricChange implements UndoEvent {
 		length = l.length;
 		tone = l.tone;
 
-		noTone = l.noTone;
+		toneless = l.toneless;
 		wordPart = l.wordPart;
 		connected = l.connected;
 	}
@@ -35,7 +35,7 @@ public class LyricChange implements UndoEvent {
 		l.length = length;
 		l.tone = tone;
 
-		l.noTone = noTone;
+		l.toneless = toneless;
 		l.wordPart = wordPart;
 		l.connected = connected;
 

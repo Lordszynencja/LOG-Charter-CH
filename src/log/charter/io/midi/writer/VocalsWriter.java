@@ -45,8 +45,8 @@ public class VocalsWriter {
 		}
 
 		for (final Lyric l : vocals.lyrics) {
-			addText(l.pos, (l.connected ? "+" : "") + l.lyric + (l.wordPart ? "-" : "") + (l.noTone ? "#" : ""), track);
-			addNote(l.noTone ? 50 : l.tone, l.pos, l.pos + l.length, track);
+			addText(l.pos, (l.connected ? "+" : "") + l.lyric + (l.wordPart ? "-" : "") + (l.toneless ? "#" : ""), track);
+			addNote(l.toneless ? 50 : l.tone, l.pos, l.pos + l.length, track);
 		}
 
 		debug("Writing vocals finished");

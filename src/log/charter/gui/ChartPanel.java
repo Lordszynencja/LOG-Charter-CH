@@ -385,7 +385,7 @@ public class ChartPanel extends JPanel {
 					break;
 				}
 				if ((x + length) > 0) {
-					(l.noTone ? tonelessNotes : notes).addPositions(x, y, length, 8);
+					(l.toneless ? tonelessNotes : notes).addPositions(x, y, length, 8);
 				}
 				if (l.connected && (i > 0)) {
 					final Lyric prev = lyrics.get(i - 1);

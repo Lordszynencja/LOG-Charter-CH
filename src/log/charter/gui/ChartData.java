@@ -1,6 +1,7 @@
 package log.charter.gui;
 
 import static java.lang.Math.abs;
+import static java.lang.System.arraycopy;
 
 import java.awt.HeadlessException;
 import java.awt.Toolkit;
@@ -29,6 +30,7 @@ import log.charter.gui.undoEvents.TempoAdd;
 import log.charter.gui.undoEvents.TempoChange;
 import log.charter.gui.undoEvents.UndoEvent;
 import log.charter.gui.undoEvents.UndoGroup;
+import log.charter.io.Logger;
 import log.charter.song.Event;
 import log.charter.song.IniData;
 import log.charter.song.Instrument;
@@ -88,6 +90,25 @@ public class ChartData {
 				(byte) ((l >> 56) & 255) };
 	}
 
+	private static byte[] joinList(final List<byte[]> list) {
+		int length = 0;
+		for (final byte[] b : list) {
+			length += b.length + 2;
+		}
+
+		final byte[] bytes = new byte[length];
+		int a = 0;
+		for (final byte[] b : list) {
+			bytes[a] = (byte) (b.length & 255);
+			bytes[a + 1] = (byte) ((b.length >> 8) & 255);
+
+			System.arraycopy(b, 0, bytes, a + 2, b.length);
+			a += b.length + 2;
+		}
+
+		return bytes;
+	}
+
 	public static List<Double> removePostionsCloseToNotes(final List<Double> positions, final List<Note> notes) {
 		final int posSize = positions.size();
 		final List<Double> newPositions = new ArrayList<>(posSize);
@@ -137,18 +158,31 @@ public class ChartData {
 		return newPositions;
 	}
 
-	public String path = Config.lastPath;
+	private static List<byte[]> splitToList(final byte[] bytes) {
+		int a = 0;
+		final List<byte[]> list = new ArrayList<>(bytes.length / 20);
+		while (a < bytes.length) {
+			final int length = (bytes[a] & 255) + ((bytes[a + 1] & 255) << 8);
+			a += 2;
 
+			list.add(Arrays.copyOfRange(bytes, a, a + length));
+			a += length;
+		}
+
+		return list;
+	}
+
+	public String path = Config.lastPath;
 	public boolean isEmpty = true;
 	public Song s = new Song();
+
 	public IniData ini = new IniData();
 	public MusicData music = new MusicData(new byte[0], 44100);
 	public Instrument currentInstrument = s.g;
-
 	public int currentDiff = 3;
 	public List<Note> currentNotes = s.g.notes.get(currentDiff);
-	public List<Integer> selectedNotes = new ArrayList<>();
 
+	public List<Integer> selectedNotes = new ArrayList<>();
 	public Integer lastSelectedNote = null;
 	public Tempo draggedTempoPrev = null;
 	public Tempo draggedTempo = null;
@@ -159,17 +193,17 @@ public class ChartData {
 	public int mx = -1;
 	public int my = -1;
 	public int t = 0;
-
 	public double nextT = 0;
 	public double zoom = 1;
 	public boolean drawAudio = false;
-	public boolean changed = false;
+
 	public int gridSize = 2;
 	public boolean useGrid = true;
 	public boolean vocalsEditing = false;
-	private final LinkedList<UndoEvent> undo = new LinkedList<>();
 
+	private final LinkedList<UndoEvent> undo = new LinkedList<>();
 	private final LinkedList<UndoEvent> redo = new LinkedList<>();
+
 	public ChartEventsHandler handler;
 
 	public ChartData() {
@@ -184,12 +218,12 @@ public class ChartData {
 		redo.clear();
 	}
 
-	public void addVocalNote(final double pos, final int tone, final String text, final boolean noTone,
+	public void addVocalNote(final double pos, final int tone, final String text, final boolean toneless,
 			final boolean wordPart, final boolean connected) {
 		final List<UndoEvent> undoEvents = new ArrayList<>();
 
 		deselect();
-		final Lyric l = new Lyric(pos, tone, text, noTone, wordPart, connected);
+		final Lyric l = new Lyric(pos, tone, text, toneless, wordPart, connected);
 		int insertPos = findFirstLyricAfterTime(pos);
 
 		if (insertPos == -1) {
@@ -408,30 +442,48 @@ public class ChartData {
 		t = 0;
 		nextT = 0;
 		drawAudio = false;
-		changed = false;
 		gridSize = 2;
 		useGrid = true;
 	}
 
-	public void copy() {// TODO vocals
-		final double firstNotePos = currentNotes.get(selectedNotes.get(0)).pos;
-		final byte[] copiedNotesData = new byte[(selectedNotes.size() * 18) + 5];
-		copiedNotesData[0] = 'n';
-		copiedNotesData[1] = 'o';
-		copiedNotesData[2] = 't';
-		copiedNotesData[3] = 'e';
-		copiedNotesData[4] = 's';
+	public void copy() {
+		final List<byte[]> list = new ArrayList<>(selectedNotes.size() + 1);
 
-		for (int i = 0; i < selectedNotes.size(); i++) {
-			final Note n = currentNotes.get(selectedNotes.get(i));
-			copiedNotesData[(18 * i) + 5] = (byte) n.notes;
-			copiedNotesData[(18 * i) + 6] = (byte) ((n.crazy ? 4 : 0) + (n.hopo ? 2 : 0) + (n.tap ? 1 : 0));
-			final double pos = n.pos - firstNotePos;
+		if (vocalsEditing) {
+			final double firstLyricPos = s.v.lyrics.get(selectedNotes.get(0)).pos;
+			list.add("lyrics".getBytes());
 
-			System.arraycopy(doubleToBytes(pos), 0, copiedNotesData, (18 * i) + 7, 8);
-			System.arraycopy(doubleToBytes(n.length), 0, copiedNotesData, (18 * i) + 15, 8);
+			for (final int id : selectedNotes) {
+				final Lyric l = s.v.lyrics.get(id);
+				final byte[] stringBytes = l.lyric.getBytes();
+				final byte[] lyricBytes = new byte[stringBytes.length + 19];
+				lyricBytes[0] = (byte) (l.tone & 255);
+				lyricBytes[1] = (byte) ((l.tone >> 8) & 255);
+				lyricBytes[2] = (byte) ((l.toneless ? 4 : 0) + (l.wordPart ? 2 : 0) + (l.connected ? 1 : 0));
+
+				arraycopy(doubleToBytes(l.pos - firstLyricPos), 0, lyricBytes, 3, 8);
+				arraycopy(doubleToBytes(l.length), 0, lyricBytes, 11, 8);
+				arraycopy(stringBytes, 0, lyricBytes, 19, stringBytes.length);
+
+				list.add(lyricBytes);
+			}
+		} else {
+			final double firstNotePos = currentNotes.get(selectedNotes.get(0)).pos;
+			list.add("notes".getBytes());
+
+			for (final int id : selectedNotes) {
+				final Note n = currentNotes.get(id);
+				final byte[] noteBytes = new byte[18];
+				noteBytes[0] = (byte) n.notes;
+				noteBytes[1] = (byte) ((n.crazy ? 4 : 0) + (n.hopo ? 2 : 0) + (n.tap ? 1 : 0));
+
+				arraycopy(doubleToBytes(n.pos - firstNotePos), 0, noteBytes, 2, 8);
+				arraycopy(doubleToBytes(n.length), 0, noteBytes, 10, 8);
+				list.add(noteBytes);
+			}
 		}
-		final DataHandler dataHandler = new DataHandler(copiedNotesData, "application/octet-stream");
+
+		final DataHandler dataHandler = new DataHandler(joinList(list), "application/octet-stream");
 		Toolkit.getDefaultToolkit().getSystemClipboard().setContents(dataHandler, null);
 	}
 
@@ -801,48 +853,100 @@ public class ChartData {
 				break;
 			}
 		}
-		if ((notesData == null) || (notesData.length < 5) || (((notesData.length - 5) % 18) != 0) || (notesData[0] != 'n')
-				|| (notesData[1] != 'o') || (notesData[2] != 't') || (notesData[3] != 'e') || (notesData[4] != 's')) {
-			return;
-		}
-		deselect();
-
-		final int n = (notesData.length - 5) / 18;
-		final List<UndoEvent> undoEvents = new ArrayList<>(n);
-		final double markerPos = nextT;
-		int noteId = findFirstNoteAfterTime(markerPos);
-		if (noteId < 0) {
-			noteId = currentNotes.size();
-		}
-		for (int i = 0; i < n; i++) {
-			final double pos = bytesToDouble(Arrays.copyOfRange(notesData, (18 * i) + 7, (18 * i) + 15));
-			final double length = bytesToDouble(Arrays.copyOfRange(notesData, (18 * i) + 15, (18 * i) + 23));
-			final Note note = new Note(markerPos + pos, notesData[(18 * i) + 5]);
-			note.length = length;
-			note.crazy = (notesData[(18 * i) + 6] & 4) > 0;
-			note.hopo = (notesData[(18 * i) + 6] & 2) > 0;
-			note.tap = (notesData[(18 * i) + 6] & 1) > 0;
-
-			while ((noteId < currentNotes.size()) && (currentNotes.get(noteId).pos < pos)) {
-				noteId++;
+		try {
+			final List<byte[]> list = splitToList(notesData);
+			final String name = new String(list.get(0));
+			final boolean notesPaste = "notes".equals(name);
+			final boolean lyricsPaste = "lyrics".equals(name);
+			if (!((notesPaste && !vocalsEditing) || (lyricsPaste && vocalsEditing))) {
+				return;
 			}
 
-			if (noteId < currentNotes.size()) {// is inside
-				if (currentNotes.get(noteId).pos != pos) {
-					undoEvents.add(new NoteAdd(noteId));
-					currentNotes.add(noteId, note);
-					fixNotesLength(note, noteId, undoEvents);
+			deselect();
+			final int n = list.size() - 1;
+			final List<UndoEvent> undoEvents = new ArrayList<>(n);
+			final double markerPos = nextT;
+
+			if (notesPaste) {
+				int noteId = findFirstNoteAfterTime(markerPos);
+				if (noteId < 0) {
+					noteId = currentNotes.size();
 				}
-			} else {// is last
-				undoEvents.add(new NoteAdd(noteId));
-				currentNotes.add(note);
-				fixNotesLength(note, noteId, undoEvents);
-			}
-			selectedNotes.add(noteId);
-			noteId++;
-		}
 
-		addUndo(new UndoGroup(undoEvents));
+				for (int i = 0; i < n; i++) {
+					final byte[] noteBytes = list.get(i + 1);
+					final double pos = bytesToDouble(Arrays.copyOfRange(noteBytes, 2, 10));
+					final double length = bytesToDouble(Arrays.copyOfRange(noteBytes, 10, 18));
+					final Note note = new Note(markerPos + pos, noteBytes[0]);
+					note.length = length;
+					note.crazy = (noteBytes[1] & 4) > 0;
+					note.hopo = (noteBytes[1] & 2) > 0;
+					note.tap = (noteBytes[1] & 1) > 0;
+
+					while ((noteId < currentNotes.size()) && (currentNotes.get(noteId).pos < pos)) {
+						noteId++;
+					}
+
+					if (noteId < currentNotes.size()) {// is inside
+						if (currentNotes.get(noteId).pos != pos) {
+							undoEvents.add(new NoteAdd(noteId));
+							currentNotes.add(noteId, note);
+							fixNotesLength(note, noteId, undoEvents);
+						}
+					} else {// is last
+						undoEvents.add(new NoteAdd(noteId));
+						currentNotes.add(note);
+						fixNotesLength(note, noteId, undoEvents);
+					}
+					selectedNotes.add(noteId);
+					noteId++;
+				}
+			} else if (lyricsPaste) {
+				int lyricId = findFirstLyricAfterTime(markerPos);
+				if (lyricId < 0) {
+					lyricId = s.v.lyrics.size();
+				}
+
+				for (int i = 0; i < n; i++) {
+					final byte[] lyricBytes = list.get(i + 1);
+					final double pos = bytesToDouble(Arrays.copyOfRange(lyricBytes, 3, 11));
+					final double length = bytesToDouble(Arrays.copyOfRange(lyricBytes, 11, 19));
+					final Lyric l = new Lyric(markerPos + pos, (lyricBytes[0] & 255) + ((lyricBytes[1] & 255) << 8));
+					l.length = length;
+					l.toneless = (lyricBytes[2] & 4) > 0;
+					l.wordPart = (lyricBytes[2] & 2) > 0;
+					l.connected = (lyricBytes[2] & 1) > 0;
+					l.lyric = new String(Arrays.copyOfRange(lyricBytes, 19, lyricBytes.length));
+
+					while ((lyricId < s.v.lyrics.size()) && (s.v.lyrics.get(lyricId).pos < pos)) {
+						lyricId++;
+					}
+
+					if (lyricId < s.v.lyrics.size()) {// is inside
+						if (s.v.lyrics.get(lyricId).pos != pos) {
+							undoEvents.add(new LyricAdd(lyricId));
+							s.v.lyrics.add(lyricId, l);
+							fixLyricLength(l, lyricId, s.v.lyrics.get(lyricId + 1), undoEvents);
+							if (lyricId > 0) {
+								fixLyricLength(s.v.lyrics.get(lyricId), lyricId - 1, l, undoEvents);
+							}
+						}
+					} else {// is last
+						undoEvents.add(new LyricAdd(lyricId));
+						s.v.lyrics.add(l);
+						if (lyricId > 0) {
+							fixLyricLength(s.v.lyrics.get(lyricId - 1), lyricId - 1, l, undoEvents);
+						}
+					}
+					selectedNotes.add(lyricId);
+					lyricId++;
+				}
+			}
+
+			addUndo(new UndoGroup(undoEvents));
+		} catch (final Exception e) {
+			Logger.error("Couldn't paste", e);
+		}
 	}
 
 	public void redo() {
@@ -1091,7 +1195,7 @@ public class ChartData {
 	public void toggleSelectedLyricToneless() {
 		for (final int id : selectedNotes) {
 			final Lyric l = s.v.lyrics.get(id);
-			l.noTone = !l.noTone;
+			l.toneless = !l.toneless;
 		}
 	}
 

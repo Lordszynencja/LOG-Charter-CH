@@ -6,6 +6,7 @@ import java.awt.event.ActionListener;
 import java.io.File;
 
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JComponent;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
@@ -17,7 +18,11 @@ import javax.swing.event.DocumentListener;
 
 public class ParamsPane extends JDialog {
 
-	protected static interface ValueSetter {
+	protected static interface BooleanValueSetter {
+		void setValue(boolean val);
+	}
+
+	protected static interface StringValueSetter {
 		void setValue(String val);
 	}
 
@@ -88,18 +93,35 @@ public class ParamsPane extends JDialog {
 	}
 
 	protected void addButtons(final int row, final ActionListener onSave) {
+		this.addButtons(row, onSave, e -> dispose());
+	}
+
+	protected void addButtons(final int row, final ActionListener onSave, final ActionListener onCancel) {
 		final JButton saveButton = new JButton("Save");
 		saveButton.addActionListener(onSave);
 		add(saveButton, 200, OPTIONS_USPACE + (row * OPTIONS_HEIGHT), 100, 25);
 		final JButton cancelButton = new JButton("Cancel");
-		cancelButton.addActionListener(e -> {
-			dispose();
-		});
+		cancelButton.addActionListener(onCancel);
 		add(cancelButton, 325, OPTIONS_USPACE + (row * OPTIONS_HEIGHT), 100, 25);
 	}
 
+	protected void addConfigCheckbox(final int id, final String name, final boolean val,
+			final BooleanValueSetter setter) {
+		final int y = OPTIONS_USPACE + (id * OPTIONS_HEIGHT);
+		final JLabel label = new JLabel(name, SwingConstants.LEFT);
+		add(label, OPTIONS_LSPACE, y, OPTIONS_LABEL_WIDTH, OPTIONS_HEIGHT);
+
+		final int fieldX = OPTIONS_LSPACE + OPTIONS_LABEL_WIDTH + 3;
+		final JCheckBox checkbox = new JCheckBox();
+		checkbox.setSelected(val);
+		checkbox.addActionListener(a -> setter.setValue(checkbox.isSelected()));
+
+		add(checkbox, fieldX, y, 20,
+				OPTIONS_HEIGHT);
+	}
+
 	protected void addConfigValue(final int id, final String name, final Object val,
-			final int inputLength, final ValueValidator validator, final ValueSetter setter) {
+			final int inputLength, final ValueValidator validator, final StringValueSetter setter) {
 		final int y = OPTIONS_USPACE + (id * OPTIONS_HEIGHT);
 		final JLabel label = new JLabel(name, SwingConstants.LEFT);
 		add(label, OPTIONS_LSPACE, y, OPTIONS_LABEL_WIDTH, OPTIONS_HEIGHT);

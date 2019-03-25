@@ -73,8 +73,8 @@ public class VocalsReader {
 			text = text.substring(1);
 		}
 
-		final boolean noTone = text.contains("#");
-		if (noTone) {
+		final boolean toneless = text.contains("#");
+		if (toneless) {
 			text = text.replaceFirst("#", "");
 		}
 
@@ -86,12 +86,12 @@ public class VocalsReader {
 		if (lyric == null) {
 			lyric = new Lyric(e.t, text);
 			lyric.connected = connected;
-			lyric.noTone = noTone;
+			lyric.toneless = toneless;
 			lyric.wordPart = wordPart;
 		} else {
 			lyric.lyric = text;
 			lyric.connected = connected;
-			lyric.noTone = noTone;
+			lyric.toneless = toneless;
 			lyric.wordPart = wordPart;
 			if (noteEnded) {
 				vocals.lyrics.add(lyric);

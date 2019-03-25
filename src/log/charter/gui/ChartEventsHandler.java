@@ -136,6 +136,10 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 		data.copyFrom(instrumentType, diff);
 	}
 
+	private void editVocalNote(final IdOrPos idOrPos) {// TODO
+		new LyricPane(frame, idOrPos);
+	}
+
 	public void exit() {
 		if (JOptionPane.YES_OPTION == JOptionPane.showConfirmDialog(frame, "Are you sure you want to exit?", "Exit",
 				JOptionPane.YES_NO_OPTION)) {
@@ -359,7 +363,9 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 				if (ctrl) {
 					data.changeLyricLines();
 				} else {
-					// TODO vocals editing popup
+					if (data.selectedNotes.size() == 1) {
+						editVocalNote(new IdOrPos(data.selectedNotes.get(0), -1));
+					}
 				}
 			}
 			break;
@@ -500,13 +506,7 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 				if (idOrPos.isId()) {
 					data.removeVocalNote(idOrPos.id);
 				} else {
-					// TODO show vocal edit
-					final int tone = 0;
-					final String text = "test";
-					final boolean noTone = true;
-					final boolean wordPart = false;
-					final boolean connected = false;
-					data.addVocalNote(idOrPos.pos, tone, text, noTone, wordPart, connected);
+					editVocalNote(idOrPos);
 				}
 			}
 		}
@@ -687,8 +687,7 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 			}
 			String folderName = songName.substring(0, songName.lastIndexOf('.'));
 
-			folderName = JOptionPane.showInputDialog(frame, "Choose folder name",
-					folderName);
+			folderName = JOptionPane.showInputDialog(frame, "Choose folder name", folderName);
 			if (folderName == null) {
 				return;
 			}

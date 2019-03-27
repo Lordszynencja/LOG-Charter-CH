@@ -201,6 +201,8 @@ public class ChartData {
 	public boolean useGrid = true;
 	public boolean vocalsEditing = false;
 
+	public boolean changed = false;
+
 	private final LinkedList<UndoEvent> undo = new LinkedList<>();
 	private final LinkedList<UndoEvent> redo = new LinkedList<>();
 
@@ -347,11 +349,7 @@ public class ChartData {
 			} else {
 				note.length -= 100 * grids;
 			}
-			if ((id + 1) < currentNotes.size()) {
-				fixNoteLength(note, id, currentNotes.get(id + 1), undoEvents);
-			} else {
-				fixNoteLength(note, id, null, undoEvents);
-			}
+			fixNotesLength(note, id, undoEvents);
 		}
 	}
 
@@ -751,8 +749,9 @@ public class ChartData {
 		if (n.length < Config.minTailLength) {
 			n.length = 0;
 		}
-		if ((next != null) && (next.pos < (Config.minLongNoteDistance + n.pos + n.length))//
-				&& (!next.crazy || ((next.notes & n.notes) > 0) || (next.notes == 0) || (n.notes == 0))) {
+		if ((((next != null)//
+				&& (next.pos < (Config.minLongNoteDistance + n.pos + n.length))//
+				&& (!n.crazy || ((next.notes & n.notes) > 0))) || (next.notes == 0) || (n.notes == 0))) {
 			events.add(new NoteChange(nId, n));
 			n.length = next.pos - Config.minLongNoteDistance - n.pos;
 		}
@@ -1147,6 +1146,7 @@ public class ChartData {
 		} else if (color == 0) {
 			n.notes = 0;
 			undoEvents.add(new NoteChange(id, n));
+			fixNotesLength(n, id, undoEvents);
 			if (!selectedNotes.contains(id)) {
 				selectedNotes.add(id);
 				selectedNotes.sort(null);
@@ -1154,11 +1154,25 @@ public class ChartData {
 		} else {
 			undoEvents.add(new NoteChange(id, n));
 			n.notes ^= color;
+			fixNotesLength(n, id, undoEvents);
 			if (!selectedNotes.contains(id)) {
 				selectedNotes.add(id);
 				selectedNotes.sort(null);
 			}
 		}
+	}
+
+	public void toggleSelectedCrazy() {
+		final List<UndoEvent> undoEvents = new ArrayList<>(selectedNotes.size());
+
+		for (final int id : selectedNotes) {
+			final Note n = currentNotes.get(id);
+			undoEvents.add(new NoteChange(id, n));
+			n.crazy = !n.crazy;
+			fixNotesLength(n, id, undoEvents);
+		}
+
+		addUndo(new UndoGroup(undoEvents));
 	}
 
 	public void toggleSelectedHopo(final boolean ctrl, final double maxDistance) {

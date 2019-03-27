@@ -16,6 +16,7 @@ import java.awt.event.MouseWheelEvent;
 import java.awt.event.MouseWheelListener;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowFocusListener;
+import java.awt.event.WindowListener;
 import java.io.File;
 import java.util.List;
 
@@ -40,7 +41,7 @@ import log.charter.sound.SoundPlayer.Player;
 import log.charter.util.RW;
 
 public class ChartEventsHandler implements KeyListener, MouseListener, MouseMotionListener, MouseWheelListener,
-		WindowFocusListener, ComponentListener {
+		WindowFocusListener, ComponentListener, WindowListener {
 	public static final int FL = 10;
 
 	private static final MusicData tick = MusicData.generateSound(4000, 0.01, 1);
@@ -109,6 +110,22 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 		c.repaint();
 	}
 
+	private boolean checkChanged() {
+		if (data.changed) {
+			final int result = JOptionPane.showConfirmDialog(frame, "You have unsaved changes. Do you want to save?",
+					"Unsaved changes", JOptionPane.YES_NO_CANCEL_OPTION);
+
+			if (result == JOptionPane.YES_OPTION) {
+				save();
+				return true;
+			} else if (result == JOptionPane.NO_OPTION) {
+				return true;
+			}
+			return false;
+		}
+		return true;
+	}
+
 	@Override
 	public void componentHidden(final ComponentEvent e) {
 	}
@@ -143,6 +160,9 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 	public void exit() {
 		if (JOptionPane.YES_OPTION == JOptionPane.showConfirmDialog(frame, "Are you sure you want to exit?", "Exit",
 				JOptionPane.YES_NO_OPTION)) {
+			if (!checkChanged()) {
+				return;
+			}
 			frame.dispose();
 			System.exit(0);
 		}
@@ -239,6 +259,7 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 			break;
 		case KeyEvent.VK_DELETE:
 			data.deleteSelected();
+			setChanged();
 			break;
 		case KeyEvent.VK_UP:
 			if (!data.vocalsEditing) {
@@ -247,6 +268,7 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 				} else {
 					data.moveSelectedDownWithoutOpen();
 				}
+				setChanged();
 			}
 			break;
 		case KeyEvent.VK_DOWN:
@@ -256,6 +278,7 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 				} else {
 					data.moveSelectedUpWithoutOpen();
 				}
+				setChanged();
 			}
 			break;
 		case KeyEvent.VK_LEFT:
@@ -334,6 +357,7 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 				} else {
 					data.snapSelectedNotes();
 				}
+				setChanged();
 			}
 			break;
 		case KeyEvent.VK_G:
@@ -356,6 +380,7 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 				} else {
 					data.toggleSelectedHopo(false, -1);
 				}
+				setChanged();
 			}
 			break;
 		case KeyEvent.VK_L:
@@ -367,6 +392,7 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 						editVocalNote(new IdOrPos(data.selectedNotes.get(0), -1));
 					}
 				}
+				setChanged();
 			}
 			break;
 		case KeyEvent.VK_M:
@@ -385,11 +411,13 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 		case KeyEvent.VK_Q:
 			if (data.vocalsEditing) {
 				data.toggleSelectedLyricConnected();
+				setChanged();
 			}
 			break;
 		case KeyEvent.VK_R:
 			if (e.isControlDown()) {
 				data.redo();
+				setChanged();
 			}
 			break;
 		case KeyEvent.VK_S:
@@ -400,6 +428,7 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 		case KeyEvent.VK_T:
 			if (data.vocalsEditing) {
 				data.toggleSelectedLyricToneless();
+				setChanged();
 			} else if (data.currentInstrument.type != InstrumentType.KEYS) {
 				if (ctrl) {
 					data.changeTapSections();
@@ -408,12 +437,19 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 					data.deselect();
 					data.toggleNote(data.findClosestIdOrPosForX(data.mx), 0);
 				}
+				setChanged();
+			}
+			break;
+		case KeyEvent.VK_U:
+			if (!data.vocalsEditing) {
+				data.toggleSelectedCrazy();
 			}
 			break;
 		case KeyEvent.VK_V:
 			if (ctrl) {
 				try {
 					data.paste();
+					setChanged();
 				} catch (final Exception exception) {
 					Logger.error("Couldn't paste notes", exception);
 				}
@@ -422,18 +458,22 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 		case KeyEvent.VK_W:
 			if (!data.vocalsEditing && ctrl) {
 				data.changeSPSections();
+				setChanged();
 			} else if (data.vocalsEditing) {
 				data.toggleSelectedVocalsWordPart();
+				setChanged();
 			}
 			break;
 		case KeyEvent.VK_Z:
 			if (ctrl) {
 				data.undo();
+				setChanged();
 			}
 			break;
 		case KeyEvent.VK_Y:
 			if (!data.vocalsEditing && ctrl) {
 				data.changeSoloSections();
+				setChanged();
 			}
 			break;
 		case KeyEvent.VK_COMMA:
@@ -508,6 +548,7 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 				} else {
 					editVocalNote(idOrPos);
 				}
+				setChanged();
 			}
 		}
 	}
@@ -637,10 +678,12 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 		case MouseEvent.BUTTON1:
 			if (data.draggedTempo != null) {
 				data.stopTempoDrag();
+				setChanged();
 			}
 			break;
 		case MouseEvent.BUTTON3:
 			data.endNoteAdding();
+			setChanged();
 			break;
 		}
 	}
@@ -656,11 +699,16 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 			} else {
 				data.changeNoteLength(rot);
 			}
+			setChanged();
 		}
 		e.consume();
 	}
 
 	public void newSong() {
+		if (!checkChanged()) {
+			return;
+		}
+
 		final JFileChooser chooser = new JFileChooser(new File(Config.musicPath));
 		chooser.setFileFilter(new FileFilter() {
 
@@ -725,11 +773,16 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 			final Object[] tempoData = data.s.tempoMap.findOrCreateClosestTempo(data.xToTime(data.mx));
 			if (tempoData != null) {
 				data.changeTempoBeatsInMeasure((Tempo) tempoData[1], (boolean) tempoData[3], num);
+				setChanged();
 			}
 		}
 	}
 
 	public void open() {
+		if (!checkChanged()) {
+			return;
+		}
+
 		final JFileChooser chooser = new JFileChooser(new File(data.path));
 		chooser.setFileFilter(new FileFilter() {
 
@@ -806,6 +859,8 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 		// TODO save chart, lcf notes
 		IniWriter.write(data.path + "/song.ini", data.ini);
 		Config.save();
+		data.changed = false;
+		frame.setTitle(CharterFrame.TITLE);
 	}
 
 	public void saveAs() {
@@ -814,6 +869,13 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 		}
 		Logger.error("saveAs not implemented!");// TODO
 		Config.save();
+		// data.changed=false;
+		// frame.setTitle(CharterFrame.TITLE);
+	}
+
+	private void setChanged() {
+		data.changed = true;
+		frame.setTitle(CharterFrame.TITLE_UNSAVED);
 	}
 
 	public void setNextTime(final double t) {
@@ -848,7 +910,32 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 	}
 
 	@Override
+	public void windowActivated(final WindowEvent e) {
+	}
+
+	@Override
+	public void windowClosed(final WindowEvent e) {
+	}
+
+	@Override
+	public void windowClosing(final WindowEvent e) {
+		exit();
+	}
+
+	@Override
+	public void windowDeactivated(final WindowEvent e) {
+	}
+
+	@Override
+	public void windowDeiconified(final WindowEvent e) {
+	}
+
+	@Override
 	public void windowGainedFocus(final WindowEvent e) {
+	}
+
+	@Override
+	public void windowIconified(final WindowEvent e) {
 	}
 
 	@Override
@@ -863,6 +950,10 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 		data.mousePressY = -1;
 		data.mx = -1;
 		data.my = -1;
+	}
+
+	@Override
+	public void windowOpened(final WindowEvent e) {
 	}
 
 }

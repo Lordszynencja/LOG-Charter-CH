@@ -123,6 +123,7 @@ public class ChartPanel extends JPanel {
 	private static final Color LYRIC_NO_TONE_COLOR = new Color(128, 128, 0);
 	private static final Color LYRIC_CONNECTION_COLOR = new Color(255, 128, 255);
 	private static final Color LYRIC_COLOR = new Color(255, 0, 255);
+	private static final Color CRAZY_COLOR = new Color(0, 0, 0);
 	private static final Color HOPO_COLOR = new Color(255, 255, 255);
 	private static final Color OPEN_NOTE_COLOR = new Color(230, 20, 230);
 	private static final Color OPEN_NOTE_TAIL_COLOR = new Color(200, 20, 200);
@@ -270,6 +271,7 @@ public class ChartPanel extends JPanel {
 				noteTails[i] = new FillList();
 				notes[i] = new FillList();
 			}
+			final FillList crazy = new FillList();
 			final FillList hopos = new FillList();
 
 			for (final Note n : data.currentNotes) {
@@ -297,6 +299,10 @@ public class ChartPanel extends JPanel {
 									if (n.hopo) {
 										hopos.addPositions(x - (noteW / 4), y - (noteH / 4), noteW / 2, noteH / 2);
 									}
+									if (n.crazy) {
+										crazy.addPositions(x - (noteW / 4), y - (noteH / 3) - 1, noteW / 2, ((3 * noteH) / 4)
+												+ 1);
+									}
 								}
 							}
 						}
@@ -309,7 +315,7 @@ public class ChartPanel extends JPanel {
 				noteTails[i].draw(g, NOTE_TAIL_COLORS[i]);
 				notes[i].draw(g, NOTE_COLORS[i]);
 			}
-
+			crazy.draw(g, CRAZY_COLOR);
 			hopos.draw(g, HOPO_COLOR);
 		}
 	}

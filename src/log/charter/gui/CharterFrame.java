@@ -9,15 +9,18 @@ import javax.swing.JScrollBar;
 public class CharterFrame extends JFrame {
 	private static final long serialVersionUID = 3603305480386377813L;
 
+	public static final String TITLE = "LOG Charter";
+	public static final String TITLE_UNSAVED = "LOG Charter*";
+
 	public final ChartEventsHandler handler;
 	public final ChartPanel chartPanel;
 	public final JScrollBar scrollBar;
 
 	public CharterFrame() {
-		super("LOG Charter");
+		super(TITLE);
 		setLayout(null);
 		handler = new ChartEventsHandler(this);
-		setDefaultCloseOperation(EXIT_ON_CLOSE);
+		setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
 		setLocationByPlatform(true);
 		setVisible(true);
 		setSize(Config.windowWidth, Config.windowHeight);
@@ -31,6 +34,7 @@ public class CharterFrame extends JFrame {
 		addKeyListener(handler);
 		addMouseWheelListener(handler);
 		addWindowFocusListener(handler);
+		addWindowListener(handler);
 		addComponentListener(handler);
 		validate();
 	}

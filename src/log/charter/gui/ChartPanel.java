@@ -9,6 +9,7 @@ import java.util.List;
 import javax.swing.JPanel;
 
 import log.charter.gui.ChartData.IdOrPos;
+import log.charter.gui.handlers.CharterFrameMouseMotionListener;
 import log.charter.song.Event;
 import log.charter.song.Instrument.InstrumentType;
 import log.charter.song.Lyric;
@@ -160,7 +161,7 @@ public class ChartPanel extends JPanel {
 		super();
 		data = handler.data;
 		addMouseListener(handler);
-		addMouseMotionListener(handler);
+		addMouseMotionListener(new CharterFrameMouseMotionListener(data));
 	}
 
 	private void drawAudio(final Graphics g) {
@@ -536,7 +537,7 @@ public class ChartPanel extends JPanel {
 		} else if (ChartPanel.isInNotes(data.my)) {
 			final DrawList highlighted = new DrawList();
 			g.setColor(Color.RED);
-			if (ChartPanel.isInNotes(data.mousePressY)) {
+			if (data.isNoteAdd) {
 				int x0, x1;
 				int y0, y1;
 				if (data.mx < data.mousePressX) {

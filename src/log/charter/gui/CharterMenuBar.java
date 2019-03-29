@@ -46,10 +46,10 @@ public class CharterMenuBar extends JMenuBar {
 
 	private JMenu prepareFileMenu() {
 		final JMenu menu = new JMenu("File");
-		menu.add(createItem("New", e -> handler.newSong()));
-		menu.add(createItem("Open", e -> handler.open()));
-		menu.add(createItem("Save", e -> handler.save()));
-		menu.add(createItem("Save as...", e -> handler.saveAs()));
+		menu.add(createItem("New", e -> handler.songFileHandler.newSong()));
+		menu.add(createItem("Open", e -> handler.songFileHandler.open()));
+		menu.add(createItem("Save", e -> handler.songFileHandler.save()));
+		menu.add(createItem("Save as... (TODO currently only saves)", e -> handler.songFileHandler.saveAs()));
 		menu.add(createItem("Exit", e -> handler.exit()));
 
 		return menu;

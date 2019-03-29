@@ -6,6 +6,11 @@ import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JScrollBar;
 
+import log.charter.gui.handlers.CharterFrameComponentListener;
+import log.charter.gui.handlers.CharterFrameMouseWheelListener;
+import log.charter.gui.handlers.CharterFrameWindowFocusListener;
+import log.charter.gui.handlers.CharterFrameWindowListener;
+
 public class CharterFrame extends JFrame {
 	private static final long serialVersionUID = 3603305480386377813L;
 
@@ -32,10 +37,10 @@ public class CharterFrame extends JFrame {
 		add(scrollBar, ChartPanel.HEIGHT, Config.windowWidth, 20);
 
 		addKeyListener(handler);
-		addMouseWheelListener(handler);
-		addWindowFocusListener(handler);
-		addWindowListener(handler);
-		addComponentListener(handler);
+		addMouseWheelListener(new CharterFrameMouseWheelListener(handler));
+		addWindowFocusListener(new CharterFrameWindowFocusListener(handler));
+		addWindowListener(new CharterFrameWindowListener(handler));
+		addComponentListener(new CharterFrameComponentListener(this));
 		validate();
 	}
 

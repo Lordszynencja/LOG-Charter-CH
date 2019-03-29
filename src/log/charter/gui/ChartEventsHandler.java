@@ -1,47 +1,26 @@
 package log.charter.gui;
 
 import static log.charter.gui.ChartPanel.isInTempos;
-import static log.charter.io.Logger.error;
 
-import java.awt.Component;
-import java.awt.Dimension;
-import java.awt.event.ComponentEvent;
-import java.awt.event.ComponentListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
-import java.awt.event.MouseMotionListener;
-import java.awt.event.MouseWheelEvent;
-import java.awt.event.MouseWheelListener;
-import java.awt.event.WindowEvent;
-import java.awt.event.WindowFocusListener;
-import java.awt.event.WindowListener;
-import java.io.File;
 import java.util.List;
 
-import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
-import javax.swing.filechooser.FileFilter;
 
 import log.charter.gui.ChartData.IdOrPos;
-import log.charter.io.IniWriter;
+import log.charter.gui.handlers.SongFileHandler;
 import log.charter.io.Logger;
-import log.charter.io.midi.reader.MidiReader;
-import log.charter.io.midi.writer.MidiWriter;
 import log.charter.song.Event;
-import log.charter.song.IniData;
 import log.charter.song.Instrument.InstrumentType;
-import log.charter.song.Song;
 import log.charter.song.Tempo;
-import log.charter.song.TempoMap;
 import log.charter.sound.MusicData;
 import log.charter.sound.SoundPlayer;
 import log.charter.sound.SoundPlayer.Player;
-import log.charter.util.RW;
 
-public class ChartEventsHandler implements KeyListener, MouseListener, MouseMotionListener, MouseWheelListener,
-		WindowFocusListener, ComponentListener, WindowListener {
+public class ChartEventsHandler implements KeyListener, MouseListener {
 	public static final int FL = 10;
 
 	private static final MusicData tick = MusicData.generateSound(4000, 0.01, 1);
@@ -66,10 +45,13 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 	private boolean right = false;
 	private boolean gPressed = false;
 
+	public final SongFileHandler songFileHandler;
+
 	public ChartEventsHandler(final CharterFrame frame) {
 		this.frame = frame;
 		data = new ChartData();
 		data.handler = this;
+		songFileHandler = new SongFileHandler(this);
 
 		new Thread(() -> {
 			try {
@@ -98,25 +80,25 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 		}).start();
 	}
 
-	private void changeWidth(final Component c, final int w) {
-		final int y = c.getY();
-		final int h = c.getHeight();
-		final Dimension newScrollBarSize = new Dimension(Config.windowWidth, h);
-		c.setMinimumSize(newScrollBarSize);
-		c.setPreferredSize(newScrollBarSize);
-		c.setMaximumSize(newScrollBarSize);
-		c.setBounds(0, y, Config.windowWidth, h);
-		c.validate();
-		c.repaint();
+	public void cancelAllActions() {
+		data.mousePressX = -1;
+		data.mousePressY = -1;
+		data.draggedTempo = null;
+		data.draggedTempoNext = null;
+		data.draggedTempoPrev = null;
+		data.draggedTempoUndo = null;
+		data.isNoteDrag = false;
+		data.isNoteAdd = false;
+		stopMusic();
 	}
 
-	private boolean checkChanged() {
+	public boolean checkChanged() {
 		if (data.changed) {
 			final int result = JOptionPane.showConfirmDialog(frame, "You have unsaved changes. Do you want to save?",
 					"Unsaved changes", JOptionPane.YES_NO_CANCEL_OPTION);
 
 			if (result == JOptionPane.YES_OPTION) {
-				save();
+				songFileHandler.save();
 				return true;
 			} else if (result == JOptionPane.NO_OPTION) {
 				return true;
@@ -126,34 +108,34 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 		return true;
 	}
 
-	@Override
-	public void componentHidden(final ComponentEvent e) {
-	}
-
-	@Override
-	public void componentMoved(final ComponentEvent e) {
-		Config.windowPosX = e.getComponent().getX();
-		Config.windowPosY = e.getComponent().getY();
-	}
-
-	@Override
-	public void componentResized(final ComponentEvent e) {
-		Config.windowHeight = e.getComponent().getHeight();
-		Config.windowWidth = e.getComponent().getWidth();
-
-		changeWidth(frame.scrollBar, Config.windowWidth);
-		changeWidth(frame.chartPanel, Config.windowWidth);
-	}
-
-	@Override
-	public void componentShown(final ComponentEvent e) {
+	public void clearKeys() {
+		ctrl = false;
+		alt = false;
+		shift = false;
+		left = false;
+		right = false;
+		gPressed = false;
 	}
 
 	public void copyFrom(final InstrumentType instrumentType, final int diff) {
 		data.copyFrom(instrumentType, diff);
 	}
 
-	private void editVocalNote(final IdOrPos idOrPos) {// TODO
+	private void editSection(final int x) {
+		final int id = data.s.tempoMap.findBeatId(data.xToTime(x + 10));
+		final String newSectionName = JOptionPane.showInputDialog(frame, "Section name:", data.s.sections.get(id));
+		if (newSectionName == null) {
+			return;
+		}
+
+		if (newSectionName.trim().equals("")) {
+			data.s.sections.remove(id);
+		} else {
+			data.s.sections.put(id, newSectionName);
+		}
+	}
+
+	private void editVocalNote(final IdOrPos idOrPos) {
 		new LyricPane(frame, idOrPos);
 	}
 
@@ -195,6 +177,30 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 			final int speed = (FL * (shift ? 10 : 2)) / (ctrl ? 10 : 1);
 			setNextTime((data.nextT - (left ? speed : 0)) + (right ? speed : 0));
 		}
+	}
+
+	public boolean isAlt() {
+		return alt;
+	}
+
+	public boolean isCtrl() {
+		return ctrl;
+	}
+
+	public boolean isGPressed() {
+		return gPressed;
+	}
+
+	public boolean isLeft() {
+		return left;
+	}
+
+	public boolean isRight() {
+		return right;
+	}
+
+	public boolean isShift() {
+		return shift;
 	}
 
 	@Override
@@ -400,12 +406,12 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 			break;
 		case KeyEvent.VK_N:
 			if (e.isControlDown()) {
-				newSong();
+				songFileHandler.newSong();
 			}
 			break;
 		case KeyEvent.VK_O:
 			if (e.isControlDown()) {
-				open();
+				songFileHandler.open();
 			}
 			break;
 		case KeyEvent.VK_Q:
@@ -422,7 +428,7 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 			break;
 		case KeyEvent.VK_S:
 			if (e.isControlDown()) {
-				save();
+				songFileHandler.save();
 			}
 			break;
 		case KeyEvent.VK_T:
@@ -524,21 +530,14 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 
 	@Override
 	public void mouseClicked(final MouseEvent e) {
+		cancelAllActions();
 		final int x = e.getX();
 		final int y = e.getY();
 		if (e.getButton() == MouseEvent.BUTTON1) {
 			if ((y > (ChartPanel.sectionNamesY - 5)) && (y < ChartPanel.spY)) {
-				stopMusic();
-				final int id = data.s.tempoMap.findBeatId(data.xToTime(x + 10));
-				final String newSectionName = JOptionPane.showInputDialog(frame, "Section name:", data.s.sections.get(id));
-				if (newSectionName == null) {
-					return;
-				}
-				if (newSectionName.trim().equals("")) {
-					data.s.sections.remove(id);
-				} else {
-					data.s.sections.put(id, newSectionName);
-				}
+				editSection(x);
+			} else if (ChartPanel.isInNotes(y)) {
+				selectNotes(x);
 			}
 		} else if (e.getButton() == MouseEvent.BUTTON3) {
 			if (data.vocalsEditing) {
@@ -554,29 +553,6 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 	}
 
 	@Override
-	public void mouseDragged(final MouseEvent e) {
-		// TODO moving notes
-		data.mx = e.getX();
-		data.my = e.getY();
-
-		if (data.draggedTempo != null) {
-			data.draggedTempo.pos = data.xToTime(data.mx);
-			if (data.draggedTempo.pos < (data.draggedTempoPrev.pos + 1)) {
-				data.draggedTempo.pos = data.draggedTempoPrev.pos + 1;
-			}
-			TempoMap.calcBPM(data.draggedTempoPrev, data.draggedTempo);
-			if (data.draggedTempoNext != null) {
-				if (data.draggedTempo.pos > (data.draggedTempoNext.pos - 1)) {
-					data.draggedTempo.pos = data.draggedTempoNext.pos - 1;
-				}
-				TempoMap.calcBPM(data.draggedTempo, data.draggedTempoNext);
-			} else {
-				data.draggedTempo.kbpm = data.draggedTempoPrev.kbpm;
-			}
-		}
-	}
-
-	@Override
 	public void mouseEntered(final MouseEvent e) {
 	}
 
@@ -585,21 +561,14 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 	}
 
 	@Override
-	public void mouseMoved(final MouseEvent e) {
-		data.mx = e.getX();
-		data.my = e.getY();
-	}
-
-	@Override
-	public void mousePressed(final MouseEvent e) {// TODO start note drag
+	public void mousePressed(final MouseEvent e) {
+		cancelAllActions();
 		data.mx = e.getX();
 		data.my = e.getY();
 
 		final int x = e.getX();
 		final int y = e.getY();
 		if (e.getButton() == MouseEvent.BUTTON1) {
-			data.mousePressX = -1;
-			data.mousePressY = -1;
 			if (ChartPanel.isInTempos(y)) {
 				final Object[] tempoData = data.s.tempoMap.findOrCreateClosestTempo(data.xToTime(x));
 				if (tempoData != null) {
@@ -608,58 +577,13 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 				}
 				return;
 			} else if (ChartPanel.isInNotes(y)) {
-				stopMusic();
-				final IdOrPos idOrPos = data.vocalsEditing ? data.findClosestVocalIdOrPosForX(x)
-						: data.findClosestIdOrPosForX(x);
-
-				final int[] newSelectedNotes;
-				final Integer last;
-				if (shift) {
-					if (idOrPos.isId() && (data.lastSelectedNote != null)) {
-						last = idOrPos.id;
-						final int start;
-						final int n;
-						if (data.lastSelectedNote < idOrPos.id) {
-							start = data.lastSelectedNote;
-							n = (idOrPos.id - data.lastSelectedNote) + 1;
-						} else {
-							start = idOrPos.id;
-							n = (data.lastSelectedNote - idOrPos.id) + 1;
-						}
-						newSelectedNotes = new int[n];
-						for (int i = 0; i < n; i++) {
-							newSelectedNotes[i] = start + i;
-						}
-					} else {
-						last = null;
-						newSelectedNotes = new int[0];
-					}
-				} else {
-					if (idOrPos.isId()) {
-						last = idOrPos.id;
-						newSelectedNotes = new int[] { idOrPos.id };
-					} else {
-						last = null;
-						newSelectedNotes = new int[0];
-					}
-				}
-				if (!ctrl) {
-					data.deselect();
-				}
-				data.lastSelectedNote = last;
-				for (final Integer id : newSelectedNotes) {
-					if (!data.selectedNotes.remove(id)) {
-						data.selectedNotes.add(id);
-					}
-				}
-				data.selectedNotes.sort(null);
-
+				data.mousePressX = data.mx;
+				data.mousePressY = data.my;
 			}
 		} else if (e.getButton() == MouseEvent.BUTTON3) {
 			if ((y >= (ChartPanel.lane0Y - (ChartPanel.laneDistY / 2))) && (y <= (ChartPanel.lane0Y
 					+ ((ChartPanel.laneDistY * 9) / 2)))) {
 				if (!data.vocalsEditing) {
-					stopMusic();
 					data.selectedNotes.clear();
 					data.lastSelectedNote = null;
 					data.startNoteAdding(x, y);
@@ -672,97 +596,27 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 	public void mouseReleased(final MouseEvent e) {
 		data.mx = e.getX();
 		data.my = e.getY();
-		// TODO end note drag
 
 		switch (e.getButton()) {
 		case MouseEvent.BUTTON1:
 			if (data.draggedTempo != null) {
 				data.stopTempoDrag();
 				setChanged();
+			} else if (data.isNoteDrag && (data.mx != data.mousePressX)) {
+				data.endNoteDrag();
 			}
 			break;
 		case MouseEvent.BUTTON3:
-			data.endNoteAdding();
-			setChanged();
+			if (data.isNoteAdd) {
+				data.endNoteAdding();
+				setChanged();
+			}
+			break;
+		default:
 			break;
 		}
-	}
 
-	@Override
-	public void mouseWheelMoved(final MouseWheelEvent e) {
-		final int rot = e.getWheelRotation();
-		if (ctrl) {
-			data.addZoom(rot * (shift ? 10 : 1));
-		} else {
-			if (data.vocalsEditing) {
-				data.changeLyricLength(rot);
-			} else {
-				data.changeNoteLength(rot);
-			}
-			setChanged();
-		}
-		e.consume();
-	}
-
-	public void newSong() {
-		if (!checkChanged()) {
-			return;
-		}
-
-		final JFileChooser chooser = new JFileChooser(new File(Config.musicPath));
-		chooser.setFileFilter(new FileFilter() {
-
-			@Override
-			public boolean accept(final File f) {
-				final String name = f.getName().toLowerCase();
-				return f.isDirectory() || name.endsWith(".mp3") || name.endsWith(".ogg");
-			}
-
-			@Override
-			public String getDescription() {
-				return "Mp3 (.mp3) or Ogg (.ogg) file";
-			}
-		});
-
-		if (chooser.showOpenDialog(frame) == JFileChooser.APPROVE_OPTION) {
-			final File songFile = chooser.getSelectedFile();
-			final String songName = songFile.getName();
-			final int dotIndex = songName.lastIndexOf('.');
-			final String extension = songName.substring(dotIndex + 1).toLowerCase();
-			if (!extension.equals("mp3") && !extension.equals("ogg")) {
-				showPopup("Not an Mp3 or Ogg file!");
-				return;
-			}
-			String folderName = songName.substring(0, songName.lastIndexOf('.'));
-
-			folderName = JOptionPane.showInputDialog(frame, "Choose folder name", folderName);
-			if (folderName == null) {
-				return;
-			}
-
-			File f = new File(Config.songsPath + "/" + folderName);
-			while (f.exists()) {
-				folderName = JOptionPane.showInputDialog(frame, "Given folder already exists, choose different name",
-						folderName);
-				if (folderName == null) {
-					return;
-				}
-				f = new File(Config.songsPath + "/" + folderName);
-			}
-			f.mkdir();
-			final String songDir = f.getAbsolutePath();
-			RW.writeB(songDir + "/guitar." + extension, RW.readB(songFile));
-
-			final MusicData musicData = MusicData.readSongFile(f.getAbsolutePath());
-			if (musicData == null) {
-				showPopup("Music file (song.mp3 or song.ogg) not found in song folder");
-				return;
-			}
-
-			data.setSong(songDir, new Song(), new IniData(), musicData);
-			data.ini.charter = Config.charter;
-			save();
-		}
+		cancelAllActions();
 	}
 
 	private void numberPressed(final int num) {
@@ -778,102 +632,59 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 		}
 	}
 
-	public void open() {
-		if (!checkChanged()) {
-			return;
-		}
-
-		final JFileChooser chooser = new JFileChooser(new File(data.path));
-		chooser.setFileFilter(new FileFilter() {
-
-			@Override
-			public boolean accept(final File f) {
-				final String name = f.getName().toLowerCase();
-				return f.isDirectory() || name.endsWith(".mid") || name.endsWith(".chart") || name.endsWith(".lcf");
-			}
-
-			@Override
-			public String getDescription() {
-				return "Midi (.mid), Chart (.chart) or Log Charter (.lcf) file";
-			}
-		});
-
-		if (chooser.showOpenDialog(frame) == JFileChooser.APPROVE_OPTION) {
-			final File f = chooser.getSelectedFile();
-			final String dirPath = f.getParent();
-			final String name = f.getName().toLowerCase();
-
-			final Song s;
-			if (name.endsWith(".mid")) {
-				s = MidiReader.readMidi(f.getAbsolutePath());
-			} else if (name.endsWith(".chart")) {
-				s = null;// TODO
-				showPopup("This file type is not supported cos I didn't finish it (remind Lordszynencja)");
-				error("TODO chart song");
-				return;
-			} else if (name.endsWith(".lcf")) {
-				s = null;// TODO
-				showPopup("This file type is not supported cos I didn't finish it (remind Lordszynencja)");
-				error("TODO lcf song");
-				return;
-			} else {
-				s = null;
-				showPopup("This file type is not supported");
-				error("unsupported file: " + f.getName());
-				return;
-			}
-
-			final MusicData musicData = MusicData.readSongFile(dirPath);
-			if (musicData == null) {
-				showPopup("Music file (song.mp3 or song.ogg) not found in song folder");
-				return;
-			}
-
-			final File iniFile = new File(dirPath + "/song.ini");
-			final IniData iniData;
-			if (iniFile.exists()) {
-				iniData = new IniData(iniFile);
-			} else {
-				iniData = new IniData();
-				error("No ini file found on path " + iniFile.getAbsolutePath());
-			}
-
-			if ((s != null) && (musicData != null) && (iniData != null)) {
-				Config.lastPath = dirPath;
-				Config.save();
-				data.setSong(dirPath, s, iniData, musicData);
-			}
-		}
-	}
-
 	private void playMusic() {
 		player = SoundPlayer.play(data.music, data.t);
 		playStartT = data.t;
 	}
 
-	public void save() {
-		if (data.isEmpty) {
-			return;
+	private void selectNotes(final int x) {
+		final IdOrPos idOrPos = data.vocalsEditing ? data.findClosestVocalIdOrPosForX(x)
+				: data.findClosestIdOrPosForX(x);
+
+		final int[] newSelectedNotes;
+		final Integer last;
+		if (shift) {
+			if (idOrPos.isId() && (data.lastSelectedNote != null)) {
+				last = idOrPos.id;
+				final int start;
+				final int n;
+				if (data.lastSelectedNote < idOrPos.id) {
+					start = data.lastSelectedNote;
+					n = (idOrPos.id - data.lastSelectedNote) + 1;
+				} else {
+					start = idOrPos.id;
+					n = (data.lastSelectedNote - idOrPos.id) + 1;
+				}
+				newSelectedNotes = new int[n];
+				for (int i = 0; i < n; i++) {
+					newSelectedNotes[i] = start + i;
+				}
+			} else {
+				last = null;
+				newSelectedNotes = new int[0];
+			}
+		} else {
+			if (idOrPos.isId()) {
+				last = idOrPos.id;
+				newSelectedNotes = new int[] { idOrPos.id };
+			} else {
+				last = null;
+				newSelectedNotes = new int[0];
+			}
 		}
-		MidiWriter.writeMidi(data.path + "/notes.mid", data.s);
-		// TODO save chart, lcf notes
-		IniWriter.write(data.path + "/song.ini", data.ini);
-		Config.save();
-		data.changed = false;
-		frame.setTitle(CharterFrame.TITLE);
+		if (!ctrl) {
+			data.deselect();
+		}
+		data.lastSelectedNote = last;
+		for (final Integer id : newSelectedNotes) {
+			if (!data.selectedNotes.remove(id)) {
+				data.selectedNotes.add(id);
+			}
+		}
+		data.selectedNotes.sort(null);
 	}
 
-	public void saveAs() {
-		if (data.isEmpty) {
-			return;
-		}
-		Logger.error("saveAs not implemented!");// TODO
-		Config.save();
-		// data.changed=false;
-		// frame.setTitle(CharterFrame.TITLE);
-	}
-
-	private void setChanged() {
+	public void setChanged() {
 		data.changed = true;
 		frame.setTitle(CharterFrame.TITLE_UNSAVED);
 	}
@@ -884,10 +695,7 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 			final double songPart = songLength == 0 ? 0 : t / songLength;
 			frame.scrollBar.setValue((int) (songPart * frame.scrollBar.getMaximum()));
 		}
-		data.nextT = t;
-		if (data.nextT < 0) {
-			data.nextT = 0;
-		}
+		setNextTimeWithoutScrolling(t);
 	}
 
 	public void setNextTimeWithoutScrolling(final double t) {
@@ -907,53 +715,6 @@ public class ChartEventsHandler implements KeyListener, MouseListener, MouseMoti
 			player = null;
 			p.stop();
 		}
-	}
-
-	@Override
-	public void windowActivated(final WindowEvent e) {
-	}
-
-	@Override
-	public void windowClosed(final WindowEvent e) {
-	}
-
-	@Override
-	public void windowClosing(final WindowEvent e) {
-		exit();
-	}
-
-	@Override
-	public void windowDeactivated(final WindowEvent e) {
-	}
-
-	@Override
-	public void windowDeiconified(final WindowEvent e) {
-	}
-
-	@Override
-	public void windowGainedFocus(final WindowEvent e) {
-	}
-
-	@Override
-	public void windowIconified(final WindowEvent e) {
-	}
-
-	@Override
-	public void windowLostFocus(final WindowEvent e) {
-		ctrl = false;
-		alt = false;
-		shift = false;
-		left = false;
-		right = false;
-		gPressed = false;
-		data.mousePressX = -1;
-		data.mousePressY = -1;
-		data.mx = -1;
-		data.my = -1;
-	}
-
-	@Override
-	public void windowOpened(final WindowEvent e) {
 	}
 
 }

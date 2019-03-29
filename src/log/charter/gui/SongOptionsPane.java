@@ -81,7 +81,7 @@ public final class SongOptionsPane extends ParamsPane {
 			iniData.diffB = diffB;
 			iniData.diffK = diffK;
 
-			frame.handler.save();
+			frame.handler.songFileHandler.save();
 
 			dispose();
 		});

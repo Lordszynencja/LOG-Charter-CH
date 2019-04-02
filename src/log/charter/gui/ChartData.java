@@ -584,6 +584,8 @@ public class ChartData {
 			return;
 		}
 
+		handler.setChanged();
+
 		if (vocalsEditing) {
 			endNoteDragLyrics();
 		} else {
@@ -608,7 +610,7 @@ public class ChartData {
 		deselect();
 		for (int i = events.size() - 1; i >= 0; i--) {
 			final Lyric l = events.get(i);
-			final IdOrPos noteMovedTo = findClosestVocalIdOrPosForTime(l.pos + dt);
+			final IdOrPos noteMovedTo = findClosestVocalIdOrPosForTime(l.pos + dt, handler.isCtrl());
 			if (noteMovedTo.isPos()) {
 				l.pos = noteMovedTo.pos;
 				int firstAfter = findFirstLyricAfterTime(l.pos);
@@ -646,7 +648,7 @@ public class ChartData {
 		deselect();
 		for (int i = events.size() - 1; i >= 0; i--) {
 			final Note n = events.get(i);
-			final IdOrPos noteMovedTo = findClosestIdOrPosForTime(n.pos + dt);
+			final IdOrPos noteMovedTo = findClosestIdOrPosForTime(n.pos + dt, handler.isCtrl());
 			if (noteMovedTo.isPos()) {
 				final Note newNote = new Note(n);
 				newNote.pos = noteMovedTo.pos;
@@ -680,8 +682,8 @@ public class ChartData {
 		return (noteX < (x + (ChartPanel.noteW / 2))) && (noteX > (x - (ChartPanel.noteW / 2))) ? closest : -1;
 	}
 
-	public IdOrPos findClosestIdOrPosForTime(final double time) {
-		final double closestGridPosition = s.tempoMap.findClosestGridPositionForTime(time, useGrid, gridSize);
+	public IdOrPos findClosestIdOrPosForTime(final double time, final boolean shouldUseGrid) {
+		final double closestGridPosition = s.tempoMap.findClosestGridPositionForTime(time, shouldUseGrid, gridSize);
 		final int closestNoteId = findClosestNoteForTime(time);
 
 		return (closestNoteId == -1) || (timeToXLength(abs(time - currentNotes.get(closestNoteId).pos)) > //
@@ -692,6 +694,16 @@ public class ChartData {
 	public IdOrPos findClosestIdOrPosForX(final int x) {
 		final double time = xToTime(x);
 		final double closestGridPosition = s.tempoMap.findClosestGridPositionForTime(time, useGrid, gridSize);
+		final int closestNoteId = findClosestNoteForTime(time);
+
+		return (closestNoteId == -1) || (timeToXLength(abs(time - currentNotes.get(closestNoteId).pos)) > //
+		(timeToXLength(abs(closestGridPosition - time)) + (ChartPanel.noteW / 2)))//
+				? new IdOrPos(-1, closestGridPosition) : new IdOrPos(closestNoteId, -1);
+	}
+
+	public IdOrPos findClosestIdOrPosForX(final int x, final boolean shouldUseGrid) {
+		final double time = xToTime(x);
+		final double closestGridPosition = s.tempoMap.findClosestGridPositionForTime(time, shouldUseGrid, gridSize);
 		final int closestNoteId = findClosestNoteForTime(time);
 
 		return (closestNoteId == -1) || (timeToXLength(abs(time - currentNotes.get(closestNoteId).pos)) > //
@@ -741,8 +753,8 @@ public class ChartData {
 		return (abs(s.v.lyrics.get(l).pos - time) > abs(s.v.lyrics.get(r).pos - time)) ? r : l;
 	}
 
-	public IdOrPos findClosestVocalIdOrPosForTime(final double time) {
-		final double closestGridPosition = s.tempoMap.findClosestGridPositionForTime(time, useGrid, gridSize);
+	public IdOrPos findClosestVocalIdOrPosForTime(final double time, final boolean shouldUseGrid) {
+		final double closestGridPosition = s.tempoMap.findClosestGridPositionForTime(time, shouldUseGrid, gridSize);
 		final int closestNoteId = findClosestVocalForTime(time);
 
 		return (closestNoteId == -1) || (timeToXLength(abs(time - s.v.lyrics.get(closestNoteId).pos)) > //
@@ -753,6 +765,16 @@ public class ChartData {
 	public IdOrPos findClosestVocalIdOrPosForX(final int x) {
 		final double time = xToTime(x);
 		final double closestGridPosition = s.tempoMap.findClosestGridPositionForTime(time, useGrid, gridSize);
+		final int closestNoteId = findClosestVocalForTime(time);
+
+		return (closestNoteId == -1) || (timeToXLength(abs(time - s.v.lyrics.get(closestNoteId).pos)) > //
+		(timeToXLength(abs(closestGridPosition - time))))//
+				? new IdOrPos(-1, closestGridPosition) : new IdOrPos(closestNoteId, -1);
+	}
+
+	public IdOrPos findClosestVocalIdOrPosForX(final int x, final boolean shouldUseGrid) {
+		final double time = xToTime(x);
+		final double closestGridPosition = s.tempoMap.findClosestGridPositionForTime(time, shouldUseGrid, gridSize);
 		final int closestNoteId = findClosestVocalForTime(time);
 
 		return (closestNoteId == -1) || (timeToXLength(abs(time - s.v.lyrics.get(closestNoteId).pos)) > //

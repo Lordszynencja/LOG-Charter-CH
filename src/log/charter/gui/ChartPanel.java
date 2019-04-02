@@ -524,16 +524,29 @@ public class ChartPanel extends JPanel {
 
 	private void drawSpecial(final Graphics g) {
 		if (data.vocalsEditing) {
-			final IdOrPos idOrPos = data.findClosestVocalIdOrPosForX(data.mx);
-			final int x = data.timeToX(idOrPos.isId() ? data.s.v.lyrics.get(idOrPos.id).pos : idOrPos.pos);
-			int xLength = idOrPos.isId() ? data.timeToXLength(data.s.v.lyrics.get(idOrPos.id).length) - 1 : 10;
-			if (xLength < 1) {
-				xLength = 1;
-			}
-			final int y = colorToY(2) - 4;
+			if (data.isNoteDrag) {
+				final IdOrPos idOrPos = data.findClosestVocalIdOrPosForX(data.mx, data.handler.isCtrl());
+				final int x = data.timeToX(idOrPos.isId() ? data.s.v.lyrics.get(idOrPos.id).pos : idOrPos.pos);
+				int xLength = idOrPos.isId() ? data.timeToXLength(data.s.v.lyrics.get(idOrPos.id).length) - 1 : 10;
+				if (xLength < 1) {
+					xLength = 1;
+				}
+				final int y = colorToY(2) - 4;
 
-			g.setColor(HIGHLIGHT_COLOR);
-			g.drawRect(x, y, xLength, 7);
+				g.setColor(HIGHLIGHT_COLOR);
+				g.drawRect(x, y, xLength, 7);
+			} else {
+				final IdOrPos idOrPos = data.findClosestVocalIdOrPosForX(data.mx);
+				final int x = data.timeToX(idOrPos.isId() ? data.s.v.lyrics.get(idOrPos.id).pos : idOrPos.pos);
+				int xLength = idOrPos.isId() ? data.timeToXLength(data.s.v.lyrics.get(idOrPos.id).length) - 1 : 10;
+				if (xLength < 1) {
+					xLength = 1;
+				}
+				final int y = colorToY(2) - 4;
+
+				g.setColor(HIGHLIGHT_COLOR);
+				g.drawRect(x, y, xLength, 7);
+			}
 		} else if (ChartPanel.isInNotes(data.my)) {
 			final DrawList highlighted = new DrawList();
 			g.setColor(Color.RED);
@@ -590,6 +603,14 @@ public class ChartPanel extends JPanel {
 					if (x >= 0) {
 						highlighted.addPositions(x - (noteW / 2), clamp(y0) - (noteH / 2), noteW - 1, noteH - 1);
 					}
+				}
+			} else if (data.isNoteDrag) {
+				final IdOrPos idOrPos = data.findClosestIdOrPosForX(data.mx, data.handler.isCtrl());
+				final int x = idOrPos.isId() ? data.timeToX(data.currentNotes.get(idOrPos.id).pos)//
+						: idOrPos.isPos() ? data.timeToX(idOrPos.pos) : -1;
+
+				if (x >= 0) {
+					highlighted.addPositions(x - (noteW / 2), clamp(data.my) - (noteH / 2), noteW - 1, noteH - 1);
 				}
 			} else {
 				final IdOrPos idOrPos = data.findClosestIdOrPosForX(data.mx);

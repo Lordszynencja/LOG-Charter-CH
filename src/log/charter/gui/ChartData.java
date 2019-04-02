@@ -243,6 +243,7 @@ public class ChartData {
 
 		undoEvents.add(new LyricAdd(insertPos));
 		selectedNotes.add(insertPos);
+		lastSelectedNote = insertPos;
 		addUndo(new UndoGroup(undoEvents));
 	}
 
@@ -1127,7 +1128,7 @@ public class ChartData {
 	}
 
 	public void removeVocalNote(final int id) {
-		deselect();
+		selectedNotes.remove((Integer) id);
 		addUndo(new LyricRemove(id, s.v.lyrics.remove(id)));
 	}
 
@@ -1297,6 +1298,7 @@ public class ChartData {
 
 		fixNotesLength(n, insertPos, undoEvents);
 		selectedNotes.add(insertPos);
+		lastSelectedNote = insertPos;
 	}
 
 	public void toggleNote(final IdOrPos idOrPos, final int colorBit) {

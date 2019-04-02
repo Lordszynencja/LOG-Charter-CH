@@ -902,19 +902,27 @@ public class ChartData {
 	}
 
 	private void fixTapSections(final List<UndoEvent> undoEvents) {
+		if (currentInstrument.tap.size() == 0) {
+			for (final List<Note> diffNotes : currentInstrument.notes) {
+				for (final Note n : diffNotes) {
+					n.tap = false;
+				}
+			}
+			return;
+		}
+
 		for (int diff = 0; diff < 4; diff++) {
 			final List<Note> diffNotes = currentInstrument.notes.get(diff);
 			for (int i = 0; i < diffNotes.size(); i++) {
 				final Note n = diffNotes.get(i);
-				if (currentInstrument.tap.size() == 0) {
+				if (n.tap) {
+					undoEvents.add(new NoteChange(i, n));
 					n.tap = false;
-				} else {
-					for (final Event e : currentInstrument.tap) {
-						final boolean newTap = (n.pos >= e.pos) && (n.pos <= (e.pos + e.length));
-						if (newTap != n.tap) {
-							undoEvents.add(new NoteChange(i, n));
-							n.tap = newTap;
-						}
+				}
+				for (final Event e : currentInstrument.tap) {
+					if ((n.pos >= e.pos) && (n.pos <= (e.pos + e.length))) {
+						undoEvents.add(new NoteChange(i, n));
+						n.tap = true;
 					}
 				}
 			}

@@ -173,6 +173,10 @@ public class ChartEventsHandler implements KeyListener, MouseListener {
 					SoundPlayer.play(tick, 0);
 				}
 			}
+
+			if ((player != null) && player.isStopped()) {
+				stopMusic();
+			}
 		} else {
 			final int speed = (FL * (shift ? 10 : 2)) / (ctrl ? 10 : 1);
 			setNextTime((data.nextT - (left ? speed : 0)) + (right ? speed : 0));

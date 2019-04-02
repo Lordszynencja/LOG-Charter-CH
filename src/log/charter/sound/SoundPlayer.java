@@ -25,6 +25,10 @@ public class SoundPlayer {
 			line = (SourceDataLine) getLine(info);
 		}
 
+		public boolean isStopped() {
+			return stopped;
+		}
+
 		private Player start(final int start) {
 			new Thread(() -> {
 				try {
@@ -54,6 +58,7 @@ public class SoundPlayer {
 					}
 					line.drain();
 					line.stop();
+					stopped = true;
 				} catch (final LineUnavailableException e) {
 					e.printStackTrace();
 				}

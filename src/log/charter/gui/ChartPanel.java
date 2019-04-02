@@ -253,9 +253,18 @@ public class ChartPanel extends JPanel {
 			if (x > getWidth()) {
 				return;
 			}
-			if (x >= 0) {
+			if (x >= -100) {
 				g.setColor(beatInMeasure == 0 ? MAIN_BEAT_COLOR : SECONDARY_BEAT_COLOR);
 				g.drawLine(x, tempoMarkerY1, x, tempoMarkerY2);
+				g.drawString("" + id, x + 3, tempoMarkerY1 + 8);
+				if (id == tmp.id) {
+					g.drawString("" + tmp.beats, x + 3, tempoMarkerY1 + 21);
+				}
+				final String sectionName = data.s.sections.get(id);
+				if (sectionName != null) {
+					g.setColor(TEXT_COLOR);
+					g.drawString("[" + sectionName + "]", x, sectionNamesY + 10);
+				}
 			}
 			beatInMeasure = (beatInMeasure + 1) % beatsPerMeasure;
 			id++;

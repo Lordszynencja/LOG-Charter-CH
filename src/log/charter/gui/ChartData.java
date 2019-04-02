@@ -862,6 +862,9 @@ public class ChartData {
 	}
 
 	private void fixNextNotesLength(final Note n, final int id, final List<UndoEvent> undoEvents) {
+		if (n.length < Config.minTailLength) {
+			n.length = 0;
+		}
 		for (int i = id + 1; (i < currentNotes.size()) && (i < (id + 100)); i++) {
 			final Note nextNote = currentNotes.get(i);
 			if (fixNoteLength(n, id, nextNote, undoEvents)) {

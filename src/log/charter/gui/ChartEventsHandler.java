@@ -695,7 +695,9 @@ public class ChartEventsHandler implements KeyListener, MouseListener {
 	}
 
 	public void setChanged() {
-		data.changed = true;
+		if (!data.isEmpty) {
+			data.changed = true;
+		}
 	}
 
 	public void setNextTime(final double t) {

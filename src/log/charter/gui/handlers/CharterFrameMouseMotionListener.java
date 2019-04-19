@@ -34,7 +34,7 @@ public class CharterFrameMouseMotionListener implements MouseMotionListener {
 			}
 		}
 
-		if (ChartPanel.isInNotes(data.my) && (Math.abs(data.mx - data.mousePressX) > 20)) {
+		if (ChartPanel.isInNotes(data.my) && (Math.abs(data.mx - data.mousePressX) > 10)) {
 			data.isNoteDrag = true;
 		}
 	}

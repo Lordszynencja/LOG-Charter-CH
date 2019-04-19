@@ -197,7 +197,7 @@ public class ChartData {
 	public double zoom = 1;
 	public boolean drawAudio = false;
 
-	public int gridSize = 4;
+	public int gridSize = 1;
 	public boolean useGrid = true;
 	public boolean vocalsEditing = false;
 	public boolean isNoteAdd = false;
@@ -427,7 +427,7 @@ public class ChartData {
 		t = 0;
 		nextT = 0;
 		drawAudio = false;
-		gridSize = 2;
+		gridSize = 4;
 		useGrid = true;
 	}
 
@@ -1391,10 +1391,8 @@ public class ChartData {
 
 	public void toggleSelectedVocalsWordPart() {
 		for (final int id : selectedNotes) {
-			if (id != 0) {
-				final Lyric l = s.v.lyrics.get(id);
-				l.wordPart = !l.wordPart;
-			}
+			final Lyric l = s.v.lyrics.get(id);
+			l.wordPart = !l.wordPart;
 		}
 	}
 

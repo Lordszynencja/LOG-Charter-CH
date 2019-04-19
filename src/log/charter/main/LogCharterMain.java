@@ -7,7 +7,7 @@ import log.charter.gui.CharterFrame;
 import log.charter.gui.Config;
 import log.charter.util.RW;
 
-public class Main {
+public class LogCharterMain {
 	private static void createHelpFile() throws IOException {
 		final InputStream input = ClassLoader.getSystemResourceAsStream("log/charter/main/help.txt");
 		final byte[] bytes = new byte[input.available()];

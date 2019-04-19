@@ -115,13 +115,14 @@ public class ChartPanel extends JPanel {
 	private static final Color HIGHLIGHT_COLOR = new Color(255, 0, 0);
 	private static final Color SELECT_COLOR = new Color(0, 255, 255);
 	private static final Color TAP_COLOR = new Color(200, 0, 200);
-	private static final Color SOLO_COLOR = new Color(50, 50, 180);
+	private static final Color SOLO_COLOR = new Color(100, 100, 210);
 	private static final Color LANE_COLOR = new Color(128, 128, 128);
 	private static final Color MAIN_BEAT_COLOR = new Color(255, 255, 255);
 	private static final Color SECONDARY_BEAT_COLOR = new Color(200, 200, 200);
 	private static final Color MARKER_COLOR = new Color(255, 0, 0);
 
 	private static final Color LYRIC_NO_TONE_COLOR = new Color(128, 128, 0);
+	private static final Color LYRIC_WORD_PART_COLOR = new Color(0, 0, 255);
 	private static final Color LYRIC_CONNECTION_COLOR = new Color(255, 128, 255);
 	private static final Color LYRIC_COLOR = new Color(255, 0, 255);
 	private static final Color CRAZY_COLOR = new Color(0, 0, 0);
@@ -385,6 +386,7 @@ public class ChartPanel extends JPanel {
 			final FillList notes = new FillList();
 			final FillList tonelessNotes = new FillList();
 			final FillList connections = new FillList();
+			final FillList wordConnections = new FillList();
 
 			final List<Lyric> lyrics = data.s.v.lyrics;
 			final int y = colorToY(2) - 4;
@@ -409,13 +411,19 @@ public class ChartPanel extends JPanel {
 					connections.addPositions(prevEnd, y, x - prevEnd, 8);
 				}
 				if ((x + g.getFontMetrics().stringWidth(l.lyric)) > 0) {
-					texts.addString(l.lyric, x, textY);
+					texts.addString(l.lyric + (l.wordPart ? "-" : ""), x, textY);
+				}
+				if (l.wordPart && (i < (lyrics.size() - 1))) {
+					final Lyric next = lyrics.get(i + 1);
+					final int nextStart = data.timeToX(next.pos);
+					wordConnections.addPositions(x + length, y + 2, nextStart - x - length, 4);
 				}
 			}
 			texts.draw(g, TEXT_COLOR);
 			notes.draw(g, LYRIC_COLOR);
 			tonelessNotes.draw(g, LYRIC_NO_TONE_COLOR);
 			connections.draw(g, LYRIC_CONNECTION_COLOR);
+			wordConnections.draw(g, LYRIC_WORD_PART_COLOR);
 		}
 	}
 

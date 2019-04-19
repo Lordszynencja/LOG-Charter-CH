@@ -14,6 +14,7 @@ import log.charter.gui.ChartData.IdOrPos;
 import log.charter.gui.handlers.SongFileHandler;
 import log.charter.io.Logger;
 import log.charter.song.Event;
+import log.charter.song.Instrument;
 import log.charter.song.Instrument.InstrumentType;
 import log.charter.song.Tempo;
 import log.charter.sound.MusicData;
@@ -119,6 +120,7 @@ public class ChartEventsHandler implements KeyListener, MouseListener {
 
 	public void copyFrom(final InstrumentType instrumentType, final int diff) {
 		data.copyFrom(instrumentType, diff);
+		setChanged();
 	}
 
 	private void editSection(final int x) {
@@ -181,6 +183,11 @@ public class ChartEventsHandler implements KeyListener, MouseListener {
 			final int speed = (FL * (shift ? 10 : 2)) / (ctrl ? 10 : 1);
 			setNextTime((data.nextT - (left ? speed : 0)) + (right ? speed : 0));
 		}
+
+		final String title = "Log Charter : " + data.ini.artist + " - " + data.ini.name + " : "//
+				+ (data.vocalsEditing ? "Vocals" : data.currentInstrument.type.name + " " + Instrument.diffNames[data.currentDiff])//
+				+ (data.changed ? "*" : "");
+		frame.setTitle(title);
 	}
 
 	public boolean isAlt() {
@@ -536,14 +543,7 @@ public class ChartEventsHandler implements KeyListener, MouseListener {
 	public void mouseClicked(final MouseEvent e) {
 		cancelAllActions();
 		final int x = e.getX();
-		final int y = e.getY();
-		if (e.getButton() == MouseEvent.BUTTON1) {
-			if ((y > (ChartPanel.sectionNamesY - 5)) && (y < ChartPanel.spY)) {
-				editSection(x);
-			} else if (ChartPanel.isInNotes(y)) {
-				selectNotes(x);
-			}
-		} else if (e.getButton() == MouseEvent.BUTTON3) {
+		if (e.getButton() == MouseEvent.BUTTON3) {
 			if (data.vocalsEditing) {
 				final IdOrPos idOrPos = data.findClosestVocalIdOrPosForX(x);
 				if (idOrPos.isId()) {
@@ -606,8 +606,14 @@ public class ChartEventsHandler implements KeyListener, MouseListener {
 			if (data.draggedTempo != null) {
 				data.stopTempoDrag();
 				setChanged();
-			} else if (data.isNoteDrag && (data.mx != data.mousePressX)) {
+			} else if (data.isNoteDrag) {
 				data.endNoteDrag();
+			} else {
+				if ((data.my > (ChartPanel.sectionNamesY - 5)) && (data.my < ChartPanel.spY)) {
+					editSection(data.mx);
+				} else if (ChartPanel.isInNotes(data.my)) {
+					selectNotes(data.mx);
+				}
 			}
 			break;
 		case MouseEvent.BUTTON3:
@@ -690,7 +696,6 @@ public class ChartEventsHandler implements KeyListener, MouseListener {
 
 	public void setChanged() {
 		data.changed = true;
-		frame.setTitle(CharterFrame.TITLE_UNSAVED);
 	}
 
 	public void setNextTime(final double t) {

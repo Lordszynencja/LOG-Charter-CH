@@ -4,6 +4,7 @@ import java.awt.Dimension;
 
 import javax.swing.JComponent;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
 import javax.swing.JScrollBar;
 
 import log.charter.gui.handlers.CharterFrameComponentListener;
@@ -36,6 +37,8 @@ public class CharterFrame extends JFrame {
 		scrollBar = createScrollBar();
 		add(scrollBar, ChartPanel.HEIGHT, Config.windowWidth, 20);
 
+		addHelp();
+
 		addKeyListener(handler);
 		addMouseWheelListener(new CharterFrameMouseWheelListener(handler));
 		addWindowFocusListener(new CharterFrameWindowFocusListener(handler));
@@ -54,6 +57,28 @@ public class CharterFrame extends JFrame {
 		component.validate();
 
 		add(component);
+	}
+
+	private void addHelp() {
+		final JLabel helpLabel = new JLabel();
+		helpLabel.setText("<html>G → toggle grid<br>"//
+				+ "G, 1-9 → set grid size<br>"//
+				+ "1-9 when mouse is on beat → set beats in measure<br>"//
+				+ "Left press above tempo section → add/edit/remove song section<br>"//
+				+ "T → place/toggle open note (guitar editing)<br>"//
+				+ "Ctrl + W → toggle Star Power section (guitar editing)<br>"//
+				+ "Ctrl + T → toggle Tap section (guitar editing)<br>"//
+				+ "Ctrl + Y → toggle Solo section (guitar editing)<br>"//
+				+ "H → toggle selected notes HOPO<br>"//
+				+ "Ctrl + H → set auto-HOPO for selected notes (type max distance since previous note in ms to make it HOPO)<br>"//
+				+ "Ctrl + L → place vocal line (vocals editing)<br>"//
+				+ "L → edit vocal note (vocals editing)<br>"//
+				+ "T → toggle note toneless (vocals editing)<br>"//
+				+ "Q → toggle note connected (vocals editing)<br>"//
+				+ "W → toggle note is word part (vocals editing)<br></html>");
+
+		helpLabel.setVerticalAlignment(JLabel.TOP);
+		add(helpLabel, ChartPanel.HEIGHT + 20, Config.windowWidth, 300);
 	}
 
 	private JScrollBar createScrollBar() {

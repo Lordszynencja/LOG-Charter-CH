@@ -1,7 +1,9 @@
 package log.charter.gui;
 
 import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
+
+import javax.swing.JComponent;
+import javax.swing.KeyStroke;
 
 import log.charter.gui.ChartData.IdOrPos;
 import log.charter.song.Lyric;
@@ -13,9 +15,11 @@ public class LyricPane extends ParamsPane {
 	private boolean toneless;
 	private boolean wordPart;
 	private boolean connected;
+	final CharterFrame frame;
 
 	public LyricPane(final CharterFrame frame, final IdOrPos idOrPos) {
 		super(frame, "Lyrics edit", 6);
+		this.frame = frame;
 		final Lyric l;
 		if (idOrPos.isId()) {
 			l = frame.handler.data.s.v.lyrics.get(idOrPos.id);
@@ -37,34 +41,16 @@ public class LyricPane extends ParamsPane {
 		addConfigCheckbox(3, "Connected", connected, val -> connected = val);
 
 		addButtons(5, e -> {
-			save(idOrPos, frame, l);
-			dispose();
+			saveAndExit(idOrPos, l);
 		});
-
-		addKeyListener(new KeyListener() {
-			@Override
-			public void keyPressed(final KeyEvent e) {
-				if (e.getKeyCode() == KeyEvent.VK_ENTER) {
-					save(idOrPos, frame, l);
-					dispose();
-				}
-			}
-
-			@Override
-			public void keyReleased(final KeyEvent e) {
-			}
-
-			@Override
-			public void keyTyped(final KeyEvent e) {
-			}
-
-		});
+		getRootPane().registerKeyboardAction(e -> dispose(), KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, 0), JComponent.WHEN_IN_FOCUSED_WINDOW);
+		getRootPane().registerKeyboardAction(e -> saveAndExit(idOrPos, l), KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), JComponent.WHEN_IN_FOCUSED_WINDOW);
 
 		validate();
 		setVisible(true);
 	}
 
-	private void save(final IdOrPos idOrPos, final CharterFrame frame, final Lyric l) {
+	private void saveAndExit(final IdOrPos idOrPos, final Lyric l) {
 		if (idOrPos.isId()) {
 			if ("".equals(text)) {
 				frame.handler.data.removeVocalNote(idOrPos.id);
@@ -79,6 +65,8 @@ public class LyricPane extends ParamsPane {
 				frame.handler.data.addVocalNote(idOrPos.pos, 0, text, toneless, wordPart, connected);
 			}
 		}
+
+		dispose();
 	}
 
 }

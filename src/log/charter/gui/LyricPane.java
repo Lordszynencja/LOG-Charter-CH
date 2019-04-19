@@ -51,6 +51,10 @@ public class LyricPane extends ParamsPane {
 	}
 
 	private void saveAndExit(final IdOrPos idOrPos, final Lyric l) {
+		if (!wordPart && (text != null) && text.contains("-")) {
+			text = text.replaceFirst("-", "");
+			wordPart = true;
+		}
 		if (idOrPos.isId()) {
 			if ("".equals(text)) {
 				frame.handler.data.removeVocalNote(idOrPos.id);

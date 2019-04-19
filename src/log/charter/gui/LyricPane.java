@@ -1,5 +1,8 @@
 package log.charter.gui;
 
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
+
 import log.charter.gui.ChartData.IdOrPos;
 import log.charter.song.Lyric;
 
@@ -34,26 +37,48 @@ public class LyricPane extends ParamsPane {
 		addConfigCheckbox(3, "Connected", connected, val -> connected = val);
 
 		addButtons(5, e -> {
-			if (idOrPos.isId()) {
-				if ("".equals(text)) {
-					frame.handler.data.removeVocalNote(idOrPos.id);
-				} else {
-					l.lyric = text;
-					l.toneless = toneless;
-					l.wordPart = wordPart;
-					l.connected = connected;
-				}
-			} else {
-				if (!"".equals(text) && (text != null)) {
-					frame.handler.data.addVocalNote(idOrPos.pos, 0, text, toneless, wordPart, connected);
+			save(idOrPos, frame, l);
+			dispose();
+		});
+
+		addKeyListener(new KeyListener() {
+			@Override
+			public void keyPressed(final KeyEvent e) {
+				if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+					save(idOrPos, frame, l);
+					dispose();
 				}
 			}
 
-			dispose();
+			@Override
+			public void keyReleased(final KeyEvent e) {
+			}
+
+			@Override
+			public void keyTyped(final KeyEvent e) {
+			}
+
 		});
 
 		validate();
 		setVisible(true);
+	}
+
+	private void save(final IdOrPos idOrPos, final CharterFrame frame, final Lyric l) {
+		if (idOrPos.isId()) {
+			if ("".equals(text)) {
+				frame.handler.data.removeVocalNote(idOrPos.id);
+			} else {
+				l.lyric = text;
+				l.toneless = toneless;
+				l.wordPart = wordPart;
+				l.connected = connected;
+			}
+		} else {
+			if (!"".equals(text) && (text != null)) {
+				frame.handler.data.addVocalNote(idOrPos.pos, 0, text, toneless, wordPart, connected);
+			}
+		}
 	}
 
 }

@@ -3,7 +3,7 @@ package log.charter.gui.handlers;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionListener;
 
-import log.charter.gui.ChartData;
+import log.charter.data.ChartData;
 import log.charter.gui.ChartPanel;
 import log.charter.song.TempoMap;
 

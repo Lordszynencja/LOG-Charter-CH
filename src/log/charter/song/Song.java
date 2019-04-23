@@ -77,6 +77,29 @@ public class Song {
 		return new Instrument[] { g, gc, gr, b, k };
 	}
 
+	public void setInstrument(final Instrument instrument) {
+		switch (instrument.type) {
+		case GUITAR:
+			g = instrument;
+			return;
+		case GUITAR_COOP:
+			gc = instrument;
+			return;
+		case GUITAR_RHYTHM:
+			gr = instrument;
+			return;
+		case BASS:
+			b = instrument;
+			return;
+		case KEYS:
+			k = instrument;
+			return;
+		default:
+			Logger.error("Wrong instrument type: " + instrument.type);
+			return;
+		}
+	}
+
 	@Override
 	public String toString() {
 		final StringBuilder sb = new StringBuilder("Song{g: ").append(g)//

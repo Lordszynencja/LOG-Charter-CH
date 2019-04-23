@@ -69,6 +69,7 @@ public class CharterFrame extends JFrame {
 				+ "Ctrl + W → toggle Star Power section (guitar editing)<br>"//
 				+ "Ctrl + T → toggle Tap section (guitar editing)<br>"//
 				+ "Ctrl + Y → toggle Solo section (guitar editing)<br>"//
+				+ "U → toggle selected notes crazy<br>"//
 				+ "H → toggle selected notes HOPO<br>"//
 				+ "Ctrl + H → set auto-HOPO for selected notes (type max distance since previous note in ms to make it HOPO)<br>"//
 				+ "Ctrl + L → place vocal line (vocals editing)<br>"//

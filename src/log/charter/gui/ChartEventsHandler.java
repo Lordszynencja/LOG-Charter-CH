@@ -10,7 +10,8 @@ import java.util.List;
 
 import javax.swing.JOptionPane;
 
-import log.charter.gui.ChartData.IdOrPos;
+import log.charter.data.ChartData;
+import log.charter.data.ChartData.IdOrPos;
 import log.charter.gui.handlers.SongFileHandler;
 import log.charter.io.Logger;
 import log.charter.song.Event;
@@ -82,14 +83,7 @@ public class ChartEventsHandler implements KeyListener, MouseListener {
 	}
 
 	public void cancelAllActions() {
-		data.mousePressX = -1;
-		data.mousePressY = -1;
-		data.draggedTempo = null;
-		data.draggedTempoNext = null;
-		data.draggedTempoPrev = null;
-		data.draggedTempoUndo = null;
-		data.isNoteDrag = false;
-		data.isNoteAdd = false;
+		data.softClearWithoutDeselect();
 		stopMusic();
 	}
 
@@ -327,6 +321,9 @@ public class ChartEventsHandler implements KeyListener, MouseListener {
 			break;
 		case KeyEvent.VK_F5:
 			data.drawAudio = !data.drawAudio;
+			break;
+		case KeyEvent.VK_0:
+			numberPressed(0);
 			break;
 		case KeyEvent.VK_1:
 			numberPressed(1);
@@ -608,12 +605,10 @@ public class ChartEventsHandler implements KeyListener, MouseListener {
 				setChanged();
 			} else if (data.isNoteDrag) {
 				data.endNoteDrag();
-			} else {
-				if ((data.my > (ChartPanel.sectionNamesY - 5)) && (data.my < ChartPanel.spY)) {
-					editSection(data.mx);
-				} else if (ChartPanel.isInNotes(data.my)) {
-					selectNotes(data.mx);
-				}
+			} else if ((data.my > (ChartPanel.sectionNamesY - 5)) && (data.my < ChartPanel.spY)) {
+				editSection(data.mx);
+			} else if (ChartPanel.isInNotes(data.my)) {
+				selectNotes(data.mx);
 			}
 			break;
 		case MouseEvent.BUTTON3:
@@ -631,14 +626,20 @@ public class ChartEventsHandler implements KeyListener, MouseListener {
 
 	private void numberPressed(final int num) {
 		if (gPressed) {
-			data.gridSize = num;
-			data.useGrid = true;
-		} else if (isInTempos(data.my)) {
-			final Object[] tempoData = data.s.tempoMap.findOrCreateClosestTempo(data.xToTime(data.mx));
-			if (tempoData != null) {
-				data.changeTempoBeatsInMeasure((Tempo) tempoData[1], (boolean) tempoData[3], num);
-				setChanged();
+			if (num != 0) {
+				data.gridSize = num;
+				data.useGrid = true;
 			}
+		} else if (isInTempos(data.my)) {
+			if (num != 0) {
+				final Object[] tempoData = data.s.tempoMap.findOrCreateClosestTempo(data.xToTime(data.mx));
+				if (tempoData != null) {
+					data.changeTempoBeatsInMeasure((Tempo) tempoData[1], (boolean) tempoData[3], num);
+					setChanged();
+				}
+			}
+		} else if (shift && (num >= 0) && (num <= 5)) {
+			data.toggleSelectedNotes(num);
 		}
 	}
 

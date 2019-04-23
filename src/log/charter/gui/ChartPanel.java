@@ -8,7 +8,8 @@ import java.util.List;
 
 import javax.swing.JPanel;
 
-import log.charter.gui.ChartData.IdOrPos;
+import log.charter.data.ChartData;
+import log.charter.data.ChartData.IdOrPos;
 import log.charter.gui.handlers.CharterFrameMouseMotionListener;
 import log.charter.song.Event;
 import log.charter.song.Instrument.InstrumentType;

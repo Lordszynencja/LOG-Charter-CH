@@ -1316,8 +1316,14 @@ public class ChartData {
 	public void toggleSelectedNotes(final int colorBit) {
 		undoSystem.addUndo();
 
-		for (final Integer id : selectedNotes) {
+		for (int i = selectedNotes.size() - 1; i >= 0; i--) {
+			final int id = selectedNotes.get(i);
 			toggleNote(id, colorBit);
+			if ((selectedNotes.size() > i) && (selectedNotes.get(i) != id)) {
+				for (int j = i; j < selectedNotes.size(); j++) {
+					selectedNotes.set(j, selectedNotes.get(j) - 1);
+				}
+			}
 		}
 	}
 

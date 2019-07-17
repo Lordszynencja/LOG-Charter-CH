@@ -150,10 +150,11 @@ public class ChartEventsHandler implements KeyListener, MouseListener {
 		if ((player != null) && (player.startTime > 0)) {
 			setNextTime((playStartT + (((System.nanoTime() - player.startTime) * data.music.slowMultiplier()) / 1000000))
 					- Config.delay);
+			final double soundTime = data.nextT + Config.delay;
 
 			final List<? extends Event> notes = data.vocalsEditing ? data.s.v.lyrics : data.currentNotes;
 
-			while ((nextNoteId != -1) && (notes.get(nextNoteId).pos < data.nextT)) {
+			while ((nextNoteId != -1) && (notes.get(nextNoteId).pos < soundTime)) {
 				nextNoteId++;
 				if (nextNoteId >= notes.size()) {
 					nextNoteId = -1;
@@ -163,7 +164,7 @@ public class ChartEventsHandler implements KeyListener, MouseListener {
 				}
 			}
 
-			while ((nextTempoTime >= 0) && (nextTempoTime < data.nextT)) {
+			while ((nextTempoTime >= 0) && (nextTempoTime < soundTime)) {
 				nextTempoTime = data.s.tempoMap.findNextBeatTime((int) data.nextT);
 				if (metronome) {
 					SoundPlayer.play(tick, 0);
@@ -216,6 +217,7 @@ public class ChartEventsHandler implements KeyListener, MouseListener {
 				&& (keyCode != KeyEvent.VK_SPACE)) {
 			stopMusic();
 		}
+
 		switch (keyCode) {
 		case KeyEvent.VK_SPACE:
 			if (!data.isEmpty && (player == null) && !left && !right) {

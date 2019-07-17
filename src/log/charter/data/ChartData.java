@@ -4,20 +4,16 @@ import static java.lang.Math.abs;
 import static java.lang.System.arraycopy;
 
 import java.awt.HeadlessException;
-import java.awt.Toolkit;
-import java.awt.datatransfer.DataFlavor;
-import java.awt.datatransfer.Transferable;
 import java.awt.datatransfer.UnsupportedFlavorException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import javax.activation.DataHandler;
-
 import log.charter.gui.ChartEventsHandler;
 import log.charter.gui.ChartPanel;
 import log.charter.gui.Config;
+import log.charter.io.ClipboardHandler;
 import log.charter.io.Logger;
 import log.charter.song.Event;
 import log.charter.song.IniData;
@@ -437,8 +433,7 @@ public class ChartData {
 			}
 		}
 
-		final DataHandler dataHandler = new DataHandler(joinList(list), "application/octet-stream");
-		Toolkit.getDefaultToolkit().getSystemClipboard().setContents(dataHandler, null);
+		ClipboardHandler.setClipboardBytes(joinList(list));
 	}
 
 	public void copyFrom(final InstrumentType instrumentType, final int diff) {
@@ -963,16 +958,8 @@ public class ChartData {
 	}
 
 	public void paste() throws HeadlessException, IOException, UnsupportedFlavorException {
-		final Transferable t = Toolkit.getDefaultToolkit().getSystemClipboard().getContents(null);
+		final byte[] notesData = ClipboardHandler.readClipboardBytes();
 
-		byte[] notesData = null;
-		for (final DataFlavor f : t.getTransferDataFlavors()) {
-			final Object o = t.getTransferData(f);
-			if (o instanceof byte[]) {
-				notesData = (byte[]) o;
-				break;
-			}
-		}
 		try {
 			final List<byte[]> list = splitToList(notesData);
 			final String name = new String(list.get(0));
@@ -1121,16 +1108,11 @@ public class ChartData {
 						- newPos;
 				n.pos = newPos;
 				n.length = newLength;
-
-				if ((id + 1) < currentNotes.size()) {
-					fixNoteLength(n, id, currentNotes.get(id + 1));
-				}
-
-				for (int j = id - 1; (j >= 0) && (j > (id - 100)); j--) {
-					final Note prevNote = currentNotes.get(j);
-					fixNoteLength(prevNote, j, n);
-				}
 			}
+		}
+		for (int i = 0; i < selectedNotes.size(); i++) {
+			final int id = selectedNotes.get(i);
+			fixNotesLength(currentNotes.get(id), id);
 		}
 	}
 
@@ -1166,15 +1148,7 @@ public class ChartData {
 
 	private void softClear() {
 		deselect();
-		draggedTempoPrev = null;
-		draggedTempo = null;
-		draggedTempoNext = null;
-		mousePressX = -1;
-		mousePressY = -1;
-		mx = -1;
-		my = -1;
-		isNoteAdd = false;
-		isNoteDrag = false;
+		softClearWithoutDeselect();
 	}
 
 	public void softClearWithoutDeselect() {
@@ -1183,8 +1157,6 @@ public class ChartData {
 		draggedTempoNext = null;
 		mousePressX = -1;
 		mousePressY = -1;
-		mx = -1;
-		my = -1;
 		isNoteAdd = false;
 		isNoteDrag = false;
 	}

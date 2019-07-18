@@ -47,6 +47,7 @@ public class RepeatingPlayer {
 	}
 
 	private void play() {
+		line.drain();
 		final byte[] data = musicData.getData();
 		int startByte = 0;
 
@@ -58,7 +59,6 @@ public class RepeatingPlayer {
 		if ((data.length - startByte) > 0) {
 			line.write(data, startByte, data.length - startByte);
 		}
-		line.drain();
 
 		playAgain = false;
 	}

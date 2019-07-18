@@ -35,24 +35,26 @@ package helliker.id3;
  * @author Jonathan Hilliker
  * @version 1.2.1
  */
-    
+
+@SuppressWarnings("serial")
 public class CorruptHeaderException extends ID3Exception {
-  
-  /**
-   * Create a CorruptHeaderException with a default message
-   *
-   */
-  public CorruptHeaderException() {
-    super("Header is corrupt");
-  }
-  
-  /**
-   * Create a CorruptHeaderException with a specified message
-   *
-   * @param msg the message for this exception
-   */
-  public CorruptHeaderException(String msg) {
-    super(msg);
-  }
-  
+
+	/**
+	 * Create a CorruptHeaderException with a default message
+	 *
+	 */
+	public CorruptHeaderException() {
+		super("Header is corrupt");
+	}
+
+	/**
+	 * Create a CorruptHeaderException with a specified message
+	 *
+	 * @param msg
+	 *           the message for this exception
+	 */
+	public CorruptHeaderException(final String msg) {
+		super(msg);
+	}
+
 }// CorruptHeaderException

@@ -19,39 +19,38 @@ package helliker.id3;
  * standards.<br />
  *
  * <dl>
- *   <dt> <b>Version History:</b </dt>
- *   <dt> 1.3.1 - <small>2002.1023 by gruni</small> </dt>
- *   <dd> -Made sourcecode compliant to the Sun Coding Conventions</dd>
- *   <dt> 1.3 - <small>2002.0318 by helliker</small> </dt>
- *   <dd> -Inherits from ID3Exception now</dd>
- *   <dt> 1.2 - <small>2001.1019 by helliker</small> </dt>
- *   <dd> All set for release.</dd>
+ * <dt><b>Version History:</b</dt>
+ * <dt>1.3.1 - <small>2002.1023 by gruni</small></dt>
+ * <dd>-Made sourcecode compliant to the Sun Coding Conventions</dd>
+ * <dt>1.3 - <small>2002.0318 by helliker</small></dt>
+ * <dd>-Inherits from ID3Exception now</dd>
+ * <dt>1.2 - <small>2001.1019 by helliker</small></dt>
+ * <dd>All set for release.</dd>
  * </dl>
  *
  *
- *@author    Jonathan Hilliker
- *@version   1.3.1
+ * @author Jonathan Hilliker
+ * @version 1.3.1
  */
 
-
+@SuppressWarnings("serial")
 public class ID3v2FormatException extends ID3Exception {
 
-  /**
-   * Create an ID3v2FormatException with a default message
-   */
-  public ID3v2FormatException() {
-    super("ID3v2 tag is not formatted correctly.");
-  }
+	/**
+	 * Create an ID3v2FormatException with a default message
+	 */
+	public ID3v2FormatException() {
+		super("ID3v2 tag is not formatted correctly.");
+	}
 
-
-  /**
-   * Create an ID3v2FormatException with a specified message
-   *
-   *@param msg  the message for this exception
-   */
-  public ID3v2FormatException(String msg) {
-    super(msg);
-  }
+	/**
+	 * Create an ID3v2FormatException with a specified message
+	 *
+	 * @param msg
+	 *           the message for this exception
+	 */
+	public ID3v2FormatException(final String msg) {
+		super(msg);
+	}
 
 }
-

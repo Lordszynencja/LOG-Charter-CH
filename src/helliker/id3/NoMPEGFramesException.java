@@ -1,4 +1,5 @@
 package helliker.id3;
+
 /*
    Copyright (C) 2001 Jonathan Hilliker
    This library is free software; you can redistribute it and/or
@@ -17,38 +18,38 @@ package helliker.id3;
  * An exception to be thrown if the parser is unable to find an mpeg header.
  *
  * <dl>
- *   <dt> <b>Version History</b> </dt>
- *   <dt> 1.3.1 - <small>2002.1023 by gruni</small> </dt>
- *   <dd> -Made Sourcecode compliant to the Sun CodingConventions</dd>
- *   <dt> 1.3 - <small>2002.0318 by helliker</small> </dt>
- *   <dd> -Inherits from ID3Exception now</dd>
- *   <dt> 1.2 - <small>2001.1019 by helliker</small> </dt>
- *   <dd> -All set for release.</dd>
+ * <dt><b>Version History</b></dt>
+ * <dt>1.3.1 - <small>2002.1023 by gruni</small></dt>
+ * <dd>-Made Sourcecode compliant to the Sun CodingConventions</dd>
+ * <dt>1.3 - <small>2002.0318 by helliker</small></dt>
+ * <dd>-Inherits from ID3Exception now</dd>
+ * <dt>1.2 - <small>2001.1019 by helliker</small></dt>
+ * <dd>-All set for release.</dd>
  * </dl>
  *
  *
- *@author    Jonathan Hilliker
- *@version   1.3.1 2002/03/18 02:12:17 helliker Exp $
+ * @author Jonathan Hilliker
+ * @version 1.3.1 2002/03/18 02:12:17 helliker Exp $
  */
 
+@SuppressWarnings("serial")
 public class NoMPEGFramesException extends ID3Exception {
 
-  /**
-   * Create a NoMPEGFramesException with a default message.
-   */
-  public NoMPEGFramesException() {
-    super("The file specified is not a valid MPEG.");
-  }
+	/**
+	 * Create a NoMPEGFramesException with a default message.
+	 */
+	public NoMPEGFramesException() {
+		super("The file specified is not a valid MPEG.");
+	}
 
-
-  /**
-   * Create a NoMPEGFramesException with a specified message.
-   *
-   *@param msg  the message for this exception
-   */
-  public NoMPEGFramesException(String msg) {
-    super(msg);
-  }
+	/**
+	 * Create a NoMPEGFramesException with a specified message.
+	 *
+	 * @param msg
+	 *           the message for this exception
+	 */
+	public NoMPEGFramesException(final String msg) {
+		super(msg);
+	}
 
 }
-

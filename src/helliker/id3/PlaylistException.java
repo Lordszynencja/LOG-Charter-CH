@@ -18,39 +18,38 @@ package helliker.id3;
  * Description: This exception is thrown by the Playlist class when an error is
  * encountered while parsing an existing playlist.
  * <dl>
- *   <dt> <b>Version History</b> </dt>
- *   <dt> 1.3.1 - <small>2002.1023 by gruni</small> </dt>
- *   <dd> -Made Sourcecode compliant to the Sun CodingConventions</dd>
- *   <dt> 1.3 - <small>2002.0318 by helliker</small> </dt>
- *   <dd> -Inherits from ID3Exception now</dd>
- *   <dt> 1.2 - <small>2001.1019 by helliker</small> </dt>
- *   <dd> All set for release.</dd>
+ * <dt><b>Version History</b></dt>
+ * <dt>1.3.1 - <small>2002.1023 by gruni</small></dt>
+ * <dd>-Made Sourcecode compliant to the Sun CodingConventions</dd>
+ * <dt>1.3 - <small>2002.0318 by helliker</small></dt>
+ * <dd>-Inherits from ID3Exception now</dd>
+ * <dt>1.2 - <small>2001.1019 by helliker</small></dt>
+ * <dd>All set for release.</dd>
  * </dl>
  *
  *
- *@author    Jonathan Hilliker
- *@version   1.3.1
+ * @author Jonathan Hilliker
+ * @version 1.3.1
  */
 
-
+@SuppressWarnings("serial")
 public class PlaylistException extends ID3Exception {
 
-  /**
-   * Create a PlaylistException with a default message
-   */
-  public PlaylistException() {
-    super("The playlist file is corrupt.");
-  }
+	/**
+	 * Create a PlaylistException with a default message
+	 */
+	public PlaylistException() {
+		super("The playlist file is corrupt.");
+	}
 
-
-  /**
-   * Create an PlaylistException with a specified message
-   *
-   *@param msg  the message for this exception
-   */
-  public PlaylistException(String msg) {
-    super(msg);
-  }
+	/**
+	 * Create an PlaylistException with a specified message
+	 *
+	 * @param msg
+	 *           the message for this exception
+	 */
+	public PlaylistException(final String msg) {
+		super(msg);
+	}
 
 }
-

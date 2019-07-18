@@ -169,7 +169,7 @@ public class ChartEventsHandler implements KeyListener, MouseListener {
 			}
 
 			while ((nextTempoTime >= 0) && (nextTempoTime < soundTime)) {
-				nextTempoTime = data.s.tempoMap.findNextBeatTime((int) data.nextT);
+				nextTempoTime = data.s.tempoMap.findNextBeatTime((int) soundTime);
 				if (metronome) {
 					tickPlayer.queuePlaying();
 				}

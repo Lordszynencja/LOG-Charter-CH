@@ -19,6 +19,7 @@ import log.charter.song.Instrument;
 import log.charter.song.Instrument.InstrumentType;
 import log.charter.song.Tempo;
 import log.charter.sound.MusicData;
+import log.charter.sound.RepeatingPlayer;
 import log.charter.sound.SoundPlayer;
 import log.charter.sound.SoundPlayer.Player;
 
@@ -27,6 +28,9 @@ public class ChartEventsHandler implements KeyListener, MouseListener {
 
 	private static final MusicData tick = MusicData.generateSound(4000, 0.01, 1);
 	private static final MusicData note = MusicData.generateSound(1000, 0.02, 0.8);
+
+	private final RepeatingPlayer tickPlayer = new RepeatingPlayer(tick);
+	private final RepeatingPlayer notePlayer = new RepeatingPlayer(note);
 
 	public final ChartData data;
 	public final CharterFrame frame;
@@ -160,14 +164,14 @@ public class ChartEventsHandler implements KeyListener, MouseListener {
 					nextNoteId = -1;
 				}
 				if (claps) {
-					SoundPlayer.play(note, 0);
+					notePlayer.queuePlaying();
 				}
 			}
 
 			while ((nextTempoTime >= 0) && (nextTempoTime < soundTime)) {
 				nextTempoTime = data.s.tempoMap.findNextBeatTime((int) data.nextT);
 				if (metronome) {
-					SoundPlayer.play(tick, 0);
+					tickPlayer.queuePlaying();
 				}
 			}
 

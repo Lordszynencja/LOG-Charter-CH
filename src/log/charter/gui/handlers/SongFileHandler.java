@@ -296,7 +296,12 @@ public class SongFileHandler {
 			return;
 		}
 
-		final JFileChooser chooser = new JFileChooser(new File(handler.data.path));
+		String startingDir = handler.data.path;
+		if (!new File(startingDir).exists()) {
+			startingDir = Config.songsPath;
+		}
+
+		final JFileChooser chooser = new JFileChooser(new File(startingDir));
 		chooser.setFileFilter(new FileFilter() {
 
 			@Override

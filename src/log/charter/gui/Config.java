@@ -27,6 +27,8 @@ public class Config {
 	public static int markerOffset = 300;
 	public static double lastMaxHOPODist = 100;
 
+	public static boolean debugLogging = false;
+
 	static {
 		read();
 		save();
@@ -84,6 +86,9 @@ public class Config {
 					case "lastMaxHOPODist":
 						lastMaxHOPODist = Double.valueOf(val);
 						break;
+					case "debugLogging":
+						debugLogging = Boolean.valueOf(val);
+						break;
 					default:
 						error("Unknown config line " + line);
 						break;
@@ -115,6 +120,7 @@ public class Config {
 		adder.accept("delay", delay + "");
 		adder.accept("markerOffset", markerOffset + "");
 		adder.accept("lastMaxHOPODist", lastMaxHOPODist + "");
+		adder.accept("debugLogging", debugLogging + "");
 
 		RW.write(configName, b.toString());
 	}

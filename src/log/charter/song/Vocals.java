@@ -31,8 +31,8 @@ public class Vocals {
 		for (int j = 0; j < (size - 1); j++) {
 			final Lyric l0 = lyrics.get(j);
 			final Lyric l1 = lyrics.get(j + 1);
-			if ((l0.pos + l0.length) >= l1.pos) {
-				l0.length = l1.pos - l0.pos;
+			if ((l0.pos + l0.getLength()) >= l1.pos) {
+				l0.setLength(l1.pos - l0.pos);
 			}
 		}
 	}

@@ -42,7 +42,7 @@ public class VocalsReader {
 			lyric = new Lyric(e.t, e.msg[1]);
 			noteStarted = true;
 		} else if (noteStarted) {
-			lyric.length = e.t - lyric.pos;
+			lyric.setLength(e.t - lyric.pos);
 			noteEnded = true;
 			if (lyric.lyric != null) {
 				vocals.lyrics.add(lyric);
@@ -60,7 +60,7 @@ public class VocalsReader {
 		if (lyricsLine == null) {
 			lyricsLine = new Event(e.t);
 		} else {
-			lyricsLine.length = e.t - lyricsLine.pos;
+			lyricsLine.setLength(e.t - lyricsLine.pos);
 			vocals.lyricLines.add(lyricsLine);
 			lyricsLine = null;
 		}

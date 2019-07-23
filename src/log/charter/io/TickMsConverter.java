@@ -117,7 +117,7 @@ public class TickMsConverter {
 		for (int i = 0; i < n; i++) {
 			final Event e = events.get(i);
 			data[2 * i] = e.pos;
-			data[(2 * i) + 1] = e.pos + e.length;
+			data[(2 * i) + 1] = e.pos + e.getLength();
 		}
 
 		return data;
@@ -131,7 +131,7 @@ public class TickMsConverter {
 		for (int i = 0; i < (data.length / 2); i++) {
 			final Event e = events.get(i);
 			e.pos = data[2 * i];
-			e.length = data[(2 * i) + 1] - e.pos;
+			e.setLength(data[(2 * i) + 1] - e.pos);
 		}
 	}
 }

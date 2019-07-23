@@ -55,18 +55,18 @@ public class InstrumentWriter {
 					track.add(new MidiEvent(msgStart, Math.round(n.pos)));
 					final SysexMessage msgEnd = new SysexMessage();
 					msgEnd.setMessage(240, new byte[] { 80, 83, 0, 0, 3, 1, 0, -9 }, 8);
-					track.add(new MidiEvent(msgEnd, Math.round(n.pos + n.length)));
+					track.add(new MidiEvent(msgEnd, Math.round(n.pos + n.getLength())));
 				} else {
 					for (int i = 0; i < 5; i++) {
 						if ((n.notes & (1 << i)) > 0) {
-							addNote(60 + (diffId * 12) + i, n.pos, n.pos + n.length, track);
+							addNote(60 + (diffId * 12) + i, n.pos, n.pos + n.getLength(), track);
 						}
 					}
 				}
 				if (n.hopo) {
-					addNote(65 + (diffId * 12), n.pos, n.pos + n.length, track);
+					addNote(65 + (diffId * 12), n.pos, n.pos + n.getLength(), track);
 				} else {
-					addNote(66 + (diffId * 12), n.pos, n.pos + n.length, track);
+					addNote(66 + (diffId * 12), n.pos, n.pos + n.getLength(), track);
 				}
 			}
 		}
@@ -74,13 +74,13 @@ public class InstrumentWriter {
 
 	private static void writeSolo(final List<Event> solo, final Track track) throws InvalidMidiDataException {
 		for (final Event e : solo) {
-			addNote(103, e.pos, e.pos + e.length, track);
+			addNote(103, e.pos, e.pos + e.getLength(), track);
 		}
 	}
 
 	private static void writeSP(final List<Event> sp, final Track track) throws InvalidMidiDataException {
 		for (final Event e : sp) {
-			addNote(116, e.pos, e.pos + e.length, track);
+			addNote(116, e.pos, e.pos + e.getLength(), track);
 		}
 	}
 
@@ -91,7 +91,7 @@ public class InstrumentWriter {
 			track.add(new MidiEvent(msgStart, Math.round(e.pos)));
 			final SysexMessage msgEnd = new SysexMessage();
 			msgEnd.setMessage(240, new byte[] { 80, 83, 0, 0, -1, 4, 0, -9 }, 8);
-			track.add(new MidiEvent(msgEnd, Math.round(e.pos + e.length)));
+			track.add(new MidiEvent(msgEnd, Math.round(e.pos + e.getLength())));
 		}
 	}
 }

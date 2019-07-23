@@ -41,7 +41,7 @@ public class Lyric extends Event {
 	@Override
 	public String toString() {
 		return "Lyric{pos: " + pos//
-				+ ", length: " + length//
+				+ ", length: " + getLength()//
 				+ ", tone: " + tone//
 				+ ", lyric: " + lyric + "}";
 	}

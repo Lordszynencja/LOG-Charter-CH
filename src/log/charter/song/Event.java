@@ -5,7 +5,7 @@ public class Event extends Position {
 	/**
 	 * length in ms
 	 */
-	public double length = 0;
+	private double length = 1;
 
 	public Event(final double pos) {
 		super(pos);
@@ -13,12 +13,20 @@ public class Event extends Position {
 
 	public Event(final double pos, final double length) {
 		super(pos);
-		this.length = length;
+		setLength(length);
 	}
 
 	public Event(final Event e) {
 		super(e);
 		length = e.length;
+	}
+
+	public double getLength() {
+		return length;
+	}
+
+	public void setLength(final double l) {
+		length = l < 1 ? 1 : l;
 	}
 
 	@Override

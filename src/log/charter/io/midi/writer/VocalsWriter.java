@@ -41,12 +41,12 @@ public class VocalsWriter {
 		track.add(new MidiEvent(msg, 0));
 
 		for (final Event e : vocals.lyricLines) {
-			addNote(105, e.pos, e.pos + e.length, track);
+			addNote(105, e.pos, e.pos + e.getLength(), track);
 		}
 
 		for (final Lyric l : vocals.lyrics) {
 			addText(l.pos, (l.connected ? "+" : "") + l.lyric + (l.wordPart ? "-" : "") + (l.toneless ? "#" : ""), track);
-			addNote(l.toneless ? 50 : l.tone, l.pos, l.pos + l.length, track);
+			addNote(l.toneless ? 50 : l.tone, l.pos, l.pos + l.getLength(), track);
 		}
 
 		debug("Writing vocals finished");

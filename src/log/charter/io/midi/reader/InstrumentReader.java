@@ -80,8 +80,8 @@ public class InstrumentReader {
 				colorNotes.add(new Note(e.t));
 			} else {
 				final Note n = colorNotes.get(colorNotes.size() - 1);
-				if (n.length < 0) {
-					n.length = e.t - n.pos;
+				if (n.getLength() < 0) {
+					n.setLength(e.t - n.pos);
 				} else {
 					colorNotes.add(new Note(e.t));
 				}
@@ -95,7 +95,7 @@ public class InstrumentReader {
 		if (solo == null) {
 			solo = new Event(e.t);
 		} else {
-			solo.length = e.t - solo.pos;
+			solo.setLength(e.t - solo.pos);
 			instr.solo.add(solo);
 			solo = null;
 		}
@@ -105,7 +105,7 @@ public class InstrumentReader {
 		if (sp == null) {
 			sp = new Event(e.t);
 		} else {
-			sp.length = e.t - sp.pos;
+			sp.setLength(e.t - sp.pos);
 			instr.sp.add(sp);
 			sp = null;
 		}
@@ -124,7 +124,7 @@ public class InstrumentReader {
 				return;
 			}
 
-			tap.length = e.t - tap.pos;
+			tap.setLength(e.t - tap.pos);
 			instr.tap.add(tap);
 			tap = null;
 		}
@@ -158,7 +158,7 @@ public class InstrumentReader {
 				for (int j = 0; j < n;) {
 					final Note nStart = laneNotes.get(j++);
 					final Note nEnd = laneNotes.get(j++);
-					nStart.length = nEnd.pos - nStart.pos;
+					nStart.setLength(nEnd.pos - nStart.pos);
 					newNotes.add(nStart);
 				}
 				laneNotes.clear();
@@ -187,8 +187,8 @@ public class InstrumentReader {
 						if (n.notes != 0) {
 							n.notes |= 1 << (j - 1);
 						}
-						if (n.length < note.length) {
-							n.length = note.length;
+						if (n.getLength() < note.getLength()) {
+							n.setLength(note.getLength());
 						}
 					}
 				}

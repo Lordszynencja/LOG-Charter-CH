@@ -65,7 +65,7 @@ public class Instrument {
 			final int size = diffNotes.size();
 
 			if (size > 1) {
-				if ((diffNotes.get(0).pos + diffNotes.get(0).length) >= diffNotes.get(1).pos) {
+				if ((diffNotes.get(0).pos + diffNotes.get(0).getLength()) >= diffNotes.get(1).pos) {
 					diffNotes.get(0).crazy = true;
 				}
 				if (!diffNotes.get(size - 1).forced && (diffNotes.get(size - 1).notes != diffNotes.get(size - 2).notes)
@@ -78,7 +78,7 @@ public class Instrument {
 				final Note nm1 = diffNotes.get(j - 1);
 				final Note n0 = diffNotes.get(j);
 				final Note n1 = diffNotes.get(j + 1);
-				if ((n0.pos + n0.length) >= n1.pos) {
+				if ((n0.pos + n0.getLength()) >= n1.pos) {
 					n0.crazy = true;
 				}
 				if (!n0.forced && (n0.notes != nm1.notes) && (n0.pos <= (nm1.pos + 150))) {
@@ -91,14 +91,14 @@ public class Instrument {
 				Event tapSection = tap.get(0);
 				for (int j = 0; j < size; j++) {
 					final Note n = diffNotes.get(j);
-					while ((nextTapId < tap.size()) && ((tapSection.pos + tapSection.length) < n.pos)) {
+					while ((nextTapId < tap.size()) && ((tapSection.pos + tapSection.getLength()) < n.pos)) {
 						tapSection = tap.get(nextTapId);
 						nextTapId++;
 					}
 					if (tapSection.pos > n.pos) {
 						continue;
 					}
-					if ((nextTapId == tap.size()) && ((tapSection.pos + tapSection.length) < n.pos)) {
+					if ((nextTapId == tap.size()) && ((tapSection.pos + tapSection.getLength()) < n.pos)) {
 						break;
 					} else {
 						n.tap = true;

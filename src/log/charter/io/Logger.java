@@ -6,10 +6,10 @@ import java.io.PrintStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
+import log.charter.gui.Config;
+
 public class Logger {
 	private static PrintStream out = System.out;
-
-	public static boolean debug = true;
 
 	static {
 		try {
@@ -26,7 +26,7 @@ public class Logger {
 	}
 
 	public static void debug(final String msg) {
-		if (debug) {
+		if (Config.debugLogging) {
 			out.println("[DEBUG] " + msg);
 		}
 	}
@@ -39,10 +39,6 @@ public class Logger {
 		out.println("[ERROR] " + msg);
 		e.printStackTrace(out);
 		e.printStackTrace(System.out);
-	}
-
-	public static void info(final String msg) {
-		out.println("[INFO] " + msg);
 	}
 
 	public static void setOutput(final PrintStream output) {

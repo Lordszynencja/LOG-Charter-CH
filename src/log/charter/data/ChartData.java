@@ -210,7 +210,7 @@ public class ChartData {
 		} else {
 			s.v.lyrics.add(insertPos, l);
 		}
-		l.length = Config.minTailLength;
+		l.setLength(Config.minTailLength);
 		if (insertPos > 0) {
 			fixLyricLength(s.v.lyrics.get(insertPos - 1), insertPos - 1, l);
 		}
@@ -235,14 +235,14 @@ public class ChartData {
 		int id = 0;
 		while (id < events.size()) {
 			final Event e = events.get(id);
-			if ((e.pos + e.length) < start) {
+			if ((e.pos + e.getLength()) < start) {
 				id++;
 				continue;
 			}
 			if (e.pos > end) {
 				break;
 			}
-			if ((e.pos == start) && ((e.pos + e.length) == end)) {
+			if ((e.pos == start) && ((e.pos + e.getLength()) == end)) {
 				events.remove(id);
 				return;
 			}
@@ -286,12 +286,12 @@ public class ChartData {
 			final Lyric l = s.v.lyrics.get(id);
 			if (useGrid) {
 				if (grids < 0) {
-					l.length = s.tempoMap.findNextGridPositionForTime(l.pos + l.length, gridSize) - l.pos;
+					l.setLength(s.tempoMap.findNextGridPositionForTime(l.pos + l.getLength(), gridSize) - l.pos);
 				} else {
-					l.length = s.tempoMap.findPreviousGridPositionForTime(l.pos + l.length, gridSize) - l.pos;
+					l.setLength(s.tempoMap.findPreviousGridPositionForTime(l.pos + l.getLength(), gridSize) - l.pos);
 				}
 			} else {
-				l.length -= 100 * grids;
+				l.setLength(l.getLength() - (100 * grids));
 			}
 			if ((id + 1) < s.v.lyrics.size()) {
 				fixLyricLength(l, id, s.v.lyrics.get(id + 1));
@@ -308,7 +308,7 @@ public class ChartData {
 		final Lyric first = s.v.lyrics.get(selectedNotes.get(0));
 		final Lyric last = s.v.lyrics.get(selectedNotes.get(selectedNotes.size() - 1));
 
-		changeEventList(s.v.lyricLines, first.pos, last.pos + last.length);
+		changeEventList(s.v.lyricLines, first.pos, last.pos + last.getLength());
 	}
 
 	public void changeNoteLength(final int grids) {
@@ -317,12 +317,12 @@ public class ChartData {
 			final Note note = currentNotes.get(id);
 			if (useGrid) {
 				if (grids < 0) {
-					note.length = s.tempoMap.findNextGridPositionForTime(note.pos + note.length, gridSize) - note.pos;
+					note.setLength(s.tempoMap.findNextGridPositionForTime(note.pos + note.getLength(), gridSize) - note.pos);
 				} else {
-					note.length = s.tempoMap.findPreviousGridPositionForTime(note.pos + note.length, gridSize) - note.pos;
+					note.setLength(s.tempoMap.findPreviousGridPositionForTime(note.pos + note.getLength(), gridSize) - note.pos);
 				}
 			} else {
-				note.length -= 100 * grids;
+				note.setLength(note.getLength() - (100 * grids));
 			}
 			fixNextNotesLength(note, id);
 		}
@@ -337,7 +337,7 @@ public class ChartData {
 		final Note first = currentNotes.get(selectedNotes.get(0));
 		final Note last = currentNotes.get(selectedNotes.get(selectedNotes.size() - 1));
 
-		changeEventList(currentInstrument.solo, first.pos, last.pos + last.length);
+		changeEventList(currentInstrument.solo, first.pos, last.pos + last.getLength());
 	}
 
 	public void changeSPSections() {
@@ -349,7 +349,7 @@ public class ChartData {
 		final Note first = currentNotes.get(selectedNotes.get(0));
 		final Note last = currentNotes.get(selectedNotes.get(selectedNotes.size() - 1));
 
-		changeEventList(currentInstrument.sp, first.pos, last.pos + last.length);
+		changeEventList(currentInstrument.sp, first.pos, last.pos + last.getLength());
 	}
 
 	public void changeTapSections() {
@@ -361,7 +361,7 @@ public class ChartData {
 		final Note first = currentNotes.get(selectedNotes.get(0));
 		final Note last = currentNotes.get(selectedNotes.get(selectedNotes.size() - 1));
 
-		changeEventList(currentInstrument.tap, first.pos, last.pos + last.length);
+		changeEventList(currentInstrument.tap, first.pos, last.pos + last.getLength());
 		fixTapSections();
 	}
 
@@ -412,7 +412,7 @@ public class ChartData {
 				lyricBytes[2] = (byte) ((l.toneless ? 4 : 0) + (l.wordPart ? 2 : 0) + (l.connected ? 1 : 0));
 
 				arraycopy(doubleToBytes(l.pos - firstLyricPos), 0, lyricBytes, 3, 8);
-				arraycopy(doubleToBytes(l.length), 0, lyricBytes, 11, 8);
+				arraycopy(doubleToBytes(l.getLength()), 0, lyricBytes, 11, 8);
 				arraycopy(stringBytes, 0, lyricBytes, 19, stringBytes.length);
 
 				list.add(lyricBytes);
@@ -428,7 +428,7 @@ public class ChartData {
 				noteBytes[1] = (byte) ((n.crazy ? 4 : 0) + (n.hopo ? 2 : 0) + (n.tap ? 1 : 0));
 
 				arraycopy(doubleToBytes(n.pos - firstNotePos), 0, noteBytes, 2, 8);
-				arraycopy(doubleToBytes(n.length), 0, noteBytes, 10, 8);
+				arraycopy(doubleToBytes(n.getLength()), 0, noteBytes, 10, 8);
 				list.add(noteBytes);
 			}
 		}
@@ -801,17 +801,14 @@ public class ChartData {
 	}
 
 	private void fixLyricLength(final Lyric l, final int id, final Lyric next) {
-		if (next.pos < (Config.minLongNoteDistance + l.pos + l.length)) {
-			l.length = next.pos - Config.minLongNoteDistance - l.pos;
-		}
-		if (l.length < 0) {
-			l.length = 0;
+		if (next.pos < (Config.minLongNoteDistance + l.pos + l.getLength())) {
+			l.setLength(next.pos - Config.minLongNoteDistance - l.pos);
 		}
 	}
 
 	private void fixNextNotesLength(final Note n, final int id) {
-		if (n.length < Config.minTailLength) {
-			n.length = 0;
+		if (n.getLength() < Config.minTailLength) {
+			n.setLength(1);
 		}
 		for (int i = id + 1; (i < currentNotes.size()) && (i < (id + 100)); i++) {
 			final Note nextNote = currentNotes.get(i);
@@ -822,8 +819,8 @@ public class ChartData {
 	}
 
 	private boolean fixNoteLength(final Note n, final int nId, final Note next) {
-		if (n.length < Config.minTailLength) {
-			n.length = 0;
+		if (n.getLength() < Config.minTailLength) {
+			n.setLength(1);
 			return true;
 		}
 
@@ -832,7 +829,7 @@ public class ChartData {
 		}
 
 		if ((n.crazy ? notesColorsOverlap(n, next) : true) && notesOverlap(n, next)) {
-			n.length = next.pos - Config.minLongNoteDistance - n.pos;
+			n.setLength(next.pos - Config.minLongNoteDistance - n.pos);
 			return true;
 		}
 
@@ -869,7 +866,7 @@ public class ChartData {
 					n.tap = false;
 				}
 				for (final Event e : currentInstrument.tap) {
-					if ((n.pos >= e.pos) && (n.pos <= (e.pos + e.length))) {
+					if ((n.pos >= e.pos) && (n.pos <= (e.pos + e.getLength()))) {
 						n.tap = true;
 					}
 				}
@@ -879,7 +876,7 @@ public class ChartData {
 
 	private boolean isInSection(final Note n, final List<Event> sections) {
 		for (final Event e : currentInstrument.tap) {
-			if ((e.pos + e.length) < n.pos) {
+			if ((e.pos + e.getLength()) < n.pos) {
 				continue;
 			}
 			if (e.pos > n.pos) {
@@ -954,7 +951,7 @@ public class ChartData {
 	}
 
 	private boolean notesOverlap(final Note n, final Note next) {
-		return next.pos < (Config.minLongNoteDistance + n.pos + n.length);
+		return next.pos < (Config.minLongNoteDistance + n.pos + n.getLength());
 	}
 
 	public void paste() throws HeadlessException, IOException, UnsupportedFlavorException {
@@ -985,7 +982,7 @@ public class ChartData {
 					final double pos = bytesToDouble(Arrays.copyOfRange(noteBytes, 2, 10));
 					final double length = bytesToDouble(Arrays.copyOfRange(noteBytes, 10, 18));
 					final Note note = new Note(markerPos + pos, noteBytes[0]);
-					note.length = length;
+					note.setLength(length);
 					note.crazy = (noteBytes[1] & 4) > 0;
 					note.hopo = (noteBytes[1] & 2) > 0;
 					note.tap = (noteBytes[1] & 1) > 0;
@@ -1017,7 +1014,7 @@ public class ChartData {
 					final double pos = bytesToDouble(Arrays.copyOfRange(lyricBytes, 3, 11));
 					final double length = bytesToDouble(Arrays.copyOfRange(lyricBytes, 11, 19));
 					final Lyric l = new Lyric(markerPos + pos, (lyricBytes[0] & 255) + ((lyricBytes[1] & 255) << 8));
-					l.length = length;
+					l.setLength(length);
 					l.toneless = (lyricBytes[2] & 4) > 0;
 					l.wordPart = (lyricBytes[2] & 2) > 0;
 					l.connected = (lyricBytes[2] & 1) > 0;
@@ -1104,10 +1101,10 @@ public class ChartData {
 				}
 				currentNotes.remove(id);
 			} else {
-				final double newLength = s.tempoMap.findClosestGridPositionForTime(n.pos + n.length, useGrid, gridSize)
+				final double newLength = s.tempoMap.findClosestGridPositionForTime(n.pos + n.getLength(), useGrid, gridSize)
 						- newPos;
 				n.pos = newPos;
-				n.length = newLength;
+				n.setLength(newLength);
 			}
 		}
 		for (int i = 0; i < selectedNotes.size(); i++) {
@@ -1131,10 +1128,10 @@ public class ChartData {
 				}
 				s.v.lyrics.remove(id);
 			} else {
-				final double newLength = s.tempoMap.findClosestGridPositionForTime(l.pos + l.length, useGrid, gridSize)
+				final double newLength = s.tempoMap.findClosestGridPositionForTime(l.pos + l.getLength(), useGrid, gridSize)
 						- newPos;
 				l.pos = newPos;
-				l.length = newLength;
+				l.setLength(newLength);
 
 				if (id > 0) {
 					fixLyricLength(s.v.lyrics.get(id - 1), id - 1, l);

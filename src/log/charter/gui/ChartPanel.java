@@ -288,7 +288,7 @@ public class ChartPanel extends JPanel {
 
 			for (final Note n : data.currentNotes) {
 				final int x = data.timeToX(n.pos);
-				final int length = data.timeToXLength(n.length);
+				final int length = data.timeToXLength(n.getLength());
 				if (x > (getWidth() + (noteW / 2))) {
 					break;
 				}
@@ -353,7 +353,7 @@ public class ChartPanel extends JPanel {
 
 			for (final Note n : data.currentNotes) {
 				final int x = data.timeToX(n.pos);
-				final int length = data.timeToXLength(n.length);
+				final int length = data.timeToXLength(n.getLength());
 				if (x > (getWidth() + (noteW / 2))) {
 					break;
 				}
@@ -395,7 +395,7 @@ public class ChartPanel extends JPanel {
 			for (int i = 0; i < lyrics.size(); i++) {
 				final Lyric l = lyrics.get(i);
 				final int x = data.timeToX(l.pos);
-				int length = data.timeToXLength(l.length);
+				int length = data.timeToXLength(l.getLength());
 				if (length < 1) {
 					length = 1;
 				}
@@ -408,7 +408,7 @@ public class ChartPanel extends JPanel {
 				}
 				if (l.connected && (i > 0)) {
 					final Lyric prev = lyrics.get(i - 1);
-					final int prevEnd = data.timeToX(prev.pos + prev.length);
+					final int prevEnd = data.timeToX(prev.pos + prev.getLength());
 					connections.addPositions(prevEnd, y, x - prevEnd, 8);
 				}
 				if ((x + g.getFontMetrics().stringWidth(l.lyric)) > 0) {
@@ -433,7 +433,7 @@ public class ChartPanel extends JPanel {
 			final FillList lines = new FillList();
 			for (final Event e : data.s.v.lyricLines) {
 				final int x = data.timeToX(e.pos);
-				final int l = data.timeToXLength(e.length);
+				final int l = data.timeToXLength(e.getLength());
 				if ((x + l) < 0) {
 					continue;
 				}
@@ -447,7 +447,7 @@ public class ChartPanel extends JPanel {
 			final FillList sp = new FillList();
 			for (final Event e : data.currentInstrument.sp) {
 				final int x = data.timeToX(e.pos);
-				final int l = data.timeToXLength(e.length);
+				final int l = data.timeToXLength(e.getLength());
 				if ((x + l) < 0) {
 					continue;
 				}
@@ -461,7 +461,7 @@ public class ChartPanel extends JPanel {
 			final FillList tap = new FillList();
 			for (final Event e : data.currentInstrument.tap) {
 				final int x = data.timeToX(e.pos);
-				final int l = data.timeToXLength(e.length);
+				final int l = data.timeToXLength(e.getLength());
 				if ((x + l) < 0) {
 					continue;
 				}
@@ -475,7 +475,7 @@ public class ChartPanel extends JPanel {
 			final FillList solos = new FillList();
 			for (final Event e : data.currentInstrument.solo) {
 				final int x = data.timeToX(e.pos);
-				final int l = data.timeToXLength(e.length);
+				final int l = data.timeToXLength(e.getLength());
 				if ((x + l) < 0) {
 					continue;
 				}
@@ -496,7 +496,7 @@ public class ChartPanel extends JPanel {
 				final Lyric l = data.s.v.lyrics.get(id);
 				final int x = data.timeToX(l.pos);
 				final int y = colorToY(2) - 5;
-				int length = data.timeToXLength(l.length) + 1;
+				int length = data.timeToXLength(l.getLength()) + 1;
 				if (length < 3) {
 					length = 3;
 				}
@@ -518,7 +518,7 @@ public class ChartPanel extends JPanel {
 			for (final int id : data.selectedNotes) {
 				final Note n = data.currentNotes.get(id);
 				final int x = data.timeToX(n.pos);
-				final int length = data.timeToXLength(n.length);
+				final int length = data.timeToXLength(n.getLength());
 				if (x > (getWidth() + (noteW / 2))) {
 					break;
 				}
@@ -545,7 +545,7 @@ public class ChartPanel extends JPanel {
 			if (data.isNoteDrag) {
 				final IdOrPos idOrPos = data.findClosestVocalIdOrPosForX(data.mx, data.handler.isCtrl());
 				final int x = data.timeToX(idOrPos.isId() ? data.s.v.lyrics.get(idOrPos.id).pos : idOrPos.pos);
-				int xLength = idOrPos.isId() ? data.timeToXLength(data.s.v.lyrics.get(idOrPos.id).length) - 1 : 10;
+				int xLength = idOrPos.isId() ? data.timeToXLength(data.s.v.lyrics.get(idOrPos.id).getLength()) - 1 : 10;
 				if (xLength < 1) {
 					xLength = 1;
 				}
@@ -556,7 +556,7 @@ public class ChartPanel extends JPanel {
 			} else {
 				final IdOrPos idOrPos = data.findClosestVocalIdOrPosForX(data.mx);
 				final int x = data.timeToX(idOrPos.isId() ? data.s.v.lyrics.get(idOrPos.id).pos : idOrPos.pos);
-				int xLength = idOrPos.isId() ? data.timeToXLength(data.s.v.lyrics.get(idOrPos.id).length) - 1 : 10;
+				int xLength = idOrPos.isId() ? data.timeToXLength(data.s.v.lyrics.get(idOrPos.id).getLength()) - 1 : 10;
 				if (xLength < 1) {
 					xLength = 1;
 				}

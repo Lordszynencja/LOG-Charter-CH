@@ -42,7 +42,7 @@ public class IniData {
 			try {
 				final int split = line.indexOf('=');
 				if (split < 0) {
-					Logger.info("Skipping ini line " + line);
+					Logger.debug("Skipping ini line " + line);
 					continue;
 				}
 				final String param = line.substring(0, split).trim();

@@ -39,7 +39,7 @@ public class Note extends Event {
 		return "Note{notes: "//
 				+ (notes & 1) + ((notes >> 1) & 1) + ((notes >> 2) & 1) + ((notes >> 3) & 1) + ((notes >> 4) & 1)//
 				+ ", pos: " + pos//
-				+ ", length: " + length//
+				+ ", length: " + getLength()//
 				+ ", hopo: " + (hopo ? "T" : "F")//
 				+ ", tap: " + (tap ? "T" : "F")//
 				+ ", crazy: " + (crazy ? "T" : "F") + "}";

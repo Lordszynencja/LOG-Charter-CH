@@ -13,6 +13,7 @@ import java.util.List;
 import log.charter.gui.ChartEventsHandler;
 import log.charter.gui.ChartPanel;
 import log.charter.gui.Config;
+import log.charter.gui.LyricPane;
 import log.charter.io.ClipboardHandler;
 import log.charter.io.Logger;
 import log.charter.song.Event;
@@ -481,55 +482,68 @@ public class ChartData {
 		deselect();
 
 		if (ChartPanel.isInNotes(my)) {
-			int x0, x1;
-			int y0, y1;
-			if (mx < mousePressX) {
-				x0 = mx;
-				y0 = my;
-				x1 = mousePressX;
-				y1 = mousePressY;
-			} else {
-				x0 = mousePressX;
-				y0 = mousePressY;
-				x1 = mx;
-				y1 = my;
-			}
-			final IdOrPos startIdOrPos = findClosestIdOrPosForX(x0);
-			final IdOrPos endIdOrPos = findClosestIdOrPosForX(x1);
-
-			final double firstNotePos = startIdOrPos.isId() ? currentNotes.get(startIdOrPos.id).pos
-					: startIdOrPos.pos;
-			final double lastNotePos = endIdOrPos.isId() ? currentNotes.get(endIdOrPos.id).pos : endIdOrPos.pos;
-
-			if (firstNotePos != lastNotePos) {
-				undoSystem.addUndo();
-				final double length = lastNotePos - firstNotePos;
-				int id = startIdOrPos.isId() ? startIdOrPos.id : findFirstNoteAfterTime(firstNotePos);
-
-				final List<Note> notes = findNotesFromTo(id, lastNotePos);
-				final List<Double> allGridPositions = s.tempoMap.getGridPositionsFromTo(gridSize, xToTime(x0), xToTime(x1));
-				final List<Double> gridPositions = ChartData.removePostionsCloseToNotes(allGridPositions, notes);
-
-				for (final Note note : notes) {
-					final double part = (note.pos - firstNotePos) / length;
-					final int colorBit = ChartPanel.yToLane((y0 * (1 - part)) + (part * y1)) + 1;
-					if ((colorBit >= 0) && (colorBit <= 5)) {
-						toggleNote(id, colorBit);
-					}
-					if ((currentNotes.size() > id) && (currentNotes.get(id) == note)) {
-						id++;
-					}
+			if (vocalsEditing) {
+				final IdOrPos idOrPos = findClosestVocalIdOrPosForX(mousePressX);
+				if (idOrPos.isId()) {
+					removeVocalNote(idOrPos.id);
+				} else {
+					new LyricPane(handler.frame, idOrPos);
 				}
-
-				for (final Double pos : gridPositions) {
-					final double part = (pos - firstNotePos) / length;
-					final int colorBit = ChartPanel.yToLane((y0 * (1 - part)) + (part * y1)) + 1;
-					if ((colorBit >= 0) && (colorBit <= 5)) {
-						toggleNote(pos, colorBit);
-					}
-				}
+				handler.setChanged();
 			} else {
-				toggleNote(startIdOrPos, ChartPanel.yToLane(y0) + 1);
+				int x0, x1;
+				int y0, y1;
+				if (mx < mousePressX) {
+					x0 = mx;
+					y0 = my;
+					x1 = mousePressX;
+					y1 = mousePressY;
+				} else {
+					x0 = mousePressX;
+					y0 = mousePressY;
+					x1 = mx;
+					y1 = my;
+				}
+				final IdOrPos startIdOrPos = findClosestIdOrPosForX(x0);
+				final IdOrPos endIdOrPos = findClosestIdOrPosForX(x1);
+
+				final double firstNotePos = startIdOrPos.isId() ? currentNotes.get(startIdOrPos.id).pos
+						: startIdOrPos.pos;
+				final double lastNotePos = endIdOrPos.isId() ? currentNotes.get(endIdOrPos.id).pos : endIdOrPos.pos;
+
+				if (firstNotePos != lastNotePos) {
+					if (vocalsEditing) {
+						return;
+					}
+					undoSystem.addUndo();
+					final double length = lastNotePos - firstNotePos;
+					int id = startIdOrPos.isId() ? startIdOrPos.id : findFirstNoteAfterTime(firstNotePos);
+
+					final List<Note> notes = findNotesFromTo(id, lastNotePos);
+					final List<Double> allGridPositions = s.tempoMap.getGridPositionsFromTo(gridSize, xToTime(x0), xToTime(x1));
+					final List<Double> gridPositions = ChartData.removePostionsCloseToNotes(allGridPositions, notes);
+
+					for (final Note note : notes) {
+						final double part = (note.pos - firstNotePos) / length;
+						final int colorBit = ChartPanel.yToLane((y0 * (1 - part)) + (part * y1)) + 1;
+						if ((colorBit >= 0) && (colorBit <= 5)) {
+							toggleNote(id, colorBit);
+						}
+						if ((currentNotes.size() > id) && (currentNotes.get(id) == note)) {
+							id++;
+						}
+					}
+
+					for (final Double pos : gridPositions) {
+						final double part = (pos - firstNotePos) / length;
+						final int colorBit = ChartPanel.yToLane((y0 * (1 - part)) + (part * y1)) + 1;
+						if ((colorBit >= 0) && (colorBit <= 5)) {
+							toggleNote(pos, colorBit);
+						}
+					}
+				} else {
+					toggleNote(startIdOrPos, ChartPanel.yToLane(y0) + 1);
+				}
 			}
 		}
 	}
@@ -575,10 +589,10 @@ public class ChartData {
 				editedEvents.add(firstAfter, l);
 				selectedNotes.add(firstAfter);
 				if ((firstAfter - 1) > 0) {
-					fixLyricLength(events.get(firstAfter - 1), firstAfter - 1, l);
+					fixLyricLength(editedEvents.get(firstAfter - 1), firstAfter - 1, l);
 				}
 				if ((firstAfter + 1) < events.size()) {
-					fixLyricLength(l, firstAfter, events.get(firstAfter + 1));
+					fixLyricLength(l, firstAfter, editedEvents.get(firstAfter + 1));
 				}
 			}
 		}
@@ -1054,6 +1068,8 @@ public class ChartData {
 
 	public void removeVocalNote(final int id) {
 		undoSystem.addUndo();
+		final List<? extends Event> events = vocalsEditing ? s.v.lyrics : currentNotes;
+		events.remove(id);
 		selectedNotes.remove((Integer) id);
 	}
 

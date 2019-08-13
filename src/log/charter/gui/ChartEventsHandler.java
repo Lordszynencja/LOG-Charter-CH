@@ -544,19 +544,6 @@ public class ChartEventsHandler implements KeyListener, MouseListener {
 
 	@Override
 	public void mouseClicked(final MouseEvent e) {
-		cancelAllActions();
-		final int x = e.getX();
-		if (e.getButton() == MouseEvent.BUTTON3) {
-			if (data.vocalsEditing) {
-				final IdOrPos idOrPos = data.findClosestVocalIdOrPosForX(x);
-				if (idOrPos.isId()) {
-					data.removeVocalNote(idOrPos.id);
-				} else {
-					editVocalNote(idOrPos);
-				}
-				setChanged();
-			}
-		}
 	}
 
 	@Override
@@ -590,11 +577,9 @@ public class ChartEventsHandler implements KeyListener, MouseListener {
 		} else if (e.getButton() == MouseEvent.BUTTON3) {
 			if ((y >= (ChartPanel.lane0Y - (ChartPanel.laneDistY / 2))) && (y <= (ChartPanel.lane0Y
 					+ ((ChartPanel.laneDistY * 9) / 2)))) {
-				if (!data.vocalsEditing) {
-					data.selectedNotes.clear();
-					data.lastSelectedNote = null;
-					data.startNoteAdding(x, y);
-				}
+				data.selectedNotes.clear();
+				data.lastSelectedNote = null;
+				data.startNoteAdding(x, y);
 			}
 		}
 	}

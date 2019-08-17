@@ -6,7 +6,7 @@ import java.io.PrintStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
-import log.charter.gui.Config;
+import log.charter.data.Config;
 
 public class Logger {
 	private static PrintStream out = System.out;

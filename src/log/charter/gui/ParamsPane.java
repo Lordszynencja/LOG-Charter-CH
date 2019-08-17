@@ -16,6 +16,8 @@ import javax.swing.WindowConstants;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 
+import log.charter.data.Config;
+
 public class ParamsPane extends JDialog {
 
 	protected static interface BooleanValueSetter {

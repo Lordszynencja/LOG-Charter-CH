@@ -12,7 +12,6 @@ import java.util.List;
 
 import log.charter.gui.ChartEventsHandler;
 import log.charter.gui.ChartPanel;
-import log.charter.gui.Config;
 import log.charter.gui.LyricPane;
 import log.charter.io.ClipboardHandler;
 import log.charter.io.Logger;

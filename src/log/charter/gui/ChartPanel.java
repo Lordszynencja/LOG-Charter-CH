@@ -3,19 +3,26 @@ package log.charter.gui;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.Graphics;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import javax.swing.JPanel;
 
 import log.charter.data.ChartData;
 import log.charter.data.ChartData.IdOrPos;
+import log.charter.data.Config;
 import log.charter.gui.handlers.CharterFrameMouseMotionListener;
+import log.charter.io.Logger;
 import log.charter.song.Event;
 import log.charter.song.Instrument.InstrumentType;
 import log.charter.song.Lyric;
 import log.charter.song.Note;
 import log.charter.song.Tempo;
+import log.charter.util.RW;
 
 public class ChartPanel extends JPanel {
 	private static class DrawList {
@@ -93,49 +100,89 @@ public class ChartPanel extends JPanel {
 
 	private static final long serialVersionUID = -3439446235287039031L;
 
-	public static final int sectionNamesY = 10;
-	public static final int spY = 60;
-	public static final int tapY = 65;
-	public static final int textY = 50;
-	public static final int lane0Y = 100;
-	public static final int laneDistY = 50;
-
-	public static final int tempoMarkerY1 = 30;
-	public static final int tempoMarkerY2 = lane0Y + (4 * laneDistY) + (laneDistY / 2);
-
 	public static final int noteH = 30;
 	public static final int noteW = 15;
 	public static final int tailSize = 15;
 
-	private static final Color TEXT_COLOR = new Color(255, 255, 255);
-	private static final Color BG_COLOR = new Color(160, 160, 160);
-	private static final Color NOTE_BG_COLOR = new Color(16, 16, 16);
-	private static final Color SP_COLOR = new Color(180, 200, 255);
-	private static final Color LYRIC_LINE_COLOR = new Color(180, 200, 255);
-
-	private static final Color HIGHLIGHT_COLOR = new Color(255, 0, 0);
-	private static final Color SELECT_COLOR = new Color(0, 255, 255);
-	private static final Color TAP_COLOR = new Color(200, 0, 200);
-	private static final Color SOLO_COLOR = new Color(100, 100, 210);
-	private static final Color LANE_COLOR = new Color(128, 128, 128);
-	private static final Color MAIN_BEAT_COLOR = new Color(255, 255, 255);
-	private static final Color SECONDARY_BEAT_COLOR = new Color(200, 200, 200);
-	private static final Color MARKER_COLOR = new Color(255, 0, 0);
-
-	private static final Color LYRIC_NO_TONE_COLOR = new Color(128, 128, 0);
-	private static final Color LYRIC_WORD_PART_COLOR = new Color(0, 0, 255);
-	private static final Color LYRIC_CONNECTION_COLOR = new Color(255, 128, 255);
-	private static final Color LYRIC_COLOR = new Color(255, 0, 255);
-	private static final Color CRAZY_COLOR = new Color(0, 0, 0);
-	private static final Color HOPO_COLOR = new Color(255, 255, 255);
-	private static final Color OPEN_NOTE_COLOR = new Color(230, 20, 230);
-	private static final Color OPEN_NOTE_TAIL_COLOR = new Color(200, 20, 200);
-	private static final Color[] NOTE_COLORS = { new Color(20, 230, 20), new Color(230, 20, 20),
-			new Color(230, 230, 20), new Color(20, 20, 230), new Color(230, 115, 20), new Color(155, 20, 155) };
-	private static final Color[] NOTE_TAIL_COLORS = { new Color(20, 200, 20), new Color(200, 20, 20),
-			new Color(200, 200, 20), new Color(20, 20, 200), new Color(200, 100, 20), new Color(155, 20, 155) };
-
+	public static final int sectionNamesY = 10;
+	public static final int lyricLinesY = sectionNamesY + 20;
+	public static final int textY = lyricLinesY + 10;
+	public static final int tempoMarkerY1 = textY + 15;
+	public static final int beatTextY = tempoMarkerY1;
+	public static final int beatSizeTextY = beatTextY + 15;
+	public static final int spY = beatSizeTextY + 20;
+	public static final int tapY = spY + 5;
+	public static final int lane0Y = tapY + 35;
+	public static final int laneDistY = noteH + 20;
+	public static final int tempoMarkerY2 = lane0Y + (4 * laneDistY) + (laneDistY / 2);
 	public static final int HEIGHT = tempoMarkerY2;
+
+	private static Map<String, Color> colors = new HashMap<>();
+
+	private static String[] hexes = { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E", "F" };
+
+	static {
+		// bg colors
+		colors.put("BG", new Color(160, 160, 160));
+		colors.put("NOTE_BG", new Color(16, 16, 16));
+		colors.put("NOTE_ADD_LINE", new Color(0, 255, 0));
+		colors.put("LANE", new Color(128, 128, 128));
+		colors.put("MAIN_BEAT", new Color(255, 255, 255));
+		colors.put("SECONDARY_BEAT", new Color(200, 200, 200));
+		colors.put("SECTION_TEXT", new Color(255, 255, 255));
+		colors.put("MARKER", new Color(255, 0, 0));
+		colors.put("HIGHLIGHT", new Color(255, 0, 0));
+		colors.put("SELECT", new Color(0, 255, 255));
+
+		// notes colors
+		colors.put("SP_SECTION", new Color(180, 200, 255));
+		colors.put("TAP_SECTION", new Color(200, 0, 200));
+		colors.put("SOLO_SECTION", new Color(100, 100, 210));
+		colors.put("OPEN_NOTE", new Color(230, 20, 230));
+		colors.put("OPEN_NOTE_TAIL", new Color(200, 20, 200));
+		colors.put("CRAZY", new Color(0, 0, 0));
+		colors.put("HOPO", new Color(255, 255, 255));
+
+		colors.put("NOTE_0", new Color(20, 230, 20));
+		colors.put("NOTE_1", new Color(230, 20, 20));
+		colors.put("NOTE_2", new Color(230, 230, 20));
+		colors.put("NOTE_3", new Color(20, 20, 230));
+		colors.put("NOTE_4", new Color(230, 115, 20));
+
+		colors.put("NOTE_TAIL_0", new Color(20, 200, 20));
+		colors.put("NOTE_TAIL_1", new Color(200, 20, 20));
+		colors.put("NOTE_TAIL_2", new Color(200, 200, 20));
+		colors.put("NOTE_TAIL_3", new Color(20, 20, 200));
+		colors.put("NOTE_TAIL_4", new Color(200, 100, 20));
+
+		colors.put("TAP_NOTE", new Color(155, 20, 155));
+		colors.put("TAP_NOTE_TAIL", new Color(155, 20, 155));
+
+		// lyrics colors
+		colors.put("LYRIC_LINE", new Color(100, 200, 200));
+		colors.put("LYRIC_LINE_TEXT", new Color(0, 0, 128));
+		colors.put("LYRIC_TEXT", new Color(255, 255, 255));
+		colors.put("LYRIC", new Color(255, 0, 255));
+		colors.put("LYRIC_NO_TONE", new Color(128, 128, 0));
+		colors.put("LYRIC_WORD_PART", new Color(0, 0, 255));
+		colors.put("LYRIC_CONNECTION", new Color(255, 128, 255));
+
+		final Map<String, String> config = RW.readConfig("colors.txt");
+		for (final Entry<String, String> configEntry : config.entrySet()) {
+			try {
+				final String[] rgb = configEntry.getValue().split(" ");
+				colors.put(configEntry.getKey(), new Color(Integer.valueOf(rgb[0], 16), Integer.valueOf(rgb[1], 16), Integer.valueOf(rgb[2], 16)));
+			} catch (final Exception e) {
+				Logger.error("Couldn't load color " + configEntry.getKey() + "=" + configEntry.getValue(), e);
+			}
+		}
+
+		for (final Entry<String, Color> colorEntry : colors.entrySet()) {
+			final Color c = colorEntry.getValue();
+			config.put(colorEntry.getKey(), hex2(c.getRed()) + " " + hex2(c.getGreen()) + " " + hex2(c.getBlue()));
+		}
+		RW.writeConfig("colors.txt", config);
+	}
 
 	private static int clamp(final double y) {
 		return colorToY(yToLane(y));
@@ -143,6 +190,10 @@ public class ChartPanel extends JPanel {
 
 	private static int colorToY(final int i) {
 		return (lane0Y + (laneDistY * i));
+	}
+
+	private static String hex2(final int v) {
+		return hexes[(v / 16) % 16] + hexes[v % 16];
 	}
 
 	public static boolean isInNotes(final int y) {
@@ -206,7 +257,7 @@ public class ChartPanel extends JPanel {
 		final List<Tempo> tempos = data.s.tempoMap.tempos;
 		int lastKBPM = 120000;
 		int beatInMeasure = 0;
-		int beatsPerMeasure = 9999;
+		int beatsPerMeasure = 1;
 
 		g.setFont(new Font(Font.DIALOG, Font.PLAIN, 15));
 		for (int i = 0; i < (tempos.size() - 1); i++) {
@@ -226,16 +277,16 @@ public class ChartPanel extends JPanel {
 						return;
 					}
 					if (x >= -100) {
-						g.setColor(beatInMeasure == 0 ? MAIN_BEAT_COLOR : SECONDARY_BEAT_COLOR);
+						g.setColor(beatInMeasure == 0 ? colors.get("MAIN_BEAT") : colors.get("SECONDARY_BEAT"));
 						g.drawLine(x, tempoMarkerY1, x, tempoMarkerY2);
-						g.drawString("" + id, x + 3, tempoMarkerY1 + 8);
+						g.drawString("" + id, x + 3, beatTextY + 11);
 						if (id == tmp.id) {
-							g.drawString("" + tmp.beats, x + 3, tempoMarkerY1 + 21);
+							g.drawString("" + tmp.beats, x + 3, beatSizeTextY + 11);
 						}
 						final String sectionName = data.s.sections.get(id);
 						if (sectionName != null) {
-							g.setColor(TEXT_COLOR);
-							g.drawString("[" + sectionName + "]", x, sectionNamesY + 10);
+							g.setColor(colors.get("SECTION_TEXT"));
+							g.drawString("[" + sectionName + "]", x, sectionNamesY + 11);
 						}
 					}
 				}
@@ -256,16 +307,16 @@ public class ChartPanel extends JPanel {
 				return;
 			}
 			if (x >= -100) {
-				g.setColor(beatInMeasure == 0 ? MAIN_BEAT_COLOR : SECONDARY_BEAT_COLOR);
+				g.setColor(beatInMeasure == 0 ? colors.get("MAIN_BEAT") : colors.get("SECONDARY_BEAT"));
 				g.drawLine(x, tempoMarkerY1, x, tempoMarkerY2);
-				g.drawString("" + id, x + 3, tempoMarkerY1 + 8);
+				g.drawString("" + id, x + 3, beatTextY + 11);
 				if (id == tmp.id) {
-					g.drawString("" + tmp.beats, x + 3, tempoMarkerY1 + 21);
+					g.drawString("" + tmp.beats, x + 3, beatSizeTextY + 11);
 				}
 				final String sectionName = data.s.sections.get(id);
 				if (sectionName != null) {
-					g.setColor(TEXT_COLOR);
-					g.drawString("[" + sectionName + "]", x, sectionNamesY + 10);
+					g.setColor(colors.get("SECTION_TEXT"));
+					g.drawString("[" + sectionName + "]", x, sectionNamesY + 11);
 				}
 			}
 			beatInMeasure = (beatInMeasure + 1) % beatsPerMeasure;
@@ -275,13 +326,15 @@ public class ChartPanel extends JPanel {
 
 	private void drawGuitarNotes(final Graphics g) {
 		if (data.s != null) {
-			final FillList openNoteTails = new FillList();
 			final FillList openNotes = new FillList();
-			final FillList[] noteTails = new FillList[6];
+			final FillList openNoteTails = new FillList();
 			final FillList[] notes = new FillList[6];
-			for (int i = 0; i < 6; i++) {
-				noteTails[i] = new FillList();
+			final FillList[] noteTails = new FillList[6];
+			final FillList tapNotes = new FillList();
+			final FillList tapNoteTails = new FillList();
+			for (int i = 0; i < 5; i++) {
 				notes[i] = new FillList();
+				noteTails[i] = new FillList();
 			}
 			final FillList crazy = new FillList();
 			final FillList hopos = new FillList();
@@ -303,8 +356,8 @@ public class ChartPanel extends JPanel {
 							if ((n.notes & (1 << c)) > 0) {
 								final int y = colorToY(c);
 								if (n.tap) {
-									notes[5].addPositions(x - (noteW / 2), y - (noteH / 2), noteW, noteH);
-									noteTails[5].addPositions(x, y - (tailSize / 2), length, tailSize);
+									tapNotes.addPositions(x - (noteW / 2), y - (noteH / 2), noteW, noteH);
+									tapNoteTails.addPositions(x, y - (tailSize / 2), length, tailSize);
 								} else {
 									notes[c].addPositions(x - (noteW / 2), y - (noteH / 2), noteW, noteH);
 									noteTails[c].addPositions(x, y - (tailSize / 2), length, tailSize);
@@ -321,14 +374,16 @@ public class ChartPanel extends JPanel {
 					}
 				}
 			}
-			openNoteTails.draw(g, OPEN_NOTE_TAIL_COLOR);
-			openNotes.draw(g, OPEN_NOTE_COLOR);
-			for (int i = 0; i < 6; i++) {
-				noteTails[i].draw(g, NOTE_TAIL_COLORS[i]);
-				notes[i].draw(g, NOTE_COLORS[i]);
+			openNoteTails.draw(g, colors.get("OPEN_NOTE_TAIL"));
+			openNotes.draw(g, colors.get("OPEN_NOTE"));
+			for (int i = 0; i < 5; i++) {
+				noteTails[i].draw(g, colors.get("NOTE_TAIL_" + i));
+				notes[i].draw(g, colors.get("NOTE_" + i));
 			}
-			crazy.draw(g, CRAZY_COLOR);
-			hopos.draw(g, HOPO_COLOR);
+			tapNoteTails.draw(g, colors.get("TAP_NOTE_TAIL"));
+			tapNotes.draw(g, colors.get("TAP_NOTE"));
+			crazy.draw(g, colors.get("CRAZY"));
+			hopos.draw(g, colors.get("HOPO"));
 		}
 	}
 
@@ -368,14 +423,14 @@ public class ChartPanel extends JPanel {
 				}
 			}
 			for (int i = 0; i < 5; i++) {
-				noteTails[i].draw(g, NOTE_TAIL_COLORS[i]);
-				notes[i].draw(g, NOTE_COLORS[i]);
+				noteTails[i].draw(g, colors.get("NOTE_TAIL_" + i));
+				notes[i].draw(g, colors.get("NOTE_" + i));
 			}
 		}
 	}
 
 	private void drawLanes(final Graphics g) {
-		g.setColor(LANE_COLOR);
+		g.setColor(colors.get("LANE"));
 		for (int i = 0; i < 5; i++) {
 			g.drawLine(0, colorToY(i), getWidth(), colorToY(i));
 		}
@@ -412,7 +467,7 @@ public class ChartPanel extends JPanel {
 					connections.addPositions(prevEnd, y, x - prevEnd, 8);
 				}
 				if ((x + g.getFontMetrics().stringWidth(l.lyric)) > 0) {
-					texts.addString(l.lyric + (l.wordPart ? "-" : ""), x, textY);
+					texts.addString(l.lyric + (l.wordPart ? "-" : ""), x, textY + 11);
 				}
 				if (l.wordPart && (i < (lyrics.size() - 1))) {
 					final Lyric next = lyrics.get(i + 1);
@@ -420,30 +475,44 @@ public class ChartPanel extends JPanel {
 					wordConnections.addPositions(x + length, y + 2, nextStart - x - length, 4);
 				}
 			}
-			texts.draw(g, TEXT_COLOR);
-			notes.draw(g, LYRIC_COLOR);
-			tonelessNotes.draw(g, LYRIC_NO_TONE_COLOR);
-			connections.draw(g, LYRIC_CONNECTION_COLOR);
-			wordConnections.draw(g, LYRIC_WORD_PART_COLOR);
+			texts.draw(g, colors.get("LYRIC_TEXT"));
+			notes.draw(g, colors.get("LYRIC"));
+			tonelessNotes.draw(g, colors.get("LYRIC_NO_TONE"));
+			connections.draw(g, colors.get("LYRIC_CONNECTION"));
+			wordConnections.draw(g, colors.get("LYRIC_WORD_PART"));
 		}
 	}
 
 	private void drawSections(final Graphics g) {
-		if (data.vocalsEditing) {
-			final FillList lines = new FillList();
-			for (final Event e : data.s.v.lyricLines) {
-				final int x = data.timeToX(e.pos);
-				final int l = data.timeToXLength(e.getLength());
-				if ((x + l) < 0) {
+		final TextDrawList lyricLines = new TextDrawList();
+		final FillList lines = new FillList();
+		for (final Event e : data.s.v.lyricLines) {
+			final int x = data.timeToX(e.pos);
+			final int l = data.timeToXLength(e.getLength());
+			if ((x + l) < 0) {
+				continue;
+			}
+			if (x >= getWidth()) {
+				break;
+			}
+			lines.addPositions(x, lyricLinesY, l, 13);
+
+			final List<Lyric> lyricsInLine = new ArrayList<>(20);
+			for (final Lyric lyric : data.s.v.lyrics) {
+				if (lyric.pos < e.pos) {
 					continue;
 				}
-				if (x >= getWidth()) {
+				if (lyric.pos > (e.pos + e.getLength())) {
 					break;
 				}
-				lines.addPositions(x, textY + 10, l, 10);
+				lyricsInLine.add(lyric);
 			}
-			lines.draw(g, LYRIC_LINE_COLOR);
-		} else {
+			lyricLines.addString(Lyric.joinLyrics(lyricsInLine), x, lyricLinesY + 11);
+		}
+		lines.draw(g, colors.get("LYRIC_LINE"));
+		lyricLines.draw(g, colors.get("LYRIC_LINE_TEXT"));
+
+		if (!data.vocalsEditing) {
 			final FillList sp = new FillList();
 			for (final Event e : data.currentInstrument.sp) {
 				final int x = data.timeToX(e.pos);
@@ -456,7 +525,7 @@ public class ChartPanel extends JPanel {
 				}
 				sp.addPositions(x, spY, l, 5);
 			}
-			sp.draw(g, SP_COLOR);
+			sp.draw(g, colors.get("SP_SECTION"));
 
 			final FillList tap = new FillList();
 			for (final Event e : data.currentInstrument.tap) {
@@ -470,7 +539,7 @@ public class ChartPanel extends JPanel {
 				}
 				tap.addPositions(x, tapY, l, 5);
 			}
-			tap.draw(g, TAP_COLOR);
+			tap.draw(g, colors.get("TAP_SECTION"));
 
 			final FillList solos = new FillList();
 			for (final Event e : data.currentInstrument.solo) {
@@ -484,7 +553,7 @@ public class ChartPanel extends JPanel {
 				}
 				solos.addPositions(x, lane0Y - (ChartPanel.laneDistY / 2), l, ChartPanel.laneDistY * 5);
 			}
-			solos.draw(g, SOLO_COLOR);
+			solos.draw(g, colors.get("SOLO_SECTION"));
 		}
 	}
 
@@ -511,7 +580,7 @@ public class ChartPanel extends JPanel {
 				}
 			}
 
-			selects.draw(g, SELECT_COLOR);
+			selects.draw(g, colors.get("SELECT"));
 		} else {
 			final DrawList selects = new DrawList();
 
@@ -536,7 +605,7 @@ public class ChartPanel extends JPanel {
 				}
 			}
 
-			selects.draw(g, SELECT_COLOR);
+			selects.draw(g, colors.get("SELECT"));
 		}
 	}
 
@@ -551,7 +620,7 @@ public class ChartPanel extends JPanel {
 				}
 				final int y = colorToY(2) - 4;
 
-				g.setColor(HIGHLIGHT_COLOR);
+				g.setColor(colors.get("HIGHLIGHT"));
 				g.drawRect(x, y, xLength, 7);
 			} else {
 				final IdOrPos idOrPos = data.findClosestVocalIdOrPosForX(data.mx);
@@ -562,12 +631,11 @@ public class ChartPanel extends JPanel {
 				}
 				final int y = colorToY(2) - 4;
 
-				g.setColor(HIGHLIGHT_COLOR);
+				g.setColor(colors.get("HIGHLIGHT"));
 				g.drawRect(x, y, xLength, 7);
 			}
 		} else if (ChartPanel.isInNotes(data.my)) {
 			final DrawList highlighted = new DrawList();
-			g.setColor(Color.RED);
 			if (data.isNoteAdd) {
 				int x0, x1;
 				int y0, y1;
@@ -582,7 +650,6 @@ public class ChartPanel extends JPanel {
 					x1 = data.mx;
 					y1 = data.my;
 				}
-				g.drawLine(x0, y0, x1, y1);
 				final IdOrPos idOrPos = data.findClosestIdOrPosForX(x1);
 				final IdOrPos startIdOrPos = data.findClosestIdOrPosForX(x0);
 
@@ -640,20 +707,20 @@ public class ChartPanel extends JPanel {
 				}
 			}
 
-			highlighted.draw(g, HIGHLIGHT_COLOR);
+			highlighted.draw(g, colors.get("HIGHLIGHT"));
 		}
 	}
 
 	@Override
 	public void paintComponent(final Graphics g) {
 		data.t = (int) data.nextT;
-		g.setColor(BG_COLOR);
+		g.setColor(colors.get("BG"));
 		g.fillRect(0, 0, getWidth(), getHeight());
 		if (data.isEmpty) {
 			return;
 		}
 
-		g.setColor(NOTE_BG_COLOR);
+		g.setColor(colors.get("NOTE_BG"));
 		g.fillRect(0, lane0Y - (laneDistY / 2), getWidth(), laneDistY * 5);
 
 		drawSections(g);
@@ -664,8 +731,12 @@ public class ChartPanel extends JPanel {
 		drawSelectedNotes(g);
 		drawSpecial(g);
 
-		g.setColor(MARKER_COLOR);
-		g.drawLine(Config.markerOffset, lane0Y - 50, Config.markerOffset, lane0Y + (laneDistY * 4) + 50);
+		g.setColor(colors.get("MARKER"));
+		g.drawLine(Config.markerOffset, spY - 5, Config.markerOffset, lane0Y + (laneDistY * 4) + 50);
+		if (!data.vocalsEditing && data.isNoteAdd) {
+			g.setColor(colors.get("NOTE_ADD_LINE"));
+			g.drawLine(data.mousePressX, data.mousePressY, data.mx, data.my);
+		}
 	}
 
 	private int tempoX(final double lastPos, final int id, final int lastId, final int lastKBPM) {

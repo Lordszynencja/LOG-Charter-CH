@@ -1,6 +1,24 @@
 package log.charter.song;
 
+import java.util.List;
+
 public class Lyric extends Event {
+	public static String joinLyrics(final List<Lyric> lyrics) {
+		final StringBuilder b = new StringBuilder();
+
+		for (final Lyric l : lyrics) {
+			if (l.lyric == null) {
+				continue;
+			}
+			b.append(l.lyric);
+			if (!l.wordPart) {
+				b.append(" ");
+			}
+		}
+
+		return b.toString();
+	}
+
 	public int tone;
 	public String lyric;
 	public boolean toneless = false;

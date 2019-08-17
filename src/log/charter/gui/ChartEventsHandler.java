@@ -11,6 +11,7 @@ import java.util.List;
 import javax.swing.JOptionPane;
 
 import log.charter.data.ChartData;
+import log.charter.data.Config;
 import log.charter.data.ChartData.IdOrPos;
 import log.charter.gui.handlers.SongFileHandler;
 import log.charter.io.Logger;

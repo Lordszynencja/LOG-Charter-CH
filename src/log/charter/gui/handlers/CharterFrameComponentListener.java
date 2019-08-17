@@ -5,8 +5,8 @@ import java.awt.Dimension;
 import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
 
+import log.charter.data.Config;
 import log.charter.gui.CharterFrame;
-import log.charter.gui.Config;
 
 public class CharterFrameComponentListener implements ComponentListener {
 

@@ -9,9 +9,9 @@ import javax.swing.JOptionPane;
 import javax.swing.filechooser.FileFilter;
 
 import helliker.id3.MP3File;
+import log.charter.data.Config;
 import log.charter.gui.ChartEventsHandler;
 import log.charter.gui.CharterFrame;
-import log.charter.gui.Config;
 import log.charter.io.IniWriter;
 import log.charter.io.Logger;
 import log.charter.io.midi.reader.MidiReader;

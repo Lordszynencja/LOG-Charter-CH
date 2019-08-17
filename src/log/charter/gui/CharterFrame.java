@@ -7,6 +7,7 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JScrollBar;
 
+import log.charter.data.Config;
 import log.charter.gui.handlers.CharterFrameComponentListener;
 import log.charter.gui.handlers.CharterFrameMouseWheelListener;
 import log.charter.gui.handlers.CharterFrameWindowFocusListener;

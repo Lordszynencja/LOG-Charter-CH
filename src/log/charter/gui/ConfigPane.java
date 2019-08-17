@@ -1,5 +1,7 @@
 package log.charter.gui;
 
+import log.charter.data.Config;
+
 public final class ConfigPane extends ParamsPane {
 	private static final long serialVersionUID = -3193534671039163160L;;
 

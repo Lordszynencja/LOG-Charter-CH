@@ -11,7 +11,6 @@ import javax.swing.filechooser.FileFilter;
 import helliker.id3.MP3File;
 import log.charter.data.Config;
 import log.charter.gui.ChartEventsHandler;
-import log.charter.gui.CharterFrame;
 import log.charter.io.IniWriter;
 import log.charter.io.Logger;
 import log.charter.io.midi.reader.MidiReader;
@@ -361,7 +360,6 @@ public class SongFileHandler {
 				Config.save();
 				handler.data.setSong(dirPath, s, iniData, musicData);
 				handler.data.changed = false;
-				handler.frame.setTitle(CharterFrame.TITLE);
 			}
 		}
 	}
@@ -371,11 +369,10 @@ public class SongFileHandler {
 			return;
 		}
 		MidiWriter.writeMidi(handler.data.path + "/notes.mid", handler.data.s);
-		// TODO save .chart, .lcf notes
+		// TODO save .chart, .lcf? notes
 		IniWriter.write(handler.data.path + "/song.ini", handler.data.ini);
 		Config.save();
 		handler.data.changed = false;
-		handler.frame.setTitle(CharterFrame.TITLE);
 	}
 
 	public void saveAs() {

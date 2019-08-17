@@ -12,19 +12,17 @@ import log.charter.gui.handlers.CharterFrameComponentListener;
 import log.charter.gui.handlers.CharterFrameMouseWheelListener;
 import log.charter.gui.handlers.CharterFrameWindowFocusListener;
 import log.charter.gui.handlers.CharterFrameWindowListener;
+import log.charter.main.LogCharterMain;
 
 public class CharterFrame extends JFrame {
 	private static final long serialVersionUID = 3603305480386377813L;
-
-	public static final String TITLE = "LOG Charter";
-	public static final String TITLE_UNSAVED = "LOG Charter*";
 
 	public final ChartEventsHandler handler;
 	public final ChartPanel chartPanel;
 	public final JScrollBar scrollBar;
 
 	public CharterFrame() {
-		super(TITLE);
+		super(LogCharterMain.TITLE);
 		setLayout(null);
 		handler = new ChartEventsHandler(this);
 		setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);

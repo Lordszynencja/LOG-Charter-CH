@@ -107,7 +107,7 @@ public class ChartPanel extends JPanel {
 	public static final int sectionNamesY = 10;
 	public static final int lyricLinesY = sectionNamesY + 20;
 	public static final int textY = lyricLinesY + 10;
-	public static final int tempoMarkerY1 = textY + 15;
+	public static final int tempoMarkerY1 = textY + 20;
 	public static final int beatTextY = tempoMarkerY1;
 	public static final int beatSizeTextY = beatTextY + 15;
 	public static final int spY = beatSizeTextY + 20;
@@ -467,7 +467,7 @@ public class ChartPanel extends JPanel {
 					connections.addPositions(prevEnd, y, x - prevEnd, 8);
 				}
 				if ((x + g.getFontMetrics().stringWidth(l.lyric)) > 0) {
-					texts.addString(l.lyric + (l.wordPart ? "-" : ""), x, textY + 11);
+					texts.addString(l.lyric + (l.wordPart ? "-" : ""), x, textY + 17);
 				}
 				if (l.wordPart && (i < (lyrics.size() - 1))) {
 					final Lyric next = lyrics.get(i + 1);

@@ -6,7 +6,9 @@ import java.awt.event.ActionListener;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
 
+import log.charter.main.LogCharterMain;
 import log.charter.song.Instrument;
 import log.charter.song.Instrument.InstrumentType;
 
@@ -34,6 +36,7 @@ public class CharterMenuBar extends JMenuBar {
 		this.add(prepareConfigMenu());
 		this.add(prepareInstrumentMenu());
 		this.add(prepareNotesMenu());
+		this.add(prepareInfoMenu());
 	}
 
 	private JMenu prepareConfigMenu() {
@@ -55,6 +58,24 @@ public class CharterMenuBar extends JMenuBar {
 		return menu;
 	}
 
+	private JMenu prepareInfoMenu() {
+		final JMenu menu = new JMenu("Info");
+
+		final String infoText = "Lords of Games Charter\n"//
+				+ "Created by Lordszynencja\n"//
+				+ "Current version: " + LogCharterMain.VERSION + "\n\n"//
+				+ "TODO:\n"//
+				+ "reading .chart files\n"//
+				+ "working Save As...\n"//
+				+ "own file type/saving song creation progress\n"//
+				+ "drums?"//
+				+ "more features of note editing/selection";
+
+		menu.add(createItem("Version", e -> JOptionPane.showMessageDialog(handler.frame, infoText)));
+
+		return menu;
+	}
+
 	private JMenu prepareInstrumentMenu() {
 		final JMenu menu = new JMenu("Instrument");
 		for (int i = 0; i < Instrument.diffNames.length; i++) {
@@ -66,7 +87,7 @@ public class CharterMenuBar extends JMenuBar {
 			menu.add(createItem(type.name, e -> handler.data.changeInstrument(type)));
 		}
 
-		menu.add(createItem("Vocals (TODO editing)", e -> handler.data.editVocals()));
+		menu.add(createItem("Vocals", e -> handler.data.editVocals()));
 
 		return menu;
 	}
@@ -88,5 +109,4 @@ public class CharterMenuBar extends JMenuBar {
 
 		return menu;
 	}
-
 }

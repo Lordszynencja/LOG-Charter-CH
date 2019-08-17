@@ -11,10 +11,11 @@ import java.util.List;
 import javax.swing.JOptionPane;
 
 import log.charter.data.ChartData;
-import log.charter.data.Config;
 import log.charter.data.ChartData.IdOrPos;
+import log.charter.data.Config;
 import log.charter.gui.handlers.SongFileHandler;
 import log.charter.io.Logger;
+import log.charter.main.LogCharterMain;
 import log.charter.song.Event;
 import log.charter.song.Instrument;
 import log.charter.song.Instrument.InstrumentType;
@@ -184,7 +185,7 @@ public class ChartEventsHandler implements KeyListener, MouseListener {
 			setNextTime((data.nextT - (left ? speed : 0)) + (right ? speed : 0));
 		}
 
-		final String title = "Log Charter : " + data.ini.artist + " - " + data.ini.name + " : "//
+		final String title = LogCharterMain.TITLE + " : " + data.ini.artist + " - " + data.ini.name + " : "//
 				+ (data.vocalsEditing ? "Vocals" : data.currentInstrument.type.name + " " + Instrument.diffNames[data.currentDiff])//
 				+ (data.changed ? "*" : "");
 		frame.setTitle(title);

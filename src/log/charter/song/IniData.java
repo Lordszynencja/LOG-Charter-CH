@@ -14,8 +14,8 @@ public class IniData {
 	public String name = "";
 	public String artist = "";
 	public String album = "";
-	public Integer track = null;
-	public Integer year = null;
+	public String track = "";
+	public String year = "";
 	public String genre = "";
 
 	public String loadingPhrase = "";
@@ -60,10 +60,10 @@ public class IniData {
 					album = value;
 					break;
 				case "track":
-					track = Integer.valueOf(value);
+					track = value;
 					break;
 				case "year":
-					year = Integer.valueOf(value);
+					year = value;
 					break;
 				case "genre":
 					genre = value;

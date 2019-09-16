@@ -71,6 +71,26 @@ public class ParamsPane extends JDialog {
 		};
 	}
 
+	protected static ValueValidator createIntValidatorWarning(final int minVal, final int maxVal, final boolean acceptEmpty) {
+		return val -> {
+			if (((val == null) || val.isEmpty()) && acceptEmpty) {
+				return null;
+			}
+			try {
+				final int i = Integer.parseInt(val);
+				if (i < minVal) {
+					return "value must be greater than or equal " + minVal;
+				}
+				if (i > maxVal) {
+					return "value must be less than or equal " + maxVal;
+				}
+				return null;
+			} catch (final Exception e) {
+				return "number expected";
+			}
+		};
+	}
+
 	public ParamsPane(final CharterFrame frame, final String title, final int rows) {
 		super(frame, title, true);
 		setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
@@ -123,7 +143,7 @@ public class ParamsPane extends JDialog {
 	}
 
 	protected void addConfigValue(final int id, final String name, final Object val,
-			final int inputLength, final ValueValidator validator, final StringValueSetter setter) {
+			final int inputLength, final ValueValidator validator, final StringValueSetter setter, final boolean allowWrong) {
 		final int y = OPTIONS_USPACE + (id * OPTIONS_HEIGHT);
 		final JLabel label = new JLabel(name, SwingConstants.LEFT);
 		add(label, OPTIONS_LSPACE, y, OPTIONS_LABEL_WIDTH, OPTIONS_HEIGHT);
@@ -132,6 +152,7 @@ public class ParamsPane extends JDialog {
 		final JTextField field = new JTextField(val == null ? "" : val.toString(), inputLength);
 		field.getDocument().addDocumentListener(new DocumentListener() {
 			JLabel error = null;
+			final boolean allowWrongValues = allowWrong;
 
 			@Override
 			public void changedUpdate(final DocumentEvent e) {
@@ -144,13 +165,18 @@ public class ParamsPane extends JDialog {
 
 					error = null;
 					final String val = field.getText();
+
 					final String validation = validator.validateValue(val);
 					if (validation == null) {
 						setter.setValue(val);
 					} else {
 						error = new JLabel(validation);
 						add(error, fieldX + field.getWidth(), y, OPTIONS_LABEL_WIDTH, OPTIONS_HEIGHT);
+						if (allowWrongValues) {
+							setter.setValue(val);
+						}
 					}
+
 					repaint();
 				}
 			}
@@ -164,8 +190,8 @@ public class ParamsPane extends JDialog {
 			public void removeUpdate(final DocumentEvent e) {
 				changedUpdate(e);
 			}
-
 		});
+
 		add(field, fieldX, y, inputLength > OPTIONS_MAX_INPUT_WIDTH ? OPTIONS_MAX_INPUT_WIDTH : inputLength,
 				OPTIONS_HEIGHT);
 	}

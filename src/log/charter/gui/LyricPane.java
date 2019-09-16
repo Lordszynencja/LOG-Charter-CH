@@ -35,7 +35,7 @@ public class LyricPane extends ParamsPane {
 			connected = false;
 		}
 
-		addConfigValue(0, "Lyric", text, 200, null, val -> text = val);
+		addConfigValue(0, "Lyric", text, 200, null, val -> text = val, true);
 		addConfigCheckbox(1, "Toneless", toneless, val -> toneless = val);
 		addConfigCheckbox(2, "Word part", wordPart, val -> wordPart = val);
 		addConfigCheckbox(3, "Connected", connected, val -> connected = val);

@@ -197,13 +197,13 @@ public class SongFileHandler {
 				error("Couldn't get album from mp3 tags data", e);
 			}
 			try {
-				data.track = mp3File.getTrack();
+				data.track = mp3File.getTrackString();
 			} catch (final Exception e) {
 				error("Couldn't get track from mp3 tags data", e);
 			}
 			try {
 				final String year = mp3File.getYear();
-				data.year = year.matches("[0-9]{1,}") ? Integer.valueOf(year) : null;
+				data.year = year;
 			} catch (final Exception e) {
 				error("Couldn't get year from mp3 tags data", e);
 			}

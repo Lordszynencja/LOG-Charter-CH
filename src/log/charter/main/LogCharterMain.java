@@ -8,7 +8,7 @@ import log.charter.gui.CharterFrame;
 import log.charter.util.RW;
 
 public class LogCharterMain {
-	public static final String VERSION = "0.8-2019.08.17";
+	public static final String VERSION = "0.8.1-2019.09.16";
 	public static final String TITLE = "LoG Charter";
 
 	private static void createHelpFile() throws IOException {

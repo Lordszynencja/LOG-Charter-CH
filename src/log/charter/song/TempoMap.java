@@ -3,6 +3,7 @@ package log.charter.song;
 import static java.lang.Math.ceil;
 import static java.lang.Math.floor;
 import static java.lang.Math.round;
+import static log.charter.io.Logger.error;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -77,18 +78,15 @@ public class TempoMap {
 			return;
 		}
 		if (tempos.get(0).pos != 0) {
-			System.err.println("first beat is not on zero: " + tempos.get(0));
+			error("first beat is not on zero: " + tempos.get(0));
 		}
 
 		Tempo prev = tempos.get(0);
-		double lastPos = tempos.get(0).pos;
 		for (int i = 1; i < tempos.size(); i++) {
 			final Tempo t0 = tempos.get(i);
-			final double newLastPos = t0.pos;
-			t0.pos = prev.pos + (((t0.pos - lastPos) * 60000000.0) / prev.kbpm / TickMsConverter.ticksPerBeat);
+			t0.pos = prev.pos + (((t0.id - prev.id) * (60000000.0 / prev.kbpm)));
 
 			prev = t0;
-			lastPos = newLastPos;
 		}
 		isMs = true;
 	}
@@ -98,7 +96,7 @@ public class TempoMap {
 			return;
 		}
 		if (tempos.get(0).pos != 0) {
-			System.err.println("first beat is not on zero: " + tempos.get(0));
+			error("first beat is not on zero: " + tempos.get(0));
 		}
 
 		for (int i = 1; i < tempos.size(); i++) {

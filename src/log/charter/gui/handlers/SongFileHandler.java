@@ -285,6 +285,7 @@ public class SongFileHandler {
 			}
 
 			handler.data.setSong(songDir, new Song(), iniData, musicData);
+			handler.data.s.tempoMap.isMs = true;
 			handler.data.ini.charter = Config.charter;
 			save();
 		}

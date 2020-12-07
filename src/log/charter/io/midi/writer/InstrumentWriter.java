@@ -94,6 +94,7 @@ public class InstrumentWriter {
 			final List<Note> diff = notes.get(diffId);
 			for (final Note n : diff) {
 				if (n.notes == 0) {
+					addNote(getNoteId(InstrumentType.GUITAR, diffId, 0), n.pos, n.pos + n.getLength(), track);
 					final SysexMessage msgStart = new SysexMessage();
 					msgStart.setMessage(240, new byte[] { 80, 83, 0, 0, 3, 1, 1, -9 }, 8);
 					track.add(new MidiEvent(msgStart, Math.round(n.pos)));

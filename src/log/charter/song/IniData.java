@@ -27,6 +27,7 @@ public class IniData {
 	public int diffB = -1;
 	public int diffK = -1;
 
+	public String sysexOpenBass = "True";
 	public String sysexSlider = "True";
 	public String proDrums = "True";
 
@@ -90,6 +91,9 @@ public class IniData {
 					break;
 				case "diff_keys":
 					diffK = Integer.valueOf(value);
+					break;
+				case "sysex_open_bass":
+					sysexSlider = value;
 					break;
 				case "sysex_slider":
 					sysexSlider = value;

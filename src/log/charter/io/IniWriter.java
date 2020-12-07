@@ -27,6 +27,7 @@ public class IniWriter {
 		writer.addPair("diff_rhythm", "" + iniData.diffGR);
 		writer.addPair("diff_bass", "" + iniData.diffB);
 		writer.addPair("diff_keys", "" + iniData.diffK);
+		writer.addPair("sysex_open_bass", "" + iniData.sysexOpenBass);
 		writer.addPair("sysex_slider", "" + iniData.sysexSlider);
 		writer.addPair("pro_drums", "" + iniData.proDrums);
 

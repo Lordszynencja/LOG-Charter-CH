@@ -403,8 +403,12 @@ public class ChartEventsHandler implements KeyListener, MouseListener {
 					double maxHOPODist = -1;
 					while ((maxHOPODist < 0) || (maxHOPODist > 10000)) {
 						try {
-							maxHOPODist = Double.parseDouble(JOptionPane.showInputDialog(
-									"Max distance between notes to make HOPO", "" + Config.lastMaxHOPODist));
+							final String value = JOptionPane.showInputDialog("Max distance between notes to make HOPO",
+									"" + Config.lastMaxHOPODist);
+							if (value == null) {
+								return;
+							}
+							maxHOPODist = Double.parseDouble(value);
 						} catch (final Exception exception) {
 						}
 					}

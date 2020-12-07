@@ -8,14 +8,16 @@ import log.charter.gui.CharterFrame;
 import log.charter.util.RW;
 
 public class LogCharterMain {
-	public static final String VERSION = "0.8.1b-2019.10.04";
+	public static final String VERSION = "0.9.0-2020.12.06";
 	public static final String TITLE = "LoG Charter";
 
 	private static void createHelpFile() throws IOException {
 		final InputStream input = ClassLoader.getSystemResourceAsStream("log/charter/main/help.txt");
-		final byte[] bytes = new byte[input.available()];
-		input.read(bytes);
-		RW.writeB("help.txt", bytes);
+		if (input != null) {
+			final byte[] bytes = new byte[input.available()];
+			input.read(bytes);
+			RW.writeB("help.txt", bytes);
+		}
 	}
 
 	public static void main(final String[] args) throws InterruptedException, IOException {

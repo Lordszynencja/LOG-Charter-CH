@@ -66,6 +66,9 @@ public final class MidiReader {
 			case BASS:
 				s.b = InstrumentReader.read(t, InstrumentType.BASS);
 				break;
+			case DRUMS:
+				s.d = InstrumentReader.read(t, InstrumentType.DRUMS);
+				break;
 			case KEYS:
 				s.k = InstrumentReader.read(t, InstrumentType.KEYS);
 				break;

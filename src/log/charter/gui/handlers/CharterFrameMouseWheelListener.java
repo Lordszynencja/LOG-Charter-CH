@@ -19,7 +19,7 @@ public class CharterFrameMouseWheelListener implements MouseWheelListener {
 		if (handler.isCtrl()) {
 			handler.data.addZoom(rot * (handler.isShift() ? 10 : 1));
 		} else {
-			if (handler.data.vocalsEditing) {
+			if (handler.data.currentInstrument.type.isVocalsType()) {
 				handler.data.changeLyricLength(rot);
 			} else {
 				handler.data.changeNoteLength(rot);

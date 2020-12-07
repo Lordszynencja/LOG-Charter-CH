@@ -28,6 +28,7 @@ public class IniData {
 	public int diffK = -1;
 
 	public String sysexSlider = "True";
+	public String proDrums = "True";
 
 	public Map<String, String> otherValues = new HashMap<>();
 
@@ -92,6 +93,9 @@ public class IniData {
 					break;
 				case "sysex_slider":
 					sysexSlider = value;
+					break;
+				case "pro_drums":
+					proDrums = value;
 					break;
 				default:
 					otherValues.put(param, value);

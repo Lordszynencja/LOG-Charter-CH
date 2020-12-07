@@ -267,8 +267,7 @@ public class SongFileHandler {
 			File f = new File(Config.songsPath + "/" + folderName);
 			while (f.exists()) {
 				folderName = JOptionPane.showInputDialog(handler.frame,
-						"Given folder already exists, choose different name",
-						folderName);
+						"Given folder already exists, choose different name", folderName);
 				if (folderName == null) {
 					return;
 				}
@@ -307,12 +306,12 @@ public class SongFileHandler {
 			@Override
 			public boolean accept(final File f) {
 				final String name = f.getName().toLowerCase();
-				return f.isDirectory() || name.endsWith(".mid") || name.endsWith(".chart") || name.endsWith(".lcf");
+				return f.isDirectory() || name.endsWith(".mid");
 			}
 
 			@Override
 			public String getDescription() {
-				return "Midi (.mid), Chart (.chart) or Log Charter (.lcf) file";
+				return "Midi (.mid) file";
 			}
 		});
 
@@ -324,16 +323,6 @@ public class SongFileHandler {
 			final Song s;
 			if (name.endsWith(".mid")) {
 				s = MidiReader.readMidi(f.getAbsolutePath());
-			} else if (name.endsWith(".chart")) {
-				s = null;// TODO
-				handler.showPopup("This file type is not supported cos I didn't finish it (remind Lordszynencja)");
-				error("TODO chart song");
-				return;
-			} else if (name.endsWith(".lcf")) {
-				s = null;// TODO
-				handler.showPopup("This file type is not supported cos I didn't finish it (remind Lordszynencja)");
-				error("TODO lcf song");
-				return;
 			} else {
 				s = null;
 				handler.showPopup("This file type is not supported");
@@ -370,7 +359,6 @@ public class SongFileHandler {
 			return;
 		}
 		MidiWriter.writeMidi(handler.data.path + "/notes.mid", handler.data.s);
-		// TODO save .chart, .lcf? notes
 		IniWriter.write(handler.data.path + "/song.ini", handler.data.ini);
 		Config.save();
 		handler.data.changed = false;

@@ -65,10 +65,8 @@ public class CharterMenuBar extends JMenuBar {
 				+ "Created by Lordszynencja\n"//
 				+ "Current version: " + LogCharterMain.VERSION + "\n\n"//
 				+ "TODO:\n"//
-				+ "reading .chart files\n"//
 				+ "working Save As...\n"//
 				+ "own file type/saving song creation progress\n"//
-				+ "drums?"//
 				+ "more features of note editing/selection";
 
 		menu.add(createItem("Version", e -> JOptionPane.showMessageDialog(handler.frame, infoText)));
@@ -86,8 +84,6 @@ public class CharterMenuBar extends JMenuBar {
 		for (final InstrumentType type : InstrumentType.sortedValues()) {
 			menu.add(createItem(type.name, e -> handler.data.changeInstrument(type)));
 		}
-
-		menu.add(createItem("Vocals", e -> handler.data.editVocals()));
 
 		return menu;
 	}

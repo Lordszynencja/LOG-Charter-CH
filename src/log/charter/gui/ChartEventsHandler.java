@@ -1,5 +1,6 @@
 package log.charter.gui;
 
+import static log.charter.gui.ChartPanel.isInLanes;
 import static log.charter.gui.ChartPanel.isInTempos;
 
 import java.awt.event.KeyEvent;
@@ -154,11 +155,13 @@ public class ChartEventsHandler implements KeyListener, MouseListener {
 
 	private void frame() {
 		if ((player != null) && (player.startTime > 0)) {
-			setNextTime((playStartT + (((System.nanoTime() - player.startTime) * data.music.slowMultiplier()) / 1000000))
-					- Config.delay);
+			setNextTime(
+					(playStartT + (((System.nanoTime() - player.startTime) * data.music.slowMultiplier()) / 1000000))
+							- Config.delay);
 			final double soundTime = data.nextT + Config.delay;
 
-			final List<? extends Event> notes = data.vocalsEditing ? data.s.v.lyrics : data.currentNotes;
+			final List<? extends Event> notes = data.currentInstrument.type.isVocalsType() ? data.s.v.lyrics
+					: data.currentNotes;
 
 			while ((nextNoteId != -1) && (notes.get(nextNoteId).pos < soundTime)) {
 				nextNoteId++;
@@ -186,7 +189,8 @@ public class ChartEventsHandler implements KeyListener, MouseListener {
 		}
 
 		final String title = LogCharterMain.TITLE + " : " + data.ini.artist + " - " + data.ini.name + " : "//
-				+ (data.vocalsEditing ? "Vocals" : data.currentInstrument.type.name + " " + Instrument.diffNames[data.currentDiff])//
+				+ (data.currentInstrument.type.isVocalsType() ? "Vocals"
+						: data.currentInstrument.type.name + " " + Instrument.diffNames[data.currentDiff])//
 				+ (data.changed ? "*" : "");
 		frame.setTitle(title);
 	}
@@ -227,7 +231,7 @@ public class ChartEventsHandler implements KeyListener, MouseListener {
 		switch (keyCode) {
 		case KeyEvent.VK_SPACE:
 			if (!data.isEmpty && (player == null) && !left && !right) {
-				if (data.vocalsEditing) {
+				if (data.currentInstrument.type.isVocalsType()) {
 					nextNoteId = data.findClosestVocalForTime(data.nextT);
 					if ((nextNoteId > 0) && (nextNoteId < data.s.v.lyrics.size()) //
 							&& (data.s.v.lyrics.get(nextNoteId).pos < data.nextT)) {
@@ -261,16 +265,17 @@ public class ChartEventsHandler implements KeyListener, MouseListener {
 			}
 			break;
 		case KeyEvent.VK_HOME:
-			if (data.vocalsEditing) {
+			if (data.currentInstrument.type.isVocalsType()) {
 				setNextTime(ctrl ? (int) (data.s.v.lyrics.isEmpty() ? 0 : data.s.v.lyrics.get(0).pos) : 0);
 			} else {
 				setNextTime(ctrl ? (int) (data.currentNotes.isEmpty() ? 0 : data.currentNotes.get(0).pos) : 0);
 			}
 			break;
 		case KeyEvent.VK_END:
-			if (data.vocalsEditing) {
-				setNextTime(ctrl ? (int) (data.s.v.lyrics.isEmpty() ? 0
-						: data.s.v.lyrics.get(data.s.v.lyrics.size() - 1).pos) : data.music.msLength());
+			if (data.currentInstrument.type.isVocalsType()) {
+				setNextTime(ctrl
+						? (int) (data.s.v.lyrics.isEmpty() ? 0 : data.s.v.lyrics.get(data.s.v.lyrics.size() - 1).pos)
+						: data.music.msLength());
 			} else {
 				setNextTime(ctrl ? (int) (data.currentNotes.isEmpty() ? 0
 						: data.currentNotes.get(data.currentNotes.size() - 1).pos) : data.music.msLength());
@@ -281,22 +286,14 @@ public class ChartEventsHandler implements KeyListener, MouseListener {
 			setChanged();
 			break;
 		case KeyEvent.VK_UP:
-			if (!data.vocalsEditing) {
-				if (ctrl) {
-					data.moveSelectedDownWithOpen();
-				} else {
-					data.moveSelectedDownWithoutOpen();
-				}
+			if (!data.currentInstrument.type.isVocalsType()) {
+				data.moveSelectedDown();
 				setChanged();
 			}
 			break;
 		case KeyEvent.VK_DOWN:
-			if (!data.vocalsEditing) {
-				if (ctrl) {
-					data.moveSelectedUpWithOpen();
-				} else {
-					data.moveSelectedUpWithoutOpen();
-				}
+			if (!data.currentInstrument.type.isVocalsType()) {
+				data.moveSelectedUp();
 				setChanged();
 			}
 			break;
@@ -365,6 +362,11 @@ public class ChartEventsHandler implements KeyListener, MouseListener {
 				data.selectAll();
 			}
 			break;
+		case KeyEvent.VK_B:
+			if (ctrl && data.currentInstrument.type.isDrumsType()) {
+				data.toggleSelectedNotesBlueTom();
+			}
+			break;
 		case KeyEvent.VK_C:
 			if (ctrl) {
 				data.copy();
@@ -372,9 +374,14 @@ public class ChartEventsHandler implements KeyListener, MouseListener {
 				claps = !claps;
 			}
 			break;
+		case KeyEvent.VK_E:
+			if (ctrl && data.currentInstrument.type.isDrumsType() && data.currentDiff == 3) {
+				data.toggleSelectedNotesExpertPlus();
+			}
+			break;
 		case KeyEvent.VK_F:
 			if (ctrl) {
-				if (data.vocalsEditing) {
+				if (data.currentInstrument.type.isVocalsType()) {
 					data.snapSelectedVocals();
 				} else {
 					data.snapSelectedNotes();
@@ -383,11 +390,15 @@ public class ChartEventsHandler implements KeyListener, MouseListener {
 			}
 			break;
 		case KeyEvent.VK_G:
-			data.useGrid = !data.useGrid;
-			gPressed = true;
+			if (ctrl && data.currentInstrument.type.isDrumsType()) {
+				data.toggleSelectedNotesGreenTom();
+			} else {
+				data.useGrid = !data.useGrid;
+				gPressed = true;
+			}
 			break;
 		case KeyEvent.VK_H:
-			if (!data.vocalsEditing && (data.currentInstrument.type != InstrumentType.KEYS)) {
+			if (!data.currentInstrument.type.isVocalsType() && (data.currentInstrument.type != InstrumentType.KEYS)) {
 				if (ctrl) {
 					double maxHOPODist = -1;
 					while ((maxHOPODist < 0) || (maxHOPODist > 10000)) {
@@ -405,8 +416,13 @@ public class ChartEventsHandler implements KeyListener, MouseListener {
 				setChanged();
 			}
 			break;
+		case KeyEvent.VK_K:
+			if (ctrl && data.currentInstrument.type.isDrumsType()) {
+				data.changeDrumRollSections();
+			}
+			break;
 		case KeyEvent.VK_L:
-			if (data.vocalsEditing) {
+			if (data.currentInstrument.type.isVocalsType()) {
 				if (ctrl) {
 					data.changeLyricLines();
 				} else {
@@ -415,6 +431,8 @@ public class ChartEventsHandler implements KeyListener, MouseListener {
 					}
 				}
 				setChanged();
+			} else if (ctrl && data.currentInstrument.type.isDrumsType()) {
+				data.changeSpecialDrumRollSections();
 			}
 			break;
 		case KeyEvent.VK_M:
@@ -430,40 +448,42 @@ public class ChartEventsHandler implements KeyListener, MouseListener {
 				songFileHandler.open();
 			}
 			break;
+		case KeyEvent.VK_P:
+			if (!data.currentInstrument.type.isVocalsType() && ctrl) {
+				data.changeSoloSections();
+				setChanged();
+			}
+			break;
 		case KeyEvent.VK_Q:
-			if (data.vocalsEditing) {
+			if (data.currentInstrument.type.isVocalsType()) {
 				data.toggleSelectedLyricConnected();
 				setChanged();
 			}
 			break;
 		case KeyEvent.VK_R:
-			if (e.isControlDown()) {
+			if (ctrl) {
 				data.redo();
 				setChanged();
 			}
 			break;
 		case KeyEvent.VK_S:
-			if (e.isControlDown()) {
+			if (ctrl) {
 				songFileHandler.save();
 			}
 			break;
 		case KeyEvent.VK_T:
-			if (data.vocalsEditing) {
+			if (data.currentInstrument.type.isVocalsType()) {
 				data.toggleSelectedLyricToneless();
 				setChanged();
-			} else if (data.currentInstrument.type != InstrumentType.KEYS) {
+			} else if (data.currentInstrument.type.isGuitarType()) {
 				if (ctrl) {
 					data.changeTapSections();
-				} else if ((data.my >= (ChartPanel.lane0Y - (ChartPanel.laneDistY / 2)))
-						&& (data.my <= (ChartPanel.lane0Y + ((ChartPanel.laneDistY * 9) / 2)))) {
-					data.deselect();
-					data.toggleNote(data.findClosestIdOrPosForX(data.mx), 0);
 				}
 				setChanged();
 			}
 			break;
 		case KeyEvent.VK_U:
-			if (!data.vocalsEditing) {
+			if (!data.currentInstrument.type.isVocalsType()) {
 				data.toggleSelectedCrazy();
 			}
 			break;
@@ -478,23 +498,22 @@ public class ChartEventsHandler implements KeyListener, MouseListener {
 			}
 			break;
 		case KeyEvent.VK_W:
-			if (!data.vocalsEditing && ctrl) {
+			if (!data.currentInstrument.type.isVocalsType() && ctrl) {
 				data.changeSPSections();
 				setChanged();
-			} else if (data.vocalsEditing) {
+			} else if (data.currentInstrument.type.isVocalsType()) {
 				data.toggleSelectedVocalsWordPart();
 				setChanged();
+			}
+			break;
+		case KeyEvent.VK_Y:
+			if (ctrl && data.currentInstrument.type.isDrumsType()) {
+				data.toggleSelectedNotesYellowTom();
 			}
 			break;
 		case KeyEvent.VK_Z:
 			if (ctrl) {
 				data.undo();
-				setChanged();
-			}
-			break;
-		case KeyEvent.VK_Y:
-			if (!data.vocalsEditing && ctrl) {
-				data.changeSoloSections();
 				setChanged();
 			}
 			break;
@@ -565,20 +584,19 @@ public class ChartEventsHandler implements KeyListener, MouseListener {
 		final int x = e.getX();
 		final int y = e.getY();
 		if (e.getButton() == MouseEvent.BUTTON1) {
-			if (ChartPanel.isInTempos(y)) {
+			if (isInTempos(y)) {
 				final Object[] tempoData = data.s.tempoMap.findOrCreateClosestTempo(data.xToTime(x));
 				if (tempoData != null) {
 					data.startTempoDrag((Tempo) tempoData[0], (Tempo) tempoData[1], (Tempo) tempoData[2],
 							(boolean) tempoData[3]);
 				}
 				return;
-			} else if (ChartPanel.isInNotes(y)) {
+			} else if (isInLanes(y)) {
 				data.mousePressX = data.mx;
 				data.mousePressY = data.my;
 			}
 		} else if (e.getButton() == MouseEvent.BUTTON3) {
-			if ((y >= (ChartPanel.lane0Y - (ChartPanel.laneDistY / 2))) && (y <= (ChartPanel.lane0Y
-					+ ((ChartPanel.laneDistY * 9) / 2)))) {
+			if (isInLanes(y)) {
 				data.selectedNotes.clear();
 				data.lastSelectedNote = null;
 				data.startNoteAdding(x, y);
@@ -600,7 +618,7 @@ public class ChartEventsHandler implements KeyListener, MouseListener {
 				data.endNoteDrag();
 			} else if ((data.my > (ChartPanel.sectionNamesY - 5)) && (data.my < ChartPanel.spY)) {
 				editSection(data.mx);
-			} else if (ChartPanel.isInNotes(data.my)) {
+			} else if (ChartPanel.isInLanes(data.my)) {
 				selectNotes(data.mx);
 			}
 			break;
@@ -631,7 +649,7 @@ public class ChartEventsHandler implements KeyListener, MouseListener {
 					setChanged();
 				}
 			}
-		} else if (shift && (num >= 0) && (num <= 5)) {
+		} else if (shift && (num >= 0) && (num <= data.currentInstrument.type.lanes)) {
 			data.toggleSelectedNotes(num);
 		}
 	}
@@ -642,7 +660,7 @@ public class ChartEventsHandler implements KeyListener, MouseListener {
 	}
 
 	private void selectNotes(final int x) {
-		final IdOrPos idOrPos = data.vocalsEditing ? data.findClosestVocalIdOrPosForX(x)
+		final IdOrPos idOrPos = data.currentInstrument.type.isVocalsType() ? data.findClosestVocalIdOrPosForX(x)
 				: data.findClosestIdOrPosForX(x);
 
 		final int[] newSelectedNotes;

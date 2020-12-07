@@ -36,6 +36,7 @@ public class MidTrack {
 		BASS("PART BASS"), //
 		KEYS("PART KEYS"), //
 		VOCALS("PART VOCALS"), //
+		DRUMS("PART DRUMS"), //
 		EVENTS("EVENTS"), //
 		TEMPO("TEMPO"), //
 		UNKNOWN("");
@@ -64,6 +65,8 @@ public class MidTrack {
 				return GUITAR_RHYTHM;
 			case BASS:
 				return BASS;
+			case DRUMS:
+				return DRUMS;
 			case KEYS:
 				return KEYS;
 			default:

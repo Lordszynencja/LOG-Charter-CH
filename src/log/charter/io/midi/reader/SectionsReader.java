@@ -16,9 +16,11 @@ public class SectionsReader {
 		final Map<Integer, String> sections = new HashMap<>(t.events.size());
 
 		for (final MidEvent e : t.events) {
-			final String name = new String(Arrays.copyOfRange(e.msg, 3, e.msg.length));
-			if (name.startsWith("[section ")) {
-				sections.put((int) (e.t / TickMsConverter.ticksPerBeat), name.substring(9, name.length() - 1));
+			if (e.msg.length >= 3) {
+				final String name = new String(Arrays.copyOfRange(e.msg, 3, e.msg.length));
+				if (name.startsWith("[section ")) {
+					sections.put((int) (e.t / TickMsConverter.ticksPerBeat), name.substring(9, name.length() - 1));
+				}
 			}
 		}
 

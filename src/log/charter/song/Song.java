@@ -27,7 +27,9 @@ public class Song {
 	public Instrument gc;
 	public Instrument gr;
 	public Instrument b;
+	public Instrument d;
 	public Instrument k;
+	public final Instrument vInstrument = new Instrument(InstrumentType.VOCALS);
 	public Vocals v;
 
 	public Map<Integer, String> sections = new HashMap<>();
@@ -38,6 +40,7 @@ public class Song {
 		gc = new Instrument(InstrumentType.GUITAR_COOP);
 		gr = new Instrument(InstrumentType.GUITAR_RHYTHM);
 		b = new Instrument(InstrumentType.BASS);
+		d = new Instrument(InstrumentType.DRUMS);
 		k = new Instrument(InstrumentType.KEYS);
 		v = new Vocals();
 		tempoMap = new TempoMap(new ArrayList<>());
@@ -48,6 +51,7 @@ public class Song {
 		gc = new Instrument(s.gc);
 		gr = new Instrument(s.gr);
 		b = new Instrument(s.b);
+		d = new Instrument(s.d);
 		k = new Instrument(s.k);
 		v = new Vocals(s.v);
 		s.sections.forEach((id, sec) -> sections.put(id, sec));
@@ -65,8 +69,12 @@ public class Song {
 			return gr;
 		case BASS:
 			return b;
+		case DRUMS:
+			return d;
 		case KEYS:
 			return k;
+		case VOCALS:
+			return vInstrument;
 		default:
 			Logger.error("Wrong instrument type: " + type);
 			return null;
@@ -74,7 +82,7 @@ public class Song {
 	}
 
 	public Instrument[] instruments() {
-		return new Instrument[] { g, gc, gr, b, k };
+		return new Instrument[] { g, gc, gr, b, d, k };
 	}
 
 	public void setInstrument(final Instrument instrument) {
@@ -91,8 +99,13 @@ public class Song {
 		case BASS:
 			b = instrument;
 			return;
+		case DRUMS:
+			d = instrument;
+			return;
 		case KEYS:
 			k = instrument;
+			return;
+		case VOCALS:
 			return;
 		default:
 			Logger.error("Wrong instrument type: " + instrument.type);
@@ -106,6 +119,7 @@ public class Song {
 				.append(",\n\tgc: ").append(gc)//
 				.append(",\n\tgr: ").append(gr)//
 				.append(",\n\tb: ").append(b)//
+				.append(",\n\td: ").append(d)//
 				.append(",\n\tk: ").append(k)//
 				.append(",\n\tv: ").append(v)//
 				.append(",\n\tsections: [");

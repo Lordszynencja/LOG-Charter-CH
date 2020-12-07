@@ -5,20 +5,40 @@ import java.util.List;
 
 public class Instrument {
 	public static enum InstrumentType {
-		GUITAR("Guitar"), //
-		GUITAR_COOP("Coop Guitar"), //
-		GUITAR_RHYTHM("Rhythm Guitar"), //
-		BASS("Bass"), //
-		KEYS("Keys");
+		GUITAR("Guitar", 6), //
+		GUITAR_COOP("Coop Guitar", 6), //
+		GUITAR_RHYTHM("Rhythm Guitar", 6), //
+		BASS("Bass", 6), //
+		KEYS("Keys", 5), //
+		DRUMS("Drums", 5), //
+		VOCALS("Vocals", 1);
 
 		public static InstrumentType[] sortedValues() {
-			return new InstrumentType[] { GUITAR, GUITAR_COOP, GUITAR_RHYTHM, BASS, KEYS };
+			return new InstrumentType[] { GUITAR, GUITAR_COOP, GUITAR_RHYTHM, BASS, DRUMS, KEYS, VOCALS };
 		}
 
 		public final String name;
+		public final int lanes;
 
-		private InstrumentType(final String name) {
+		private InstrumentType(final String name, final int lanes) {
 			this.name = name;
+			this.lanes = lanes;
+		}
+
+		public boolean isGuitarType() {
+			return this == GUITAR || this == GUITAR_COOP || this == GUITAR_RHYTHM || this == BASS;
+		}
+
+		public boolean isKeysType() {
+			return this == KEYS;
+		}
+
+		public boolean isDrumsType() {
+			return this == DRUMS;
+		}
+
+		public boolean isVocalsType() {
+			return this == VOCALS;
 		}
 	}
 
@@ -29,6 +49,8 @@ public class Instrument {
 	public final List<Event> sp = new ArrayList<>();
 	public final List<Event> tap = new ArrayList<>();
 	public final List<Event> solo = new ArrayList<>();
+	public final List<Event> drumRoll = new ArrayList<>();
+	public final List<Event> specialDrumRoll = new ArrayList<>();
 
 	public Instrument(final Instrument instr) {
 		this(instr.type);
@@ -46,6 +68,12 @@ public class Instrument {
 		}
 		for (final Event e : instr.solo) {
 			solo.add(new Event(e));
+		}
+		for (final Event e : instr.drumRoll) {
+			drumRoll.add(new Event(e));
+		}
+		for (final Event e : instr.specialDrumRoll) {
+			specialDrumRoll.add(new Event(e));
 		}
 	}
 
@@ -123,6 +151,8 @@ public class Instrument {
 		sp.sort(null);
 		tap.sort(null);
 		solo.sort(null);
+		drumRoll.sort(null);
+		specialDrumRoll.sort(null);
 	}
 
 	@Override
@@ -158,6 +188,20 @@ public class Instrument {
 
 		first = true;
 		for (final Event e : solo) {
+			sb.append(first ? "" : ",\n\t\t").append(e);
+			first = false;
+		}
+		sb.append("],\n\t\tdrumRoll: [");
+
+		first = true;
+		for (final Event e : drumRoll) {
+			sb.append(first ? "" : ",\n\t\t").append(e);
+			first = false;
+		}
+		sb.append("],\n\t\tspecialDrumRoll: [");
+
+		first = true;
+		for (final Event e : specialDrumRoll) {
 			sb.append(first ? "" : ",\n\t\t").append(e);
 			first = false;
 		}

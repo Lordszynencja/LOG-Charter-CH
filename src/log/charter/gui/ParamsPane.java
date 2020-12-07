@@ -71,7 +71,8 @@ public class ParamsPane extends JDialog {
 		};
 	}
 
-	protected static ValueValidator createIntValidatorWarning(final int minVal, final int maxVal, final boolean acceptEmpty) {
+	protected static ValueValidator createIntValidatorWarning(final int minVal, final int maxVal,
+			final boolean acceptEmpty) {
 		return val -> {
 			if (((val == null) || val.isEmpty()) && acceptEmpty) {
 				return null;
@@ -98,13 +99,13 @@ public class ParamsPane extends JDialog {
 		setLocation(Config.windowPosX + 100, Config.windowPosY + 100);
 		pack();
 		final Insets insets = getInsets();
-		setSize(700 + insets.left + insets.right, insets.top + insets.bottom + (OPTIONS_USPACE * 2) + (rows
-				* OPTIONS_HEIGHT));
+		final int w = 700 + insets.left + insets.right;
+		final int h = insets.top + insets.bottom + (OPTIONS_USPACE * 2) + (rows * OPTIONS_HEIGHT);
+		setSize(w, h);
 		setLayout(null);
 	}
 
-	protected void add(final JComponent component, final int x, final int y, final int w,
-			final int h) {
+	protected void add(final JComponent component, final int x, final int y, final int w, final int h) {
 		component.setBounds(x, y, w, h);
 		final Dimension size = new Dimension(w, h);
 		component.setMinimumSize(size);
@@ -138,12 +139,11 @@ public class ParamsPane extends JDialog {
 		checkbox.setSelected(val);
 		checkbox.addActionListener(a -> setter.setValue(checkbox.isSelected()));
 
-		add(checkbox, fieldX, y, 20,
-				OPTIONS_HEIGHT);
+		add(checkbox, fieldX, y, 20, OPTIONS_HEIGHT);
 	}
 
-	protected void addConfigValue(final int id, final String name, final Object val,
-			final int inputLength, final ValueValidator validator, final StringValueSetter setter, final boolean allowWrong) {
+	protected void addConfigValue(final int id, final String name, final Object val, final int inputLength,
+			final ValueValidator validator, final StringValueSetter setter, final boolean allowWrong) {
 		final int y = OPTIONS_USPACE + (id * OPTIONS_HEIGHT);
 		final JLabel label = new JLabel(name, SwingConstants.LEFT);
 		add(label, OPTIONS_LSPACE, y, OPTIONS_LABEL_WIDTH, OPTIONS_HEIGHT);
@@ -192,7 +192,7 @@ public class ParamsPane extends JDialog {
 			}
 		});
 
-		add(field, fieldX, y, inputLength > OPTIONS_MAX_INPUT_WIDTH ? OPTIONS_MAX_INPUT_WIDTH : inputLength,
-				OPTIONS_HEIGHT);
+		final int length = inputLength > OPTIONS_MAX_INPUT_WIDTH ? OPTIONS_MAX_INPUT_WIDTH : inputLength;
+		add(field, fieldX, y, length, OPTIONS_HEIGHT);
 	}
 }

@@ -22,13 +22,13 @@ public final class MidiWriter {
 			TempoWriter.write(conv.tempoMap, seq.createTrack());
 			SectionsWriter.write(conv.sections, seq.createTrack());
 			for (final Instrument instr : conv.instruments()) {
-				InstrumentWriter.write(instr, instr.type, seq.createTrack());
+				InstrumentWriter.write(instr, seq.createTrack());
 			}
 			VocalsWriter.write(conv.v, seq.createTrack());
 
 			MidiSystem.write(seq, 1, new File(path));
 		} catch (final Exception e) {
-			Logger.error("Couln't save midi file", e);
+			Logger.error("Couldn't save midi file", e);
 		}
 
 	}

@@ -15,7 +15,7 @@ public class UndoState {
 	private final TempoMap tempoMap;
 
 	public UndoState(final ChartData data) {
-		if (data.vocalsEditing) {
+		if (data.currentInstrument.type.isVocalsType()) {
 			vocals = new Vocals(data.s.v);
 			instrument = null;
 		} else {

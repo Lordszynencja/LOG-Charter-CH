@@ -21,8 +21,11 @@ public final class SongOptionsPane extends ParamsPane {
 	private int diffB;
 	private int diffK;
 
+	private boolean sysexSlider;
+	private boolean proDrums;
+
 	public SongOptionsPane(final CharterFrame frame) {
-		super(frame, "Options", 15);
+		super(frame, "Options", 19);
 
 		final IniData iniData = frame.handler.data.ini;
 		name = iniData.name;
@@ -41,6 +44,9 @@ public final class SongOptionsPane extends ParamsPane {
 		diffB = iniData.diffB;
 		diffK = iniData.diffK;
 
+		sysexSlider = "True".equals(iniData.sysexSlider);
+		proDrums = "True".equals(iniData.proDrums);
+
 		addConfigValue(0, "Song name", name, 300, null, //
 				val -> name = val, false);
 		addConfigValue(1, "Artist", artist, 300, null, //
@@ -54,23 +60,26 @@ public final class SongOptionsPane extends ParamsPane {
 		addConfigValue(5, "Genre", genre, 200, null, //
 				val -> genre = val, true);
 
-		addConfigValue(6, "Loading phrase", loadingPhrase, 500, null, //
+		addConfigValue(7, "Loading phrase", loadingPhrase, 450, null, //
 				val -> loadingPhrase = val, true);
-		addConfigValue(7, "Charter", charter, 200, null, //
+		addConfigValue(8, "Charter", charter, 200, null, //
 				val -> charter = val, true);
 
-		addConfigValue(8, "Guitar difficulty", diffG, 40, createIntValidator(-1, 100, false), //
+		addConfigValue(9, "Guitar difficulty", diffG, 40, createIntValidator(-1, 100, false), //
 				val -> diffG = Integer.valueOf(val), false);
-		addConfigValue(9, "Coop guitar difficulty", diffGC, 40, createIntValidator(-1, 100, false), //
+		addConfigValue(10, "Coop guitar difficulty", diffGC, 40, createIntValidator(-1, 100, false), //
 				val -> diffGC = Integer.valueOf(val), false);
-		addConfigValue(10, "Rhytm guitar difficulty", diffGR, 40, createIntValidator(-1, 100, false), //
+		addConfigValue(11, "Rhytm guitar difficulty", diffGR, 40, createIntValidator(-1, 100, false), //
 				val -> diffGR = Integer.valueOf(val), false);
-		addConfigValue(11, "Bass difficulty", diffB, 40, createIntValidator(-1, 100, false), //
+		addConfigValue(12, "Bass difficulty", diffB, 40, createIntValidator(-1, 100, false), //
 				val -> diffB = Integer.valueOf(val), false);
-		addConfigValue(12, "Keyboard difficulty", diffK, 40, createIntValidator(-1, 100, false), //
+		addConfigValue(13, "Keyboard difficulty", diffK, 40, createIntValidator(-1, 100, false), //
 				val -> diffK = Integer.valueOf(val), false);
 
-		addButtons(14, e -> {
+		addConfigCheckbox(15, "sysex_slider", sysexSlider, val -> sysexSlider = val);
+		addConfigCheckbox(16, "pro_drums", proDrums, val -> proDrums = val);
+
+		addButtons(18, e -> {
 			iniData.name = name;
 			iniData.artist = artist;
 			iniData.album = album;
@@ -86,6 +95,9 @@ public final class SongOptionsPane extends ParamsPane {
 			iniData.diffGR = diffGR;
 			iniData.diffB = diffB;
 			iniData.diffK = diffK;
+
+			iniData.sysexSlider = sysexSlider ? "True" : "False";
+			iniData.proDrums = proDrums ? "True" : "False";
 
 			frame.handler.songFileHandler.save();
 

@@ -3,7 +3,9 @@ package log.charter.gui.handlers;
 import static log.charter.io.Logger.error;
 
 import java.io.File;
+import java.io.IOException;
 
+import javax.sound.midi.InvalidMidiDataException;
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import javax.swing.filechooser.FileFilter;
@@ -322,7 +324,17 @@ public class SongFileHandler {
 
 			final Song s;
 			if (name.endsWith(".mid")) {
-				s = MidiReader.readMidi(f.getAbsolutePath());
+				try {
+					s = MidiReader.readMidi(f.getAbsolutePath());
+				} catch (final InvalidMidiDataException e) {
+					handler.showPopup("File is invalid:\n" + e.getLocalizedMessage());
+					error("Error when opening midi", e);
+					return;
+				} catch (final IOException e) {
+					handler.showPopup("File can't be read:\n" + e.getLocalizedMessage());
+					error("Error when opening midi", e);
+					return;
+				}
 			} else {
 				s = null;
 				handler.showPopup("This file type is not supported");

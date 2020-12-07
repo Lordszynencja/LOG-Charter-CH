@@ -12,7 +12,6 @@ import javax.sound.midi.MidiSystem;
 import javax.sound.midi.Sequence;
 import javax.sound.midi.Track;
 
-import log.charter.io.Logger;
 import log.charter.io.TickMsConverter;
 import log.charter.io.midi.MidTrack;
 import log.charter.song.Instrument.InstrumentType;
@@ -21,13 +20,8 @@ import log.charter.song.TempoMap;
 
 public final class MidiReader {
 
-	public static Song readMidi(final String path) {
-		try {
-			return new MidiReader(path).read();
-		} catch (final Exception e) {
-			Logger.error("Couln't load midi file", e);
-			return null;
-		}
+	public static Song readMidi(final String path) throws InvalidMidiDataException, IOException {
+		return new MidiReader(path).read();
 	}
 
 	private final List<MidTrack> tracks;

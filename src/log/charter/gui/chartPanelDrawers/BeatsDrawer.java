@@ -73,8 +73,7 @@ public class BeatsDrawer implements Drawer {
 		}
 
 		int id = tmp.id;
-		final int maxId = id + 100;
-		while (id < maxId) {
+		while (lastKBPM < 10000000) {
 			final int x = tempoX(data, tmp.pos, id, tmp.id, lastKBPM);
 			if (x > panel.getWidth()) {
 				return;

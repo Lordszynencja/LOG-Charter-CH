@@ -19,22 +19,24 @@ public class CharterFrame extends JFrame {
 
 	public final ChartEventsHandler handler;
 	public final ChartPanel chartPanel;
+	public final CharterMenuBar menuBar;
 	public final JScrollBar scrollBar;
 	public final JLabel helpLabel;
 
 	public CharterFrame() {
 		super(LogCharterMain.TITLE);
 		setLayout(null);
-		handler = new ChartEventsHandler(this);
 		setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
 		setLocationByPlatform(true);
 		setVisible(true);
 		setSize(Config.windowWidth, Config.windowHeight);
 		setLocation(Config.windowPosX, Config.windowPosY);
-		setJMenuBar(new CharterMenuBar(handler));
 
+		handler = new ChartEventsHandler(this);
 		chartPanel = new ChartPanel(handler);
 		add(chartPanel, 0, Config.windowWidth, ChartPanel.HEIGHT);
+		menuBar = new CharterMenuBar(handler);
+		setJMenuBar(menuBar);
 		scrollBar = createScrollBar();
 		add(scrollBar, ChartPanel.HEIGHT, Config.windowWidth, 20);
 		helpLabel = createHelp();
@@ -77,17 +79,9 @@ public class CharterFrame extends JFrame {
 	}
 
 	public void setGuitarHelp() {
-		helpLabel.setText("<html>G → toggle grid<br>"//
-				+ "G, 1-9 → set grid size<br>"//
+		helpLabel.setText("<html>G, 1-9 → set grid size<br>"//
 				+ "1-9 when mouse is on beat → set beats in measure<br>"//
 				+ "Left press above tempo section → add/edit/remove song section<br>"//
-				+ "T → place/toggle open note<br>"//
-				+ "Ctrl + W → toggle Star Power section<br>"//
-				+ "Ctrl + T → toggle Tap section<br>"//
-				+ "Ctrl + P → toggle Solo section<br>"//
-				+ "U → toggle selected notes crazy<br>"//
-				+ "H → toggle selected notes HOPO<br>"//
-				+ "Ctrl + H → set auto-HOPO for selected notes (type max distance since previous note in ms to make it HOPO)<br>"//
 				+ "</html>");
 	}
 

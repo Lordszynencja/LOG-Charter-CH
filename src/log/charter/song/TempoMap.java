@@ -219,6 +219,13 @@ public class TempoMap {
 		return tmp.pos + (btt(gridPoint, tmp.kbpm) / gridSize);
 	}
 
+	/**
+	 *
+	 * @param time
+	 * 
+	 * @return current tempo, new instance of current tempo, next tempo and if tempo
+	 *         is new
+	 */
 	public Object[] findOrCreateClosestTempo(final double time) {// TODO
 		final int tmpId = findTempoId(time);
 		final Tempo tmp = tempos.get(tmpId);
@@ -227,8 +234,8 @@ public class TempoMap {
 			if (tmpId == 0) {
 				return null;
 			}
-			return new Object[] { tempos.get(tmpId - 1), tmp, tempos.size() > (tmpId + 1) ? tempos.get(tmpId + 1) : null,
-					false };
+			return new Object[] { tempos.get(tmpId - 1), tmp,
+					tempos.size() > (tmpId + 1) ? tempos.get(tmpId + 1) : null, false };
 		}
 
 		final Tempo nextTmp = tempos.size() > (tmpId + 1) ? tempos.get(tmpId + 1) : null;

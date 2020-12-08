@@ -178,7 +178,7 @@ public class SongFileHandler {
 		}
 	}
 
-	private static IniData extractNewSongData(final String path) {// TODO
+	private static IniData extractNewSongData(final String path) {
 		final IniData data = new IniData();
 		try {
 			final MP3File mp3File = new MP3File(path);
@@ -323,7 +323,7 @@ public class SongFileHandler {
 			final String name = f.getName().toLowerCase();
 
 			final Song s;
-			if (name.endsWith(".mid")) {
+			if (name.endsWith(".mid")) {// TODO add .chart
 				try {
 					s = MidiReader.readMidi(f.getAbsolutePath());
 				} catch (final InvalidMidiDataException e) {
@@ -345,6 +345,7 @@ public class SongFileHandler {
 			final MusicData musicData = MusicData.readSongFile(dirPath);
 			if (musicData == null) {
 				handler.showPopup("Music file (song.mp3 or song.ogg) not found in song folder");
+				// TODO add asking for another music file
 				return;
 			}
 
@@ -370,6 +371,7 @@ public class SongFileHandler {
 		if (handler.data.isEmpty) {
 			return;
 		}
+
 		MidiWriter.writeMidi(handler.data.path + "/notes.mid", handler.data.s);
 		IniWriter.write(handler.data.path + "/song.ini", handler.data.ini);
 		Config.save();
@@ -380,6 +382,7 @@ public class SongFileHandler {
 		if (handler.data.isEmpty) {
 			return;
 		}
+
 		Logger.error("saveAs not implemented, doing normal save!");// TODO
 		save();
 		Config.save();

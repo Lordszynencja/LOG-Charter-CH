@@ -138,11 +138,8 @@ public class ChartEventsHandler implements KeyListener, MouseListener {
 		}
 	}
 
-	private void editVocalNote(final IdOrPos idOrPos) {
-		new LyricPane(frame, idOrPos);
-	}
-
 	public void exit() {
+		stopMusic();
 		if (JOptionPane.YES_OPTION == JOptionPane.showConfirmDialog(frame, "Are you sure you want to exit?", "Exit",
 				JOptionPane.YES_NO_OPTION)) {
 			if (!checkChanged()) {
@@ -228,6 +225,23 @@ public class ChartEventsHandler implements KeyListener, MouseListener {
 			stopMusic();
 		}
 
+		if (data.isEmpty) {
+			switch (keyCode) {
+			case KeyEvent.VK_CONTROL:
+				ctrl = true;
+				break;
+			case KeyEvent.VK_ALT:
+				alt = true;
+				break;
+			case KeyEvent.VK_SHIFT:
+				shift = true;
+				break;
+			default:
+				break;
+			}
+			return;
+		}
+
 		switch (keyCode) {
 		case KeyEvent.VK_SPACE:
 			if (!data.isEmpty && (player == null) && !left && !right) {
@@ -281,10 +295,6 @@ public class ChartEventsHandler implements KeyListener, MouseListener {
 						: data.currentNotes.get(data.currentNotes.size() - 1).pos) : data.music.msLength());
 			}
 			break;
-		case KeyEvent.VK_DELETE:
-			data.deleteSelected();
-			setChanged();
-			break;
 		case KeyEvent.VK_UP:
 			if (!data.currentInstrument.type.isVocalsType()) {
 				data.moveSelectedDown();
@@ -320,13 +330,6 @@ public class ChartEventsHandler implements KeyListener, MouseListener {
 		case KeyEvent.VK_SHIFT:
 			shift = true;
 			break;
-		case KeyEvent.VK_ESCAPE:
-			stopMusic();
-			exit();
-			break;
-		case KeyEvent.VK_F5:
-			data.drawAudio = !data.drawAudio;
-			break;
 		case KeyEvent.VK_0:
 			numberPressed(0);
 			break;
@@ -357,183 +360,195 @@ public class ChartEventsHandler implements KeyListener, MouseListener {
 		case KeyEvent.VK_9:
 			numberPressed(9);
 			break;
-		case KeyEvent.VK_A:
-			if (ctrl) {
-				data.selectAll();
-			}
-			break;
-		case KeyEvent.VK_B:
-			if (ctrl && data.currentInstrument.type.isDrumsType()) {
-				data.toggleSelectedNotesBlueTom();
-			}
-			break;
-		case KeyEvent.VK_C:
-			if (ctrl) {
-				data.copy();
-			} else {
-				claps = !claps;
-			}
-			break;
-		case KeyEvent.VK_E:
-			if (ctrl && data.currentInstrument.type.isDrumsType() && data.currentDiff == 3) {
-				data.toggleSelectedNotesExpertPlus();
-			}
-			break;
-		case KeyEvent.VK_F:
-			if (ctrl) {
-				if (data.currentInstrument.type.isVocalsType()) {
-					data.snapSelectedVocals();
-				} else {
-					data.snapSelectedNotes();
-				}
-				setChanged();
-			}
-			break;
 		case KeyEvent.VK_G:
-			if (ctrl && data.currentInstrument.type.isDrumsType()) {
-				data.toggleSelectedNotesGreenTom();
-			} else {
-				data.useGrid = !data.useGrid;
-				gPressed = true;
-			}
-			break;
-		case KeyEvent.VK_H:
-			if (!data.currentInstrument.type.isVocalsType() && (data.currentInstrument.type != InstrumentType.KEYS)) {
-				if (ctrl) {
-					double maxHOPODist = -1;
-					while ((maxHOPODist < 0) || (maxHOPODist > 10000)) {
-						try {
-							final String value = JOptionPane.showInputDialog("Max distance between notes to make HOPO",
-									"" + Config.lastMaxHOPODist);
-							if (value == null) {
-								return;
-							}
-							maxHOPODist = Double.parseDouble(value);
-						} catch (final Exception exception) {
-						}
-					}
-					Config.lastMaxHOPODist = maxHOPODist;
-					data.toggleSelectedHopo(true, maxHOPODist);
-				} else {
-					data.toggleSelectedHopo(false, -1);
-				}
-				setChanged();
-			}
-			break;
-		case KeyEvent.VK_K:
-			if (ctrl && data.currentInstrument.type.isDrumsType()) {
-				data.changeDrumRollSections();
-			}
-			break;
-		case KeyEvent.VK_L:
-			if (data.currentInstrument.type.isVocalsType()) {
-				if (ctrl) {
-					data.changeLyricLines();
-				} else {
-					if (data.selectedNotes.size() == 1) {
-						editVocalNote(new IdOrPos(data.selectedNotes.get(0), -1));
-					}
-				}
-				setChanged();
-			} else if (ctrl && data.currentInstrument.type.isDrumsType()) {
-				data.changeSpecialDrumRollSections();
-			}
-			break;
-		case KeyEvent.VK_M:
-			metronome = !metronome;
-			break;
-		case KeyEvent.VK_N:
-			if (e.isControlDown()) {
-				songFileHandler.newSong();
-			}
-			break;
-		case KeyEvent.VK_O:
-			if (e.isControlDown()) {
-				songFileHandler.open();
-			}
-			break;
-		case KeyEvent.VK_P:
-			if (!data.currentInstrument.type.isVocalsType() && ctrl) {
-				data.changeSoloSections();
-				setChanged();
-			}
-			break;
-		case KeyEvent.VK_Q:
-			if (data.currentInstrument.type.isVocalsType()) {
-				data.toggleSelectedLyricConnected();
-				setChanged();
-			}
-			break;
-		case KeyEvent.VK_R:
-			if (ctrl) {
-				data.redo();
-				setChanged();
-			}
-			break;
-		case KeyEvent.VK_S:
-			if (ctrl) {
-				songFileHandler.save();
-			}
-			break;
-		case KeyEvent.VK_T:
-			if (data.currentInstrument.type.isVocalsType()) {
-				data.toggleSelectedLyricToneless();
-				setChanged();
-			} else if (data.currentInstrument.type.isGuitarType()) {
-				if (ctrl) {
-					data.changeTapSections();
-				}
-				setChanged();
-			}
-			break;
-		case KeyEvent.VK_U:
-			if (!data.currentInstrument.type.isVocalsType()) {
-				data.toggleSelectedCrazy();
-			}
-			break;
-		case KeyEvent.VK_V:
-			if (ctrl) {
-				try {
-					data.paste();
-					setChanged();
-				} catch (final Exception exception) {
-					Logger.error("Couldn't paste notes", exception);
-				}
-			}
-			break;
-		case KeyEvent.VK_W:
-			if (!data.currentInstrument.type.isVocalsType() && ctrl) {
-				data.changeSPSections();
-				setChanged();
-			} else if (data.currentInstrument.type.isVocalsType()) {
-				data.toggleSelectedVocalsWordPart();
-				setChanged();
-			}
-			break;
-		case KeyEvent.VK_Y:
-			if (ctrl && data.currentInstrument.type.isDrumsType()) {
-				data.toggleSelectedNotesYellowTom();
-			}
-			break;
-		case KeyEvent.VK_Z:
-			if (ctrl) {
-				data.undo();
-				setChanged();
-			}
-			break;
-		case KeyEvent.VK_COMMA:
-			if (((data.gridSize / 2) * 2) == data.gridSize) {
-				data.gridSize /= 2;
-			}
-			break;
-		case KeyEvent.VK_PERIOD:
-			data.gridSize *= 2;
+			gPressed = true;
 			break;
 		default:
 			break;
 		}
 		if (e.getKeyCode() != KeyEvent.VK_G) {
 			gPressed = false;
+		}
+	}
+
+	public void toggleDrawWaveform() {
+		data.drawAudio = !data.drawAudio;
+	}
+
+	public void toggleClaps() {
+		claps = !claps;
+	}
+
+	public void toggleMetronome() {
+		metronome = !metronome;
+	}
+
+	public void delete() {
+		data.deleteSelected();
+		setChanged();
+	}
+
+	public void undo() {
+		data.undo();
+		setChanged();
+	}
+
+	public void redo() {
+		data.redo();
+		setChanged();
+	}
+
+	public void paste() {
+		if (data.isEmpty) {
+			return;
+		}
+
+		try {
+			data.paste();
+		} catch (final Exception exception) {
+			Logger.error("Couldn't paste notes", exception);
+		}
+		setChanged();
+	}
+
+	public void toggleHOPO() {
+		data.toggleSelectedHopo(false, -1);
+		setChanged();
+	}
+
+	public void toggleHOPOByDistance() {
+		double maxHOPODist = -1;
+		while ((maxHOPODist < 0) || (maxHOPODist > 10000)) {
+			try {
+				final String value = JOptionPane.showInputDialog("Max distance between notes to make HOPO",
+						"" + Config.lastMaxHOPODist);
+				if (value == null) {
+					return;
+				}
+				maxHOPODist = Double.parseDouble(value);
+			} catch (final Exception exception) {
+			}
+		}
+		Config.lastMaxHOPODist = maxHOPODist;
+		data.toggleSelectedHopo(true, maxHOPODist);
+		setChanged();
+	}
+
+	public void toggleCrazy() {
+		data.toggleSelectedCrazy();
+		setChanged();
+	}
+
+	public void setSPSection() {
+		data.changeSPSections();
+		setChanged();
+	}
+
+	public void setTapSection() {
+		data.changeTapSections();
+		setChanged();
+	}
+
+	public void setSoloSection() {
+		data.changeTapSections();
+		setChanged();
+	}
+
+	public void setDrumRollSection() {
+		data.changeDrumRollSections();
+		setChanged();
+	}
+
+	public void setSpecialDrumRollSection() {
+		data.changeSpecialDrumRollSections();
+		setChanged();
+	}
+
+	public void toggleGrid() {
+		data.useGrid = !data.useGrid;
+	}
+
+	public void changeGridSize() {
+		int newGridSize = -1;
+		while ((newGridSize < 0) || (newGridSize > 100)) {
+			try {
+				final String value = JOptionPane.showInputDialog("Grid size", "" + data.gridSize);
+				if (value == null) {
+					return;
+				}
+				newGridSize = Integer.valueOf(value);
+			} catch (final Exception exception) {
+			}
+		}
+		data.gridSize = newGridSize;
+		data.useGrid = true;
+	}
+
+	public void toggleExpertPlus() {
+		if (data.currentDiff == 3) {
+			data.toggleSelectedNotesExpertPlus();
+			setChanged();
+		}
+	}
+
+	public void toggleYellowTom() {
+		data.toggleSelectedNotesYellowTom();
+		setChanged();
+	}
+
+	public void toggleBlueTom() {
+		data.toggleSelectedNotesBlueTom();
+		setChanged();
+	}
+
+	public void toggleGreenTom() {
+		data.toggleSelectedNotesGreenTom();
+		setChanged();
+	}
+
+	public void editLyric() {
+		if (data.selectedNotes.size() == 1) {
+			new LyricPane(frame, new IdOrPos(data.selectedNotes.get(0), -1));
+		}
+		setChanged();
+	}
+
+	public void setLyricLine() {
+		data.changeLyricLines();
+		setChanged();
+	}
+
+	public void toggleLyricConnected() {
+		data.toggleSelectedLyricConnected();
+		setChanged();
+	}
+
+	public void toggleLyricToneless() {
+		data.toggleSelectedLyricToneless();
+		setChanged();
+	}
+
+	public void toggleLyricWordPart() {
+		data.toggleSelectedVocalsWordPart();
+		setChanged();
+	}
+
+	public void snapNotes() {
+		if (data.currentInstrument.type.isVocalsType()) {
+			data.snapSelectedVocals();
+		} else {
+			data.snapSelectedNotes();
+		}
+		setChanged();
+	}
+
+	public void doubleGridSize() {
+		data.gridSize *= 2;
+	}
+
+	public void halfGridSize() {
+		if (data.gridSize % 2 == 0) {
+			data.gridSize /= 2;
 		}
 	}
 
@@ -569,6 +584,29 @@ public class ChartEventsHandler implements KeyListener, MouseListener {
 
 	@Override
 	public void mouseClicked(final MouseEvent e) {
+		if (e.getButton() == MouseEvent.BUTTON1) {
+			final int y = e.getY();
+			if (isInTempos(y)) {
+				int newTempoMeasures = -1;
+				final Object[] tempoData = data.s.tempoMap.findOrCreateClosestTempo(data.xToTime(data.mx));
+				while ((newTempoMeasures < 0) || (newTempoMeasures > 1000)) {
+					try {
+						final String value = JOptionPane.showInputDialog("Measures in beat",
+								"" + ((Tempo) tempoData[0]).beats);
+						if (value == null) {
+							return;
+						}
+						newTempoMeasures = Integer.valueOf(value);
+					} catch (final Exception exception) {
+					}
+				}
+
+				if (tempoData != null) {
+					data.changeTempoBeatsInMeasure((Tempo) tempoData[1], (boolean) tempoData[3], newTempoMeasures);
+					setChanged();
+				}
+			}
+		}
 	}
 
 	@Override
@@ -581,6 +619,10 @@ public class ChartEventsHandler implements KeyListener, MouseListener {
 
 	@Override
 	public void mousePressed(final MouseEvent e) {
+		if (data.isEmpty) {
+			return;
+		}
+
 		cancelAllActions();
 		data.mx = e.getX();
 		data.my = e.getY();
@@ -594,7 +636,6 @@ public class ChartEventsHandler implements KeyListener, MouseListener {
 					data.startTempoDrag((Tempo) tempoData[0], (Tempo) tempoData[1], (Tempo) tempoData[2],
 							(boolean) tempoData[3]);
 				}
-				return;
 			} else if (isInLanes(y)) {
 				data.mousePressX = data.mx;
 				data.mousePressY = data.my;
@@ -610,6 +651,9 @@ public class ChartEventsHandler implements KeyListener, MouseListener {
 
 	@Override
 	public void mouseReleased(final MouseEvent e) {
+		if (data.isEmpty) {
+			return;
+		}
 		data.mx = e.getX();
 		data.my = e.getY();
 

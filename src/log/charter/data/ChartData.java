@@ -230,6 +230,7 @@ public class ChartData {
 
 	public void changeInstrument(final InstrumentType type) {
 		handler.stopMusic();
+		handler.frame.menuBar.changeInstrument(type);
 		switch (type) {
 		case GUITAR:
 			currentInstrument = s.g;
@@ -310,7 +311,7 @@ public class ChartData {
 		}
 	}
 
-	public void changeSoloSections() {
+	private void changeSections(final List<Event> events) {
 		if (selectedNotes.isEmpty()) {
 			return;
 		}
@@ -319,55 +320,27 @@ public class ChartData {
 		final Note first = currentNotes.get(selectedNotes.get(0));
 		final Note last = currentNotes.get(selectedNotes.get(selectedNotes.size() - 1));
 
-		changeEventList(currentInstrument.solo, first.pos, last.pos + last.getLength());
+		changeEventList(events, first.pos, last.pos + last.getLength());
+	}
+
+	public void changeSoloSections() {
+		changeSections(currentInstrument.solo);
 	}
 
 	public void changeSPSections() {
-		if (selectedNotes.isEmpty()) {
-			return;
-		}
-		undoSystem.addUndo();
-
-		final Note first = currentNotes.get(selectedNotes.get(0));
-		final Note last = currentNotes.get(selectedNotes.get(selectedNotes.size() - 1));
-
-		changeEventList(currentInstrument.sp, first.pos, last.pos + last.getLength());
+		changeSections(currentInstrument.sp);
 	}
 
 	public void changeDrumRollSections() {
-		if (selectedNotes.isEmpty()) {
-			return;
-		}
-		undoSystem.addUndo();
-
-		final Note first = currentNotes.get(selectedNotes.get(0));
-		final Note last = currentNotes.get(selectedNotes.get(selectedNotes.size() - 1));
-
-		changeEventList(currentInstrument.drumRoll, first.pos, last.pos + last.getLength());
+		changeSections(currentInstrument.drumRoll);
 	}
 
 	public void changeSpecialDrumRollSections() {
-		if (selectedNotes.isEmpty()) {
-			return;
-		}
-		undoSystem.addUndo();
-
-		final Note first = currentNotes.get(selectedNotes.get(0));
-		final Note last = currentNotes.get(selectedNotes.get(selectedNotes.size() - 1));
-
-		changeEventList(currentInstrument.specialDrumRoll, first.pos, last.pos + last.getLength());
+		changeSections(currentInstrument.specialDrumRoll);
 	}
 
 	public void changeTapSections() {
-		if (selectedNotes.isEmpty()) {
-			return;
-		}
-		undoSystem.addUndo();
-
-		final Note first = currentNotes.get(selectedNotes.get(0));
-		final Note last = currentNotes.get(selectedNotes.get(selectedNotes.size() - 1));
-
-		changeEventList(currentInstrument.tap, first.pos, last.pos + last.getLength());
+		changeSections(currentInstrument.tap);
 		fixTapSections();
 	}
 
@@ -403,6 +376,10 @@ public class ChartData {
 	}
 
 	public void copy() {
+		if (isEmpty) {
+			return;
+		}
+
 		final List<byte[]> list = new ArrayList<>(selectedNotes.size() + 1);
 
 		if (currentInstrument.type.isVocalsType()) {
@@ -1034,8 +1011,7 @@ public class ChartData {
 		clear();
 		isEmpty = false;
 		s = song;
-		currentInstrument = s.g;
-		currentNotes = currentInstrument.notes.get(currentDiff);
+		changeInstrument(InstrumentType.GUITAR);
 		path = dir;
 		Config.lastPath = path;
 		ini = iniData;
@@ -1268,6 +1244,8 @@ public class ChartData {
 	}
 
 	public void toggleSelectedVocalsWordPart() {
+		undoSystem.addUndo();
+
 		for (final int id : selectedNotes) {
 			final Lyric l = s.v.lyrics.get(id);
 			l.wordPart = !l.wordPart;
@@ -1275,6 +1253,8 @@ public class ChartData {
 	}
 
 	public void toggleSelectedNotesExpertPlus() {
+		undoSystem.addUndo();
+
 		for (final int id : selectedNotes) {
 			final Note n = currentNotes.get(id);
 			n.expertPlus = !n.expertPlus;
@@ -1282,6 +1262,8 @@ public class ChartData {
 	}
 
 	public void toggleSelectedNotesYellowTom() {
+		undoSystem.addUndo();
+
 		for (final int id : selectedNotes) {
 			final Note n = currentNotes.get(id);
 			n.yellowTom = !n.yellowTom;
@@ -1289,6 +1271,8 @@ public class ChartData {
 	}
 
 	public void toggleSelectedNotesBlueTom() {
+		undoSystem.addUndo();
+
 		for (final int id : selectedNotes) {
 			final Note n = currentNotes.get(id);
 			n.blueTom = !n.blueTom;
@@ -1296,6 +1280,8 @@ public class ChartData {
 	}
 
 	public void toggleSelectedNotesGreenTom() {
+		undoSystem.addUndo();
+
 		for (final int id : selectedNotes) {
 			final Note n = currentNotes.get(id);
 			n.greenTom = !n.greenTom;

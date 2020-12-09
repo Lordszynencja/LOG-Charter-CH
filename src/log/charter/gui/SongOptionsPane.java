@@ -19,6 +19,7 @@ public final class SongOptionsPane extends ParamsPane {
 	private int diffGC;
 	private int diffGR;
 	private int diffB;
+	private int diffD;
 	private int diffK;
 
 	private boolean sysexOpenBass;
@@ -26,7 +27,7 @@ public final class SongOptionsPane extends ParamsPane {
 	private boolean proDrums;
 
 	public SongOptionsPane(final CharterFrame frame) {
-		super(frame, "Options", 20);
+		super(frame, "Options", 21);
 
 		final IniData iniData = frame.handler.data.ini;
 		name = iniData.name;
@@ -43,6 +44,7 @@ public final class SongOptionsPane extends ParamsPane {
 		diffGC = iniData.diffGC;
 		diffGR = iniData.diffGR;
 		diffB = iniData.diffB;
+		diffD = iniData.diffD;
 		diffK = iniData.diffK;
 
 		sysexOpenBass = "True".equals(iniData.sysexOpenBass);
@@ -75,14 +77,16 @@ public final class SongOptionsPane extends ParamsPane {
 				val -> diffGR = Integer.valueOf(val), false);
 		addConfigValue(12, "Bass difficulty", diffB, 40, createIntValidator(-1, 100, false), //
 				val -> diffB = Integer.valueOf(val), false);
-		addConfigValue(13, "Keyboard difficulty", diffK, 40, createIntValidator(-1, 100, false), //
+		addConfigValue(13, "Drums difficulty", diffD, 40, createIntValidator(-1, 100, false), //
+				val -> diffD = Integer.valueOf(val), false);
+		addConfigValue(14, "Keyboard difficulty", diffK, 40, createIntValidator(-1, 100, false), //
 				val -> diffK = Integer.valueOf(val), false);
 
-		addConfigCheckbox(15, "sysex_open_bass", sysexOpenBass, val -> sysexOpenBass = val);
-		addConfigCheckbox(16, "sysex_slider", sysexSlider, val -> sysexSlider = val);
-		addConfigCheckbox(17, "pro_drums", proDrums, val -> proDrums = val);
+		addConfigCheckbox(16, "sysex_open_bass", sysexOpenBass, val -> sysexOpenBass = val);
+		addConfigCheckbox(17, "sysex_slider", sysexSlider, val -> sysexSlider = val);
+		addConfigCheckbox(18, "pro_drums", proDrums, val -> proDrums = val);
 
-		addButtons(19, e -> {
+		addButtons(20, e -> {
 			iniData.name = name;
 			iniData.artist = artist;
 			iniData.album = album;
@@ -97,6 +101,7 @@ public final class SongOptionsPane extends ParamsPane {
 			iniData.diffGC = diffGC;
 			iniData.diffGR = diffGR;
 			iniData.diffB = diffB;
+			iniData.diffD = diffD;
 			iniData.diffK = diffK;
 
 			iniData.sysexOpenBass = sysexOpenBass ? "True" : "False";

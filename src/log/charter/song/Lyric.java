@@ -21,7 +21,7 @@ public class Lyric extends Event {
 			if (l.lyric == null) {
 				continue;
 			}
-			b.append(l.lyric);
+			b.append(l.lyric.replace("=", "-"));
 			if (!l.wordPart) {
 				b.append(" ");
 			}

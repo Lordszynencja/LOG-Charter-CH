@@ -42,6 +42,10 @@ public class CharterMenuBar extends JMenuBar {
 		return getKeyStroke(keyCode, 0);
 	}
 
+	private static KeyStroke altCtrl(final int keyCode) {
+		return getKeyStroke(keyCode, KeyEvent.ALT_DOWN_MASK | KeyEvent.CTRL_DOWN_MASK);
+	}
+
 	private static KeyStroke ctrl(final int keyCode) {
 		return getKeyStroke(keyCode, KeyEvent.CTRL_DOWN_MASK);
 	}
@@ -85,9 +89,9 @@ public class CharterMenuBar extends JMenuBar {
 		final JMenu menu = new JMenu("File");
 		menu.add(createItem("New", ctrl('N'), e -> handler.songFileHandler.newSong()));
 		menu.add(createItem("Open", ctrl('O'), e -> handler.songFileHandler.open()));
+		menu.add(createItem("Open audio file", e -> handler.songFileHandler.openAudioFile()));
 		menu.add(createItem("Save", ctrl('S'), e -> handler.songFileHandler.save()));
-		menu.add(createItem("Save as... (TODO currently only saves)", ctrlShift('S'),
-				e -> handler.songFileHandler.saveAs()));
+		menu.add(createItem("Save as...", ctrlShift('S'), e -> handler.songFileHandler.saveAs()));
 		menu.add(createItem("Exit", button(VK_ESCAPE), e -> handler.exit()));
 
 		return menu;
@@ -193,6 +197,9 @@ public class CharterMenuBar extends JMenuBar {
 		menu.add(createItem("Toggle yellow tom", ctrl('Y'), e -> handler.toggleYellowTom()));
 		menu.add(createItem("Toggle blue tom", ctrl('B'), e -> handler.toggleBlueTom()));
 		menu.add(createItem("Toggle green tom", ctrl('G'), e -> handler.toggleGreenTom()));
+		menu.add(createItem("Toggle yellow tom+cymbal", altCtrl('Y'), e -> handler.toggleYellowTomCymbal()));
+		menu.add(createItem("Toggle blue tom+cymbal", altCtrl('B'), e -> handler.toggleBlueTomCymbal()));
+		menu.add(createItem("Toggle green tom+cymbal", altCtrl('G'), e -> handler.toggleGreenTomCymbal()));
 
 		menu.setEnabled(false);
 

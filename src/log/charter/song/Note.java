@@ -14,18 +14,24 @@ public class Note extends Event {
 	private static final int BIT_YELLOW_TOM = 2;
 	private static final int BIT_BLUE_TOM = 3;
 	private static final int BIT_GREEN_TOM = 4;
-	private static final int BIT_EXPERT_PLUS = 5;
+	private static final int BIT_YELLOW_CYMBAL = 5;
+	private static final int BIT_BLUE_CYMBAL = 6;
+	private static final int BIT_GREEN_CYMBAL = 7;
+	private static final int BIT_EXPERT_PLUS = 0;
 
 	public static Note fromBytes(final byte[] bytes, final double offset) {
-		final double pos = offset + bytesToDouble(Arrays.copyOfRange(bytes, 2, 10));
-		final double length = bytesToDouble(Arrays.copyOfRange(bytes, 10, 18));
+		final double pos = offset + bytesToDouble(Arrays.copyOfRange(bytes, 3, 11));
+		final double length = bytesToDouble(Arrays.copyOfRange(bytes, 11, 19));
 		return new Note(pos, length, bytes[0], //
 				getBit(bytes[1], BIT_HOPO), //
 				getBit(bytes[1], BIT_CRAZY), //
 				getBit(bytes[1], BIT_YELLOW_TOM), //
 				getBit(bytes[1], BIT_BLUE_TOM), //
 				getBit(bytes[1], BIT_GREEN_TOM), //
-				getBit(bytes[1], BIT_EXPERT_PLUS));
+				getBit(bytes[1], BIT_YELLOW_CYMBAL), //
+				getBit(bytes[1], BIT_BLUE_CYMBAL), //
+				getBit(bytes[1], BIT_GREEN_CYMBAL), //
+				getBit(bytes[2], BIT_EXPERT_PLUS));
 	}
 
 	/**
@@ -52,6 +58,9 @@ public class Note extends Event {
 	public boolean yellowTom;
 	public boolean blueTom;
 	public boolean greenTom;
+	public boolean yellowCymbal;
+	public boolean blueCymbal;
+	public boolean greenCymbal;
 	public boolean expertPlus;
 
 	public Note(final double pos) {
@@ -64,7 +73,8 @@ public class Note extends Event {
 	}
 
 	public Note(final double pos, final double length, final int notes, final boolean hopo, final boolean crazy,
-			final boolean yellowTom, final boolean blueTom, final boolean greenTom, final boolean expertPlus) {
+			final boolean yellowTom, final boolean blueTom, final boolean greenTom, final boolean yellowCymbal,
+			final boolean blueCymbal, final boolean greenCymbal, final boolean expertPlus) {
 		super(pos, length);
 		this.notes = notes;
 		this.hopo = hopo;
@@ -72,6 +82,9 @@ public class Note extends Event {
 		this.yellowTom = yellowTom;
 		this.blueTom = blueTom;
 		this.greenTom = greenTom;
+		this.yellowCymbal = yellowCymbal;
+		this.blueCymbal = blueCymbal;
+		this.greenCymbal = greenCymbal;
 		this.expertPlus = expertPlus;
 	}
 
@@ -85,11 +98,14 @@ public class Note extends Event {
 		yellowTom = n.yellowTom;
 		blueTom = n.blueTom;
 		greenTom = n.greenTom;
+		yellowCymbal = n.yellowCymbal;
+		blueCymbal = n.blueCymbal;
+		greenCymbal = n.greenCymbal;
 		expertPlus = n.expertPlus;
 	}
 
 	public byte[] toBytes(final double offset) {
-		final byte[] noteBytes = new byte[18];
+		final byte[] noteBytes = new byte[19];
 		noteBytes[0] = (byte) notes;
 		noteBytes[1] = 0;
 		noteBytes[1] |= (hopo ? getBitByte(BIT_HOPO) : 0);
@@ -97,10 +113,14 @@ public class Note extends Event {
 		noteBytes[1] |= (yellowTom ? getBitByte(BIT_YELLOW_TOM) : 0);
 		noteBytes[1] |= (blueTom ? getBitByte(BIT_BLUE_TOM) : 0);
 		noteBytes[1] |= (greenTom ? getBitByte(BIT_GREEN_TOM) : 0);
-		noteBytes[1] |= (expertPlus ? getBitByte(BIT_EXPERT_PLUS) : 0);
+		noteBytes[1] |= (yellowCymbal ? getBitByte(BIT_YELLOW_CYMBAL) : 0);
+		noteBytes[1] |= (blueCymbal ? getBitByte(BIT_BLUE_CYMBAL) : 0);
+		noteBytes[1] |= (greenCymbal ? getBitByte(BIT_GREEN_CYMBAL) : 0);
+		noteBytes[2] = 0;
+		noteBytes[2] |= (expertPlus ? getBitByte(BIT_EXPERT_PLUS) : 0);
 
-		arraycopy(doubleToBytes(pos - offset), 0, noteBytes, 2, 8);
-		arraycopy(doubleToBytes(getLength()), 0, noteBytes, 10, 8);
+		arraycopy(doubleToBytes(pos - offset), 0, noteBytes, 3, 8);
+		arraycopy(doubleToBytes(getLength()), 0, noteBytes, 11, 8);
 
 		return noteBytes;
 	}
@@ -117,6 +137,9 @@ public class Note extends Event {
 				+ ", yellowTom: " + (yellowTom ? "T" : "F") //
 				+ ", blueTom: " + (blueTom ? "T" : "F") //
 				+ ", greenTom: " + (greenTom ? "T" : "F") //
+				+ ", yellowCymbal: " + (yellowCymbal ? "T" : "F") //
+				+ ", blueCymbal: " + (blueCymbal ? "T" : "F") //
+				+ ", greenCymbal: " + (greenCymbal ? "T" : "F") //
 				+ ", expertPlus: " + (expertPlus ? "T" : "F") + "}";
 	}
 }

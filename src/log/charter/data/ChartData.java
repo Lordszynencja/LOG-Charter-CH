@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Consumer;
 
 import log.charter.gui.ChartEventsHandler;
 import log.charter.gui.ChartPanel;
@@ -1243,6 +1244,14 @@ public class ChartData {
 		}
 	}
 
+	private void changeSelectedNotes(final Consumer<Note> action) {
+		undoSystem.addUndo();
+
+		selectedNotes.stream()//
+				.map(id -> currentNotes.get(id))//
+				.forEach(action);
+	}
+
 	public void toggleSelectedVocalsWordPart() {
 		undoSystem.addUndo();
 
@@ -1253,39 +1262,52 @@ public class ChartData {
 	}
 
 	public void toggleSelectedNotesExpertPlus() {
-		undoSystem.addUndo();
-
-		for (final int id : selectedNotes) {
-			final Note n = currentNotes.get(id);
-			n.expertPlus = !n.expertPlus;
+		if (selectedNotes.size() > 1) {
+			undoSystem.addUndo();
+			boolean even = false;
+			for (final Integer id : selectedNotes) {
+				currentNotes.get(id).expertPlus = even;
+				even = !even;
+			}
+		} else {
+			changeSelectedNotes(n -> n.expertPlus = !n.expertPlus);
 		}
 	}
 
 	public void toggleSelectedNotesYellowTom() {
-		undoSystem.addUndo();
-
-		for (final int id : selectedNotes) {
-			final Note n = currentNotes.get(id);
-			n.yellowTom = !n.yellowTom;
-		}
+		changeSelectedNotes(n -> n.yellowTom = !n.yellowTom);
 	}
 
 	public void toggleSelectedNotesBlueTom() {
-		undoSystem.addUndo();
-
-		for (final int id : selectedNotes) {
-			final Note n = currentNotes.get(id);
-			n.blueTom = !n.blueTom;
-		}
+		changeSelectedNotes(n -> n.blueTom = !n.blueTom);
 	}
 
 	public void toggleSelectedNotesGreenTom() {
-		undoSystem.addUndo();
+		changeSelectedNotes(n -> n.greenTom = !n.greenTom);
+	}
 
-		for (final int id : selectedNotes) {
-			final Note n = currentNotes.get(id);
-			n.greenTom = !n.greenTom;
-		}
+	public void toggleSelectedNotesYellowTomCymbal() {
+		changeSelectedNotes(n -> {
+			final boolean newValue = !n.yellowTom || !n.yellowCymbal;
+			n.yellowTom = newValue;
+			n.yellowCymbal = newValue;
+		});
+	}
+
+	public void toggleSelectedNotesBlueTomCymbal() {
+		changeSelectedNotes(n -> {
+			final boolean newValue = !n.blueTom || !n.blueCymbal;
+			n.blueTom = newValue;
+			n.blueCymbal = newValue;
+		});
+	}
+
+	public void toggleSelectedNotesGreenTomCymbal() {
+		changeSelectedNotes(n -> {
+			final boolean newValue = !n.greenTom || !n.greenCymbal;
+			n.greenTom = newValue;
+			n.greenCymbal = newValue;
+		});
 	}
 
 	public void undo() {

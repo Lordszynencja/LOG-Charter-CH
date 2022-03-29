@@ -450,7 +450,7 @@ public class ChartEventsHandler implements KeyListener, MouseListener {
 	}
 
 	public void setSoloSection() {
-		data.changeTapSections();
+		data.changeSoloSections();
 		setChanged();
 	}
 
@@ -503,6 +503,21 @@ public class ChartEventsHandler implements KeyListener, MouseListener {
 
 	public void toggleGreenTom() {
 		data.toggleSelectedNotesGreenTom();
+		setChanged();
+	}
+
+	public void toggleYellowTomCymbal() {
+		data.toggleSelectedNotesYellowTomCymbal();
+		setChanged();
+	}
+
+	public void toggleBlueTomCymbal() {
+		data.toggleSelectedNotesBlueTomCymbal();
+		setChanged();
+	}
+
+	public void toggleGreenTomCymbal() {
+		data.toggleSelectedNotesGreenTomCymbal();
 		setChanged();
 	}
 

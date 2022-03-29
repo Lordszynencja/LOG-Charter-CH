@@ -10,6 +10,7 @@ import static log.charter.io.midi.NoteIds.getNoteId;
 import static log.charter.util.ByteUtils.getBit;
 
 import java.util.List;
+import java.util.function.IntToDoubleFunction;
 
 import javax.sound.midi.InvalidMidiDataException;
 import javax.sound.midi.MetaMessage;
@@ -25,17 +26,53 @@ import log.charter.song.Instrument.InstrumentType;
 import log.charter.song.Note;
 
 public class InstrumentWriter {
+	private static void addNoteMessage(final Track track, final byte note, final boolean start, final double pos)
+			throws InvalidMidiDataException {
+		final ShortMessage msgStart = new ShortMessage(-112, note, start ? 100 : 0);
+		track.add(new MidiEvent(msgStart, Math.round(pos)));
+	}
+
 	private static void addNote(final int note, final double pos, final double end, final Track track)
 			throws InvalidMidiDataException {
 		if (note == -1) {
 			error("INVALID NOTE");
 		}
-		final ShortMessage msgStart = new ShortMessage();
-		msgStart.setMessage(-112, note, 100);
-		track.add(new MidiEvent(msgStart, Math.round(pos)));
-		final ShortMessage msgEnd = new ShortMessage();
-		msgEnd.setMessage(-112, note, 0);
-		track.add(new MidiEvent(msgEnd, Math.round(end)));
+		addNoteMessage(track, (byte) note, true, pos);
+		addNoteMessage(track, (byte) note, false, end);
+	}
+
+	private enum SysexMessageType {
+		OPEN_NOTE((byte) 1), //
+		TAP((byte) 4), //
+		YELLOW_BOTH((byte) 6), //
+		BLUE_BOTH((byte) 18), //
+		GREEN_BOTH((byte) 19);
+
+		private final byte value;
+
+		private SysexMessageType(final byte value) {
+			this.value = value;
+		}
+
+		public byte[] start(final byte diff, final byte mod) {
+			return new byte[] { -16, 80, 83, 0, 0, diff, (byte) (value + mod), 1, -9 };
+		}
+
+		public byte[] end(final byte diff, final byte mod) {
+			return new byte[] { -16, 80, 83, 0, 0, diff, (byte) (value + mod), 0, -9 };
+		}
+	}
+
+	private static void addSysexMessage(final Track track, final byte[] data, final double pos)
+			throws InvalidMidiDataException {
+		final SysexMessage msg = new SysexMessage(data, data.length);
+		track.add(new MidiEvent(msg, Math.round(pos)));
+	}
+
+	private static void addSysexNote(final SysexMessageType message, final int diff, final double pos, final double end,
+			final Track track, final byte mod) throws InvalidMidiDataException {
+		addSysexMessage(track, message.start((byte) diff, mod), pos);
+		addSysexMessage(track, message.end((byte) diff, mod), end);
 	}
 
 	private static void writeGuitar(final Instrument instrument, final Track track) throws InvalidMidiDataException {
@@ -95,12 +132,7 @@ public class InstrumentWriter {
 			for (final Note n : diff) {
 				if (n.notes == 0) {
 					addNote(getNoteId(InstrumentType.GUITAR, diffId, 0), n.pos, n.pos + n.getLength(), track);
-					final SysexMessage msgStart = new SysexMessage();
-					msgStart.setMessage(240, new byte[] { 80, 83, 0, 0, 3, 1, 1, -9 }, 8);
-					track.add(new MidiEvent(msgStart, Math.round(n.pos)));
-					final SysexMessage msgEnd = new SysexMessage();
-					msgEnd.setMessage(240, new byte[] { 80, 83, 0, 0, 3, 1, 0, -9 }, 8);
-					track.add(new MidiEvent(msgEnd, Math.round(n.pos + n.getLength())));
+					addSysexNote(SysexMessageType.OPEN_NOTE, diffId, n.pos, n.pos + n.getLength(), track, (byte) 0);
 				} else {
 					for (int i = 0; i < 5; i++) {
 						if (getBit(n.notes, i)) {
@@ -110,6 +142,20 @@ public class InstrumentWriter {
 				}
 
 				addNote(getNoteId(InstrumentType.GUITAR, diffId, n.hopo ? 5 : 6), n.pos, n.pos + n.getLength(), track);
+			}
+		}
+	}
+
+	private static void writeDrumNoteColorCymbalTom(final Track track, final Note n, final int diff, final int bit,
+			final int lane, final boolean tom, final boolean cymbal, final SysexMessageType type)
+			throws InvalidMidiDataException {
+		if (getBit(n.notes, bit)) {
+			if (tom) {
+				if (cymbal) {
+					addSysexNote(type, diff, n.pos, n.pos + n.getLength(), track, (byte) 0);
+				} else {
+					addNote(getNoteId(InstrumentType.DRUMS, diff, lane), n.pos, n.pos + n.getLength(), track);
+				}
 			}
 		}
 	}
@@ -128,16 +174,30 @@ public class InstrumentWriter {
 					addNote(getNoteId(InstrumentType.DRUMS, diffId, n.expertPlus ? 5 : 0), n.pos, n.pos + n.getLength(),
 							track);
 				}
-				if (getBit(n.notes, 2) && n.yellowTom) {
-					addNote(getNoteId(InstrumentType.DRUMS, diffId, 6), n.pos, n.pos + n.getLength(), track);
-				}
-				if (getBit(n.notes, 3) && n.blueTom) {
-					addNote(getNoteId(InstrumentType.DRUMS, diffId, 7), n.pos, n.pos + n.getLength(), track);
-				}
-				if (getBit(n.notes, 4) && n.greenTom) {
-					addNote(getNoteId(InstrumentType.DRUMS, diffId, 8), n.pos, n.pos + n.getLength(), track);
-				}
+				writeDrumNoteColorCymbalTom(track, n, diffId, 2, 6, n.yellowTom, n.yellowCymbal,
+						SysexMessageType.YELLOW_BOTH);
+				writeDrumNoteColorCymbalTom(track, n, diffId, 3, 7, n.blueTom, n.blueCymbal,
+						SysexMessageType.BLUE_BOTH);
+				writeDrumNoteColorCymbalTom(track, n, diffId, 4, 8, n.greenTom, n.greenCymbal,
+						SysexMessageType.GREEN_BOTH);
 			}
+		}
+
+		final int min = 101;
+		final IntToDoubleFunction f = i -> (i - min) * 100;
+
+		for (int i = min; i < 100; i++) {
+			addNote(getNoteId(InstrumentType.DRUMS, 3, 4), f.applyAsDouble(i), f.applyAsDouble(i) + 1, track);
+			addNote(getNoteId(InstrumentType.DRUMS, 3, 8), f.applyAsDouble(i), f.applyAsDouble(i) + 1, track);
+			addSysexNote(SysexMessageType.GREEN_BOTH, 3, f.applyAsDouble(i), f.applyAsDouble(i) + 1, track, (byte) i);
+		}
+
+		for (int i = min; i < 128; i++) {
+			addNote(getNoteId(InstrumentType.DRUMS, 3, 4), f.applyAsDouble(i + 200), f.applyAsDouble(i + 200) + 1,
+					track);
+			addNote(getNoteId(InstrumentType.DRUMS, 3, 8), f.applyAsDouble(i + 200), f.applyAsDouble(i + 200) + 1,
+					track);
+			addNote(i, f.applyAsDouble(i + 200), f.applyAsDouble(i + 200) + 1, track);
 		}
 	}
 
@@ -181,12 +241,7 @@ public class InstrumentWriter {
 
 	private static void writeTap(final List<Event> tap, final Track track) throws InvalidMidiDataException {
 		for (final Event e : tap) {
-			final SysexMessage msgStart = new SysexMessage();
-			msgStart.setMessage(240, new byte[] { 80, 83, 0, 0, -1, 4, 1, -9 }, 8);
-			track.add(new MidiEvent(msgStart, Math.round(e.pos)));
-			final SysexMessage msgEnd = new SysexMessage();
-			msgEnd.setMessage(240, new byte[] { 80, 83, 0, 0, -1, 4, 0, -9 }, 8);
-			track.add(new MidiEvent(msgEnd, Math.round(e.pos + e.getLength())));
+			addSysexNote(SysexMessageType.TAP, -1, e.pos, e.pos + e.getLength(), track, (byte) 0);
 		}
 	}
 }

@@ -74,42 +74,53 @@ public class NoteIds {
 		addNoteId(102, 0, 3, 6);
 
 		// Drums
-		addNoteId(60, 1, 0, 0);
-		addNoteId(61, 1, 0, 1);
-		addNoteId(62, 1, 0, 2);
-		addNoteId(63, 1, 0, 3);
-		addNoteId(64, 1, 0, 4);
-		addNoteId(110, 1, 0, 6);
-		addNoteId(111, 1, 0, 7);
-		addNoteId(112, 1, 0, 8);
+		final int drumsType = getType(InstrumentType.DRUMS);
+		for (int diff = 0; diff < 4; diff++) {
+			for (int c = 0; c < 5; c++) {
+				final int id = 60 + diff * 12 + c;
+				addNoteId(id, drumsType, diff, c);
+			}
+			for (int c = 2; c < 5; c++) {
+				addNoteId(108 + c, drumsType, diff, 4 + c);
+			}
+		}
+		addNoteId(95, 1, 3, 5);// expert+ bass
 
-		addNoteId(72, 1, 1, 0);
-		addNoteId(73, 1, 1, 1);
-		addNoteId(74, 1, 1, 2);
-		addNoteId(75, 1, 1, 3);
-		addNoteId(76, 1, 1, 4);
-		addNoteId(110, 1, 1, 6);
-		addNoteId(111, 1, 1, 7);
-		addNoteId(112, 1, 1, 8);
+//		addNoteId(60, 1, 0, 0);
+//		addNoteId(61, 1, 0, 1);
+//		addNoteId(62, 1, 0, 2);
+//		addNoteId(63, 1, 0, 3);
+//		addNoteId(64, 1, 0, 4);
+//		addNoteId(110, 1, 0, 6);
+//		addNoteId(111, 1, 0, 7);
+//		addNoteId(112, 1, 0, 8);
 
-		addNoteId(84, 1, 2, 0);
-		addNoteId(85, 1, 2, 1);
-		addNoteId(86, 1, 2, 2);
-		addNoteId(87, 1, 2, 3);
-		addNoteId(88, 1, 2, 4);
-		addNoteId(110, 1, 2, 6);
-		addNoteId(111, 1, 2, 7);
-		addNoteId(112, 1, 2, 8);
+//		addNoteId(72, 1, 1, 0);
+//		addNoteId(73, 1, 1, 1);
+//		addNoteId(74, 1, 1, 2);
+//		addNoteId(75, 1, 1, 3);
+//		addNoteId(76, 1, 1, 4);
+//		addNoteId(110, 1, 1, 6);
+//		addNoteId(111, 1, 1, 7);
+//		addNoteId(112, 1, 1, 8);
 
-		addNoteId(96, 1, 3, 0);
-		addNoteId(97, 1, 3, 1);
-		addNoteId(98, 1, 3, 2);
-		addNoteId(99, 1, 3, 3);
-		addNoteId(100, 1, 3, 4);
-		addNoteId(95, 1, 3, 5);
-		addNoteId(110, 1, 3, 6);
-		addNoteId(111, 1, 3, 7);
-		addNoteId(112, 1, 3, 8);
+//		addNoteId(84, 1, 2, 0);
+//		addNoteId(85, 1, 2, 1);
+//		addNoteId(86, 1, 2, 2);
+//		addNoteId(87, 1, 2, 3);
+//		addNoteId(88, 1, 2, 4);
+//		addNoteId(110, 1, 2, 6);
+//		addNoteId(111, 1, 2, 7);
+//		addNoteId(112, 1, 2, 8);
+
+//		addNoteId(96, 1, 3, 0);
+//		addNoteId(97, 1, 3, 1);
+//		addNoteId(98, 1, 3, 2);
+//		addNoteId(99, 1, 3, 3);
+//		addNoteId(100, 1, 3, 4);
+//		addNoteId(110, 1, 3, 6);
+//		addNoteId(111, 1, 3, 7);
+//		addNoteId(112, 1, 3, 8);
 
 		// Keys
 		addNoteId(60, 2, 0, 0);

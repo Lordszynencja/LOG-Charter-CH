@@ -40,10 +40,12 @@ public class MusicData {
 		if (musicFile.exists()) {
 			return Mp3Loader.load(musicFile.getAbsolutePath());
 		}
+
 		musicFile = new File(dir + "/guitar.ogg");
 		if (musicFile.exists()) {
 			return OggLoader.load(musicFile.getAbsolutePath());
 		}
+
 		return null;
 	}
 

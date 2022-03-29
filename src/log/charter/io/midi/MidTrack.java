@@ -39,6 +39,7 @@ public class MidTrack {
 		DRUMS("PART DRUMS"), //
 		EVENTS("EVENTS"), //
 		TEMPO("TEMPO"), //
+		REAL_DRUMS("PART REAL_DRUMS_PS"), //
 		UNKNOWN("");
 
 		public static TrackType from(final String s) {

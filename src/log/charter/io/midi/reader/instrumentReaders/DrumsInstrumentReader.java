@@ -55,7 +55,7 @@ public class DrumsInstrumentReader extends InstrumentReader {
 		notes = new ArrayList<>(4);
 		for (int i = 0; i < 4; i++) {
 			notes.add(new ArrayList<>(9));
-			for (int j = 0; j < 9; j++) {
+			for (int j = 0; j < 12; j++) {
 				notes.get(i).add(new ArrayList<>());
 			}
 		}
@@ -112,23 +112,60 @@ public class DrumsInstrumentReader extends InstrumentReader {
 					n.greenTom = true;
 				}
 			});
+			notes.get(i).get(9).forEach(note -> {
+				final Note n = notesMap.get((long) note.pos);
+				if (n != null) {
+					n.yellowTom = true;
+					n.yellowCymbal = true;
+				}
+			});
+			notes.get(i).get(10).forEach(note -> {
+				final Note n = notesMap.get((long) note.pos);
+				if (n != null) {
+					n.blueTom = true;
+					n.blueCymbal = true;
+				}
+			});
+			notes.get(i).get(11).forEach(note -> {
+				final Note n = notesMap.get((long) note.pos);
+				if (n != null) {
+					n.greenTom = true;
+					n.greenCymbal = true;
+				}
+			});
 
 			instr.notes.get(i).addAll(notesMap.values());
 		}
 	}
 
+	private static boolean isSpecialEvent(final MidEvent e) {
+		return e.msg[0] == -16;
+	}
+
+	private void addSpecial(final MidEvent e) {
+		final int difficulty = e.msg[5];
+		final int type = e.msg[6] - 17;
+		if (difficulty >= 0 && difficulty < 4 && type >= 0 && type < 3) {
+			notes.get(difficulty).get(9 + type).add(new Note(e.t));
+		}
+	}
+
 	private void handleNote(final MidEvent e) {
-		final Integer id = e.msg[1] & 0xFF;
-		final int diff = getDiff(InstrumentType.DRUMS, id);
-		final int lane = NoteIds.getLane(InstrumentType.DRUMS, id);
-		if (lane == 6 || lane == 7 || lane == 8) {
-			for (int i = 0; i < 4; i++) {
-				notes.get(i).get(lane).add(new Note(e.t));
-			}
-		} else if (diff != -1 && lane != -1) {
-			notes.get(diff).get(lane).add(new Note(e.t));
+		if (isSpecialEvent(e)) {
+			addSpecial(e);
 		} else {
-			error("Unknown note: " + e.toString());
+			final Integer id = e.msg[1] & 0xFF;
+			final int diff = getDiff(InstrumentType.DRUMS, id);
+			final int lane = NoteIds.getLane(InstrumentType.DRUMS, id);
+			if (lane == 6 || lane == 7 || lane == 8) {
+				for (int i = 0; i < 4; i++) {
+					notes.get(i).get(lane).add(new Note(e.t));
+				}
+			} else if (diff != -1 && lane != -1) {
+				notes.get(diff).get(lane).add(new Note(e.t));
+			} else {
+				error("Unknown note: " + e.toString());
+			}
 		}
 	}
 

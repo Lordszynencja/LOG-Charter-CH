@@ -145,6 +145,7 @@ public class InstrumentDrawer implements Drawer {
 			cymbalNotes[i] = new ArcList();
 		}
 		final FillList expertPlusNotes = new FillList();
+		final FillList tomCymbalNotes = new FillList();
 
 		final int tailH = noteH5 / 2;
 		final int w = panel.getWidth();
@@ -165,6 +166,12 @@ public class InstrumentDrawer implements Drawer {
 						} else {
 							notes[c].addPositions(x - noteW / 2, y - noteH5 / 2, noteW, noteH5);
 						}
+						if ((c == 2 && n.yellowCymbal && n.yellowTom)//
+								|| (c == 3 && n.blueCymbal && n.blueTom)//
+								|| (c == 4 && n.greenCymbal && n.greenTom)) {
+							tomCymbalNotes.addPositions(x - 3, y - 3, 7, 7);
+						}
+
 						if (length > noteW / 2) {
 							noteTails[c].addPositions(x, y - tailH / 2, length, tailH);
 						}
@@ -186,6 +193,7 @@ public class InstrumentDrawer implements Drawer {
 			cymbalNotes[i].draw(g, ChartPanel.colors.get("NOTE_" + colorIds[i + 2]));
 		}
 		expertPlusNotes.draw(g, ChartPanel.colors.get("NOTE_1"));
+		tomCymbalNotes.draw(g, ChartPanel.colors.get("NOTE_CYMBAL_TOM"));
 	}
 
 	private void drawLyrics(final Graphics g, final ChartPanel panel, final ChartData data) {

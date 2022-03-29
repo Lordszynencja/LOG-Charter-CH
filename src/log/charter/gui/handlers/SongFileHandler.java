@@ -14,7 +14,6 @@ import helliker.id3.MP3File;
 import log.charter.data.Config;
 import log.charter.gui.ChartEventsHandler;
 import log.charter.io.IniWriter;
-import log.charter.io.Logger;
 import log.charter.io.midi.reader.MidiReader;
 import log.charter.io.midi.writer.MidiWriter;
 import log.charter.song.IniData;
@@ -277,11 +276,13 @@ public class SongFileHandler {
 			}
 			f.mkdir();
 			final String songDir = f.getAbsolutePath();
-			RW.writeB(songDir + "/guitar." + extension, RW.readB(songFile));
+			final String musicPath = songDir + "/guitar." + extension;
+			RW.writeB(musicPath, RW.readB(songFile));
 
-			final MusicData musicData = MusicData.readSongFile(f.getAbsolutePath());
+			final MusicData musicData = MusicData.readFile(musicPath);
 			if (musicData == null) {
-				handler.showPopup("Music file (song.mp3 or song.ogg) not found in song folder");
+				handler.showPopup(
+						"Music file not found in song folder, something went wrong with copying or the file is invalid");
 				return;
 			}
 
@@ -290,6 +291,49 @@ public class SongFileHandler {
 			handler.data.ini.charter = Config.charter;
 			save();
 		}
+	}
+
+	private File chooseFile(final String startingDir, final String[] extensions, final String[] descriptions) {
+		final JFileChooser chooser = new JFileChooser(new File(startingDir));
+		chooser.setAcceptAllFileFilterUsed(false);
+
+		for (int i = 0; i < extensions.length; i++) {
+			final String extension = extensions[i];
+			final String description = descriptions[i];
+			chooser.addChoosableFileFilter(new FileFilter() {
+
+				@Override
+				public boolean accept(final File f) {
+					if (f.isDirectory()) {
+						return true;
+					}
+
+					final String name = f.getName().toLowerCase();
+
+					return f.isDirectory() || name.endsWith(extension);
+				}
+
+				@Override
+				public String getDescription() {
+					return description;
+				}
+			});
+		}
+
+		final int chosenOption = chooser.showOpenDialog(handler.frame);
+		if (chosenOption != JFileChooser.APPROVE_OPTION) {
+			return null;
+		}
+		return chooser.getSelectedFile();
+	}
+
+	public MusicData chooseMusicFile(final String startingDir) {
+		final File musicFile = chooseFile(startingDir, new String[] { ".ogg", ".mp3" },
+				new String[] { "Ogg file", "Mp3 file" });
+		if (musicFile == null) {
+			return null;
+		}
+		return MusicData.readFile(musicFile.getAbsolutePath());
 	}
 
 	public void open() {
@@ -302,68 +346,72 @@ public class SongFileHandler {
 			startingDir = Config.songsPath;
 		}
 
-		final JFileChooser chooser = new JFileChooser(new File(startingDir));
-		chooser.setFileFilter(new FileFilter() {
+		final File midiFileChosen = chooseFile(startingDir, new String[] { ".mid" }, new String[] { "Midi file" });
+		if (midiFileChosen == null) {
+			return;
+		}
 
-			@Override
-			public boolean accept(final File f) {
-				final String name = f.getName().toLowerCase();
-				return f.isDirectory() || name.endsWith(".mid");
-			}
+		final String dirPath = midiFileChosen.getParent();
+		final String name = midiFileChosen.getName().toLowerCase();
 
-			@Override
-			public String getDescription() {
-				return "Midi (.mid) file";
-			}
-		});
-
-		if (chooser.showOpenDialog(handler.frame) == JFileChooser.APPROVE_OPTION) {
-			final File f = chooser.getSelectedFile();
-			final String dirPath = f.getParent();
-			final String name = f.getName().toLowerCase();
-
-			final Song s;
-			if (name.endsWith(".mid")) {// TODO add .chart
-				try {
-					s = MidiReader.readMidi(f.getAbsolutePath());
-				} catch (final InvalidMidiDataException e) {
-					handler.showPopup("File is invalid:\n" + e.getLocalizedMessage());
-					error("Error when opening midi", e);
-					return;
-				} catch (final IOException e) {
-					handler.showPopup("File can't be read:\n" + e.getLocalizedMessage());
-					error("Error when opening midi", e);
-					return;
-				}
-			} else {
-				s = null;
-				handler.showPopup("This file type is not supported");
-				error("unsupported file: " + f.getName());
+		final Song s;
+		if (name.endsWith(".mid")) {
+			try {
+				s = MidiReader.readMidi(midiFileChosen.getAbsolutePath());
+			} catch (final InvalidMidiDataException e) {
+				handler.showPopup("File is invalid:\n" + e.getLocalizedMessage());
+				error("Error when opening midi", e);
+				return;
+			} catch (final IOException e) {
+				handler.showPopup("File can't be read:\n" + e.getLocalizedMessage());
+				error("Error when opening midi", e);
 				return;
 			}
+		} else {
+			s = null;
+			handler.showPopup("This file type is not supported");
+			error("unsupported file: " + midiFileChosen.getName());
+			return;
+		}
 
-			final MusicData musicData = MusicData.readSongFile(dirPath);
-			if (musicData == null) {
-				handler.showPopup("Music file (song.mp3 or song.ogg) not found in song folder");
-				// TODO add asking for another music file
-				return;
+		final String[] fileNames = { "guitar.mp3", "guitar.ogg", "song.mp3", "song.ogg" };
+		MusicData musicData = null;
+		for (final String fileName : fileNames) {
+			musicData = MusicData.readFile(dirPath + "\\" + fileName);
+			if (musicData != null) {
+				break;
 			}
+		}
+		if (musicData == null) {
+			handler.showPopup("Music file not found in song folder, please choose the music file");
+			musicData = chooseMusicFile(startingDir);
+		}
+		if (musicData == null) {
+			handler.showPopup("Music file couldn't be loaded");
+			return;
+		}
 
-			final File iniFile = new File(dirPath + "/song.ini");
-			final IniData iniData;
-			if (iniFile.exists()) {
-				iniData = new IniData(iniFile);
-			} else {
-				iniData = new IniData();
-				error("No ini file found on path " + iniFile.getAbsolutePath());
-			}
+		final File iniFile = new File(dirPath + "/song.ini");
+		final IniData iniData;
+		if (iniFile.exists()) {
+			iniData = new IniData(iniFile);
+		} else {
+			iniData = new IniData();
+			error("No ini file found on path " + iniFile.getAbsolutePath());
+		}
 
-			if ((s != null) && (musicData != null) && (iniData != null)) {
-				Config.lastPath = dirPath;
-				Config.save();
-				handler.data.setSong(dirPath, s, iniData, musicData);
-				handler.data.changed = false;
-			}
+		if ((s != null) && (musicData != null) && (iniData != null)) {
+			Config.lastPath = dirPath;
+			Config.save();
+			handler.data.setSong(dirPath, s, iniData, musicData);
+			handler.data.changed = false;
+		}
+	}
+
+	public void openAudioFile() {
+		final MusicData musicData = chooseMusicFile(handler.data.path);
+		if (musicData != null) {
+			handler.data.music = musicData;
 		}
 	}
 
@@ -383,7 +431,15 @@ public class SongFileHandler {
 			return;
 		}
 
-		Logger.error("saveAs not implemented, doing normal save!");// TODO
+		final JFileChooser chooser = new JFileChooser(new File(handler.data.path));
+		chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+
+		final int chosenOption = chooser.showOpenDialog(handler.frame);
+		if (chosenOption != JFileChooser.APPROVE_OPTION) {
+			return;
+		}
+		final File newDir = chooser.getSelectedFile();
+		handler.data.path = newDir.getAbsolutePath();
 		save();
 		Config.save();
 	}

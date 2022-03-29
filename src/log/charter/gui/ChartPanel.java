@@ -106,6 +106,8 @@ public class ChartPanel extends JPanel {
 		colors.put("TAP_NOTE", new Color(155, 20, 155));
 		colors.put("TAP_NOTE_TAIL", new Color(155, 20, 155));
 
+		colors.put("NOTE_CYMBAL_TOM", new Color(64, 64, 64));
+
 		// lyrics colors
 		colors.put("LYRIC_LINE", new Color(100, 200, 200));
 		colors.put("LYRIC_LINE_TEXT", new Color(0, 0, 128));

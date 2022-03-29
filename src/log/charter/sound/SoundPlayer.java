@@ -14,14 +14,14 @@ public class SoundPlayer {
 	public static class Player {
 		private static final int BUFF_SIZE = 1024 * 128;
 
-		private final MusicData md;
+		private final MusicData musicData;
 		private final SourceDataLine line;
 		private boolean stopped;
 		public long startTime = -1;
 
-		private Player(final MusicData md) throws LineUnavailableException {
-			this.md = md;
-			final Info info = new Info(SourceDataLine.class, md.outFormat);
+		private Player(final MusicData musicData) throws LineUnavailableException {
+			this.musicData = musicData;
+			final Info info = new Info(SourceDataLine.class, musicData.outFormat);
 			line = (SourceDataLine) getLine(info);
 		}
 
@@ -32,16 +32,17 @@ public class SoundPlayer {
 		private Player start(final int start) {
 			new Thread(() -> {
 				try {
-					int startByte = (int) floor(((md.outFormat.getFrameRate() * start) / md.slowMultiplier()) / 250);
+					int startByte = (int) floor(
+							((musicData.outFormat.getFrameRate() * start) / musicData.slowMultiplier()) / 250);
 					startByte -= startByte % 4;
 
 					if (stopped) {
 						return;
 					}
 
-					line.open(md.outFormat);
+					line.open(musicData.outFormat);
 					line.start();
-					final byte[] data = md.getData();
+					final byte[] data = musicData.getData();
 					startTime = System.nanoTime();
 					if (stopped) {
 						while ((data.length - startByte) > BUFF_SIZE) {
@@ -98,13 +99,20 @@ public class SoundPlayer {
 		return joined;
 	}
 
-	public static int[][] generateData(final int length, final int pitch, final int loudness, final int rate) {
-		final int[][] data = new int[2][length];
+	public static int[] generateBeep(final int length, final int pitch, final int loudness, final int rate) {
+		final int[] data = new int[length];
 
 		for (int i = 0; i < length; i++) {
-			data[0][i] = (int) floor(sin(((i * Math.PI * 2) / rate) * pitch) * loudness);
-			data[1][i] = (int) floor(sin(((i * Math.PI * 2) / rate) * pitch) * loudness);
+			data[i] = (int) floor(sin(((i * Math.PI * 2) / rate) * pitch) * loudness);
 		}
+
+		return data;
+	}
+
+	public static int[][] generateData(final int length, final int pitch, final int loudness, final int rate) {
+		final int[][] data = new int[2][];
+		data[0] = generateBeep(length, pitch, loudness, rate);
+		data[1] = data[0];
 
 		return data;
 	}

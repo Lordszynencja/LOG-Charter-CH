@@ -1,20 +1,29 @@
 package log.charter.sound;
 
+import static java.lang.Math.max;
+import static java.lang.Math.min;
+import static java.lang.Math.pow;
+import static java.lang.Math.sin;
+import static log.charter.sound.SoundPlayer.generateBeep;
 import static log.charter.sound.SoundPlayer.slow;
 import static log.charter.sound.SoundPlayer.toBytes;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioFormat.Encoding;
 
+import log.charter.sound.HighPassFilter.PassType;
+
 public class MusicData {
-	private static final int DEF_RATE = 44100;
+	public static final int DEF_RATE = 44100;
 
 	public static MusicData generateSound(final double pitch, final double length, final double loudness) {
 		final int[] data = new int[(int) (length * DEF_RATE)];
 		for (int i = 0; i < data.length; i++) {
-			data[i] = (int) (Math.pow(Math.sin((pitch * Math.PI * i) / DEF_RATE), 2) * loudness * 32768);
+			data[i] = (int) (pow(sin((pitch * Math.PI * i) / DEF_RATE), 2) * loudness * 32767);
 		}
 
 		return new MusicData(new int[][] { data, data }, DEF_RATE);
@@ -70,7 +79,7 @@ public class MusicData {
 		outFormat = new AudioFormat(Encoding.PCM_SIGNED, rate, 16, 2, 4, rate, false);
 	}
 
-	private MusicData(final int[][] data, final float rate) {
+	public MusicData(final int[][] data, final float rate) {
 		preparedData = toBytes(data);
 		this.data = data;
 		outFormat = new AudioFormat(Encoding.PCM_SIGNED, rate, 16, 2, 4, rate, false);
@@ -96,5 +105,72 @@ public class MusicData {
 
 	public double slowMultiplier() {
 		return slow > 0 ? 1.0 / slow : -slow / (-slow + 1.0);
+	}
+
+	public List<Double> positionsOfHighs() {
+		final double rate = outFormat.getSampleRate();
+		final int timeout = (int) (25 * rate / 1000);
+		final List<Double> highs = new ArrayList<>();
+
+		int soundCounter = 0;
+		for (int j = 0; j < data[0].length; j++) {
+			for (int i = 0; i < data.length; i++) {
+				if (soundCounter > 0) {
+					soundCounter--;
+				} else {
+					if (data[i][j] > 32_700) {
+						highs.add(j / rate);
+						soundCounter = timeout;
+					}
+				}
+			}
+		}
+
+		return highs;
+	}
+
+	public MusicData highsToSounds() {
+		final float rate = outFormat.getSampleRate();
+		final int[][] newData = new int[data.length][];
+		final int[] sound = generateBeep((int) (20 * rate / 1000), 440, 32767, (int) rate);
+
+		for (int i = 0; i < data.length; i++) {
+			final int[] oldChannel = data[i];
+			final int[] newChannel = new int[oldChannel.length];
+
+			int soundCounter = 0;
+			for (int j = 0; j < oldChannel.length; j++) {
+				if (soundCounter > 0) {
+					newChannel[j] = sound[sound.length - soundCounter];
+					soundCounter--;
+				} else {
+					newChannel[j] = 0;
+					if (oldChannel[j] > 32_000) {
+						soundCounter = sound.length;
+					}
+				}
+			}
+
+			newData[i] = newChannel;
+		}
+
+		return new MusicData(newData, rate);
+	}
+
+	public MusicData pass(final float frequency, final float resonance, final PassType type) {
+		final float rate = outFormat.getSampleRate();
+		final int[][] newData = new int[data.length][];
+		for (int i = 0; i < data.length; i++) {
+			final int[] oldChannel = data[i];
+			newData[i] = new int[oldChannel.length];
+			final HighPassFilter filter = new HighPassFilter(frequency, (int) rate, type, resonance);
+			for (int j = 0; j < oldChannel.length; j++) {
+				final float oldVal = (float) ((oldChannel[j] + 32768) / 65536.0);
+				final float newVal = max(0, min(1, filter.update(oldVal) * 1.0f));
+				newData[i][j] = (int) (newVal * 65535 - 32768);
+			}
+		}
+
+		return new MusicData(newData, rate);
 	}
 }

@@ -10,7 +10,6 @@ import static log.charter.io.midi.NoteIds.getNoteId;
 import static log.charter.util.ByteUtils.getBit;
 
 import java.util.List;
-import java.util.function.IntToDoubleFunction;
 
 import javax.sound.midi.InvalidMidiDataException;
 import javax.sound.midi.MetaMessage;
@@ -44,7 +43,7 @@ public class InstrumentWriter {
 	private enum SysexMessageType {
 		OPEN_NOTE((byte) 1), //
 		TAP((byte) 4), //
-		YELLOW_BOTH((byte) 6), //
+		YELLOW_BOTH((byte) 17), //
 		BLUE_BOTH((byte) 18), //
 		GREEN_BOTH((byte) 19);
 
@@ -181,23 +180,6 @@ public class InstrumentWriter {
 				writeDrumNoteColorCymbalTom(track, n, diffId, 4, 8, n.greenTom, n.greenCymbal,
 						SysexMessageType.GREEN_BOTH);
 			}
-		}
-
-		final int min = 101;
-		final IntToDoubleFunction f = i -> (i - min) * 100;
-
-		for (int i = min; i < 100; i++) {
-			addNote(getNoteId(InstrumentType.DRUMS, 3, 4), f.applyAsDouble(i), f.applyAsDouble(i) + 1, track);
-			addNote(getNoteId(InstrumentType.DRUMS, 3, 8), f.applyAsDouble(i), f.applyAsDouble(i) + 1, track);
-			addSysexNote(SysexMessageType.GREEN_BOTH, 3, f.applyAsDouble(i), f.applyAsDouble(i) + 1, track, (byte) i);
-		}
-
-		for (int i = min; i < 128; i++) {
-			addNote(getNoteId(InstrumentType.DRUMS, 3, 4), f.applyAsDouble(i + 200), f.applyAsDouble(i + 200) + 1,
-					track);
-			addNote(getNoteId(InstrumentType.DRUMS, 3, 8), f.applyAsDouble(i + 200), f.applyAsDouble(i + 200) + 1,
-					track);
-			addNote(i, f.applyAsDouble(i + 200), f.applyAsDouble(i + 200) + 1, track);
 		}
 	}
 

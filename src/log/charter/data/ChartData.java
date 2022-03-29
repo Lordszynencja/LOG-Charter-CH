@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import log.charter.gui.ChartEventsHandler;
 import log.charter.gui.ChartPanel;
@@ -1026,29 +1027,52 @@ public class ChartData {
 
 	public void snapSelectedNotes() {
 		undoSystem.addUndo();
+		snapNotes(selectedNotes);
+	}
 
-		for (int i = 0; i < selectedNotes.size(); i++) {
-			final int id = selectedNotes.get(i);
+	private void snapNotes2(final List<Integer> notes, final Function<Double, Double> positionCalculator) {
+		for (int i = 0; i < notes.size(); i++) {
+			final int id = notes.get(i);
 			final Note n = currentNotes.get(id);
-			final double newPos = s.tempoMap.findClosestGridPositionForTime(n.pos, useGrid, gridSize);
-			if (((id > 0) && (newPos <= currentNotes.get(id - 1).pos))//
-					|| (((id + 1) < currentNotes.size()) && (newPos >= currentNotes.get(id + 1).pos))) {
-				selectedNotes.remove(i);
-				for (int j = i; j < selectedNotes.size(); j++) {
-					selectedNotes.add(j, selectedNotes.remove(j) - 1);
+			final double newPos = positionCalculator.apply(n.pos);
+
+			final boolean isBeforePrevious = (id > 0) && (newPos <= currentNotes.get(id - 1).pos);
+			final boolean isAfterNext = ((id + 1) < currentNotes.size()) && (newPos >= currentNotes.get(id + 1).pos);
+			if (isBeforePrevious || isAfterNext) {
+				if (currentInstrument.type.isDrumsType()) {
+					if (isBeforePrevious) {
+						currentNotes.get(id - 1).drumMerge(n);
+					} else {
+						currentNotes.get(id + 1).drumMerge(n);
+					}
+				}
+				notes.remove(i);
+				for (int j = i; j < notes.size(); j++) {
+					notes.add(j, notes.remove(j) - 1);
 				}
 				currentNotes.remove(id);
+				i--;
 			} else {
-				final double newLength = s.tempoMap.findClosestGridPositionForTime(n.pos + n.getLength(), useGrid,
-						gridSize) - newPos;
+				final double newLength = positionCalculator.apply(n.pos + n.getLength()) - newPos;
 				n.pos = newPos;
 				n.setLength(newLength);
 			}
 		}
-		for (int i = 0; i < selectedNotes.size(); i++) {
-			final int id = selectedNotes.get(i);
-			fixNotesLength(currentNotes.get(id), id);
+
+		if (!currentInstrument.type.isDrumsType()) {
+			for (int i = 0; i < notes.size(); i++) {
+				final int id = notes.get(i);
+				fixNotesLength(currentNotes.get(id), id);
+			}
 		}
+	}
+
+	public void snapNotes(final List<Integer> notes) {
+		snapNotes2(notes, pos -> s.tempoMap.findClosestGridPositionForTime(pos, useGrid, gridSize));
+	}
+
+	public void snapNotes(final List<Integer> notes, final int gridSizeToUse) {
+		snapNotes2(notes, pos -> s.tempoMap.findClosestGridPositionForTime(pos, true, gridSizeToUse));
 	}
 
 	public void snapSelectedVocals() {
@@ -1123,7 +1147,7 @@ public class ChartData {
 		return (int) (length * zoom);
 	}
 
-	private void addNote(final double pos, final int colorBit) {
+	public void addNote(final double pos, final int colorBit) {
 		int color = 0;
 		if (currentInstrument.type.isGuitarType()) {
 			color = colorBit == 0 ? 0 : (1 << (colorBit - 1));
@@ -1141,7 +1165,9 @@ public class ChartData {
 		}
 		n.tap = isInSection(n, currentInstrument.tap);
 
-		fixNotesLength(n, insertPos);
+		if (!currentInstrument.type.isDrumsType()) {
+			fixNotesLength(n, insertPos);
+		}
 		selectedNotes.add(insertPos);
 		lastSelectedNote = insertPos;
 	}

@@ -47,7 +47,7 @@ public class RepeatingPlayer {
 	}
 
 	private void play() {
-		line.drain();
+		line.flush();
 		final byte[] data = musicData.getData();
 		int startByte = 0;
 

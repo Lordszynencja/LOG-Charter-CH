@@ -71,6 +71,27 @@ public class ParamsPane extends JDialog {
 		};
 	}
 
+	protected static ValueValidator createFloatValidator(final float minVal, final float maxVal,
+			final boolean acceptEmpty) {
+		return val -> {
+			if (((val == null) || val.isEmpty()) && acceptEmpty) {
+				return null;
+			}
+			try {
+				final float f = Float.parseFloat(val);
+				if (f < minVal) {
+					return "value must be greater than or equal " + minVal;
+				}
+				if (f > maxVal) {
+					return "value must be less than or equal " + maxVal;
+				}
+				return null;
+			} catch (final Exception e) {
+				return "number expected";
+			}
+		};
+	}
+
 	protected static ValueValidator createIntValidatorWarning(final int minVal, final int maxVal,
 			final boolean acceptEmpty) {
 		return val -> {
@@ -92,14 +113,20 @@ public class ParamsPane extends JDialog {
 		};
 	}
 
+	private final int w;
+
 	public ParamsPane(final CharterFrame frame, final String title, final int rows) {
+		this(frame, title, rows, 700);
+	}
+
+	public ParamsPane(final CharterFrame frame, final String title, final int rows, final int width) {
 		super(frame, title, true);
 		setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
 		setResizable(true);
 		setLocation(Config.windowPosX + 100, Config.windowPosY + 100);
 		pack();
 		final Insets insets = getInsets();
-		final int w = 700 + insets.left + insets.right;
+		w = width + insets.left + insets.right;
 		final int h = insets.top + insets.bottom + (OPTIONS_USPACE * 2) + (rows * OPTIONS_HEIGHT);
 		setSize(w, h);
 		setLayout(null);
@@ -119,13 +146,22 @@ public class ParamsPane extends JDialog {
 		this.addButtons(row, onSave, e -> dispose());
 	}
 
+	protected void addButtons(final int row, final String name, final ActionListener onSave) {
+		this.addButtons(row, name, "Cancel", onSave, e -> dispose());
+	}
+
 	protected void addButtons(final int row, final ActionListener onSave, final ActionListener onCancel) {
-		final JButton saveButton = new JButton("Save");
-		saveButton.addActionListener(onSave);
-		add(saveButton, 200, OPTIONS_USPACE + (row * OPTIONS_HEIGHT), 100, 25);
-		final JButton cancelButton = new JButton("Cancel");
-		cancelButton.addActionListener(onCancel);
-		add(cancelButton, 325, OPTIONS_USPACE + (row * OPTIONS_HEIGHT), 100, 25);
+		addButtons(row, "Save", "Cancel", onSave, onCancel);
+	}
+
+	protected void addButtons(final int row, final String button1Label, final String button2Label,
+			final ActionListener on1, final ActionListener on2) {
+		final JButton button1 = new JButton(button1Label);
+		button1.addActionListener(on1);
+		add(button1, (w - 300) / 2, OPTIONS_USPACE + (row * OPTIONS_HEIGHT), 100, 25);
+		final JButton button2 = new JButton(button2Label);
+		button2.addActionListener(on2);
+		add(button2, (w - 300) / 2 + 125, OPTIONS_USPACE + (row * OPTIONS_HEIGHT), 100, 25);
 	}
 
 	protected void addConfigCheckbox(final int id, final String name, final boolean val,

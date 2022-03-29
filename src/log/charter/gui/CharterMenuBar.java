@@ -200,6 +200,10 @@ public class CharterMenuBar extends JMenuBar {
 		menu.add(createItem("Toggle yellow tom+cymbal", altCtrl('Y'), e -> handler.toggleYellowTomCymbal()));
 		menu.add(createItem("Toggle blue tom+cymbal", altCtrl('B'), e -> handler.toggleBlueTomCymbal()));
 		menu.add(createItem("Toggle green tom+cymbal", altCtrl('G'), e -> handler.toggleGreenTomCymbal()));
+		menu.addSeparator();
+
+		menu.add(createItem("Generate kick drum", e -> handler.generateKickDrumFromMusic()));
+		menu.add(createItem("Generate snare drum", e -> handler.generateSnareDrumFromMusic()));
 
 		menu.setEnabled(false);
 

@@ -135,11 +135,22 @@ public class Note extends Event {
 				+ ", tap: " + (tap ? "T" : "F")//
 				+ ", crazy: " + (crazy ? "T" : "F") //
 				+ ", yellowTom: " + (yellowTom ? "T" : "F") //
-				+ ", blueTom: " + (blueTom ? "T" : "F") //
-				+ ", greenTom: " + (greenTom ? "T" : "F") //
 				+ ", yellowCymbal: " + (yellowCymbal ? "T" : "F") //
+				+ ", blueTom: " + (blueTom ? "T" : "F") //
 				+ ", blueCymbal: " + (blueCymbal ? "T" : "F") //
+				+ ", greenTom: " + (greenTom ? "T" : "F") //
 				+ ", greenCymbal: " + (greenCymbal ? "T" : "F") //
 				+ ", expertPlus: " + (expertPlus ? "T" : "F") + "}";
+	}
+
+	public void drumMerge(final Note n) {
+		notes |= n.notes;
+		crazy |= n.crazy;
+		yellowTom |= n.yellowTom;
+		yellowCymbal |= n.yellowCymbal;
+		blueTom |= n.blueTom;
+		blueCymbal |= n.blueCymbal;
+		greenTom |= n.greenTom;
+		greenCymbal |= n.greenCymbal;
 	}
 }

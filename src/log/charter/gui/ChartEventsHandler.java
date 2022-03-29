@@ -7,6 +7,7 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.swing.JOptionPane;
@@ -21,6 +22,7 @@ import log.charter.song.Event;
 import log.charter.song.Instrument;
 import log.charter.song.Instrument.InstrumentType;
 import log.charter.song.Tempo;
+import log.charter.sound.HighPassFilter.PassType;
 import log.charter.sound.MusicData;
 import log.charter.sound.RepeatingPlayer;
 import log.charter.sound.SoundPlayer;
@@ -29,11 +31,8 @@ import log.charter.sound.SoundPlayer.Player;
 public class ChartEventsHandler implements KeyListener, MouseListener {
 	public static final int FL = 10;
 
-	private static final MusicData tick = MusicData.generateSound(4000, 0.01, 1);
-	private static final MusicData note = MusicData.generateSound(1000, 0.02, 0.8);
-
-	private final RepeatingPlayer tickPlayer = new RepeatingPlayer(tick);
-	private final RepeatingPlayer notePlayer = new RepeatingPlayer(note);
+	private final RepeatingPlayer tickPlayer = new RepeatingPlayer(MusicData.generateSound(4000, 0.01, 1));
+	private final RepeatingPlayer notePlayer = new RepeatingPlayer(MusicData.generateSound(1000, 0.02, 0.8));
 
 	public final ChartData data;
 	public final CharterFrame frame;
@@ -803,4 +802,74 @@ public class ChartEventsHandler implements KeyListener, MouseListener {
 		}
 	}
 
+	private void addNotesFromMusic(final float frequency, final float resonance, final PassType type,
+			final int noteColor, final int gridSnap) {
+		data.undoSystem.addUndo();
+		for (final Double pos : data.music.pass(frequency, resonance, type).positionsOfHighs()) {
+			data.addNote(pos * 1000, noteColor);
+		}
+
+		final List<Integer> notes = new ArrayList<>();
+		for (int i = 0; i < data.currentNotes.size(); i++) {
+			notes.add(i);
+		}
+
+		notes.removeIf(noteId -> (data.currentNotes.get(noteId).notes & 1 << noteColor) == 0);
+		data.snapNotes(notes, gridSnap);
+		data.selectAll();
+	}
+
+	public void generateKickDrumFromMusic() {
+		new ParamsPane(frame, "set data", 6, 500) {
+			private static final long serialVersionUID = 1L;
+
+			private float frequency = 80;
+			private float resonance = 0.2f;
+			private int gridSnap = 8;
+
+			{
+				addConfigValue(0, "Frequency", frequency + "", 50, createFloatValidator(20f, 20_000f, false),
+						val -> frequency = Float.valueOf(val), false);
+				addConfigValue(1, "Resonance (higher -> less notes will match)", resonance + "", 50,
+						createFloatValidator(0.01f, 1f, false), val -> resonance = Float.valueOf(val), false);
+				addConfigValue(2, "Grid snap", gridSnap + "", 50, createIntValidator(1, 999, false),
+						val -> gridSnap = Integer.valueOf(val), false);
+
+				addButtons(4, "Generate bass", e -> {
+					addNotesFromMusic(frequency, resonance, PassType.Lowpass, 0, gridSnap);
+					dispose();
+				});
+
+				validate();
+				setVisible(true);
+			}
+		};
+	}
+
+	public void generateSnareDrumFromMusic() {
+		new ParamsPane(frame, "set data", 6, 500) {
+			private static final long serialVersionUID = 1L;
+
+			private float frequency = 150;
+			private float resonance = 0.2f;
+			private int gridSnap = 8;
+
+			{
+				addConfigValue(0, "Frequency", frequency + "", 50, createFloatValidator(20f, 20_000f, false),
+						val -> frequency = Float.valueOf(val), false);
+				addConfigValue(1, "Resonance (higher -> less notes will match)", resonance + "", 50,
+						createFloatValidator(0.01f, 1f, false), val -> resonance = Float.valueOf(val), false);
+				addConfigValue(2, "Grid snap", gridSnap + "", 50, createIntValidator(1, 999, false),
+						val -> gridSnap = Integer.valueOf(val), false);
+
+				addButtons(4, "Generate snare", e -> {
+					addNotesFromMusic(frequency, resonance, PassType.Highpass, 1, gridSnap);
+					dispose();
+				});
+
+				validate();
+				setVisible(true);
+			}
+		};
+	}
 }

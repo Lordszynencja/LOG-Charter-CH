@@ -11,83 +11,54 @@ import java.awt.Graphics;
 import java.util.List;
 
 import log.charter.data.ChartData;
-import log.charter.data.ChartData.IdOrPos;
+import log.charter.data.IdOrPos;
+import log.charter.data.IdOrPosWithLane;
 import log.charter.gui.ChartPanel;
 import log.charter.gui.chartPanelDrawers.lists.DrawList;
-import log.charter.song.Note;
 
 public class HighlightDrawer implements Drawer {
-	private void drawGuitarHighlightNoteAdd(final Graphics g, final ChartData data) {
+	private void drawHighlightNoteAdd(final Graphics g, final ChartData data, final int lanes) {
 		final DrawList highlighted = new DrawList();
-		int x0, x1;
-		int y0, y1;
-		if (data.mx < data.mousePressX) {
-			x0 = data.mx;
-			y0 = data.my;
-			x1 = data.mousePressX;
-			y1 = data.mousePressY;
-		} else {
-			x0 = data.mousePressX;
-			y0 = data.mousePressY;
-			x1 = data.mx;
-			y1 = data.my;
-		}
-		final IdOrPos idOrPos = data.findClosestIdOrPosForX(x1);
-		final IdOrPos startIdOrPos = data.findClosestIdOrPosForX(x0);
+		final int noteH = lanes == 5 ? noteH5 : noteH6;
 
-		final double firstNotePos = startIdOrPos.isId() ? data.currentNotes.get(startIdOrPos.id).pos : startIdOrPos.pos;
-		final double lastNotePos = idOrPos.isId() ? data.currentNotes.get(idOrPos.id).pos : idOrPos.pos;
-
-		if (firstNotePos != lastNotePos) {
-			final double length = lastNotePos - firstNotePos;
-
-			final List<Note> notes = data.findNotesFromTo(
-					startIdOrPos.isId() ? startIdOrPos.id : data.findFirstNoteAfterTime(firstNotePos), lastNotePos);
-
-			for (final Note note : notes) {
-				final double part = (note.pos - firstNotePos) / length;
-				final int y = clamp((y0 * (1 - part)) + (part * y1), 6);
-				if (isInLanes(y)) {
-					highlighted.addPositions(data.timeToX(note.pos) - (noteW / 2), y - (noteH6 / 2), noteW - 1,
-							noteH6 - 1);
-				}
-			}
-
-			final List<Double> allGridPositions = data.s.tempoMap.getGridPositionsFromTo(data.gridSize,
-					data.xToTime(x0), data.xToTime(x1));
-			final List<Double> gridPositions = ChartData.removePostionsCloseToNotes(allGridPositions, notes);
-			for (final Double pos : gridPositions) {
-				final double part = (pos - firstNotePos) / length;
-				final double y = (y0 * (1 - part)) + (part * y1);
-				highlighted.addPositions(data.timeToX(pos) - (noteW / 2), clamp(y, 6) - (noteH6 / 2), noteW - 1,
-						noteH6 - 1);
-			}
-		} else {
-			final int x = idOrPos.isId() ? data.timeToX(data.currentNotes.get(idOrPos.id).pos)//
-					: idOrPos.isPos() ? data.timeToX(idOrPos.pos) : -1;
-
-			if (x >= 0) {
-				highlighted.addPositions(x - (noteW / 2), clamp(y0, 6) - (noteH6 / 2), noteW - 1, noteH6 - 1);
-			}
+		final List<IdOrPosWithLane> highlightedNotes = data.getHighlightedNotes();
+		for (final IdOrPosWithLane note : highlightedNotes) {
+			final int x = data.timeToX(note.pos);
+			final int y = getLaneY(note.lane, lanes);
+			highlighted.addPositions(x - (noteW / 2), y - (noteH / 2), noteW - 1, noteH - 1);
 		}
 
 		highlighted.draw(g, ChartPanel.colors.get("HIGHLIGHT"));
 	}
 
-	private void drawGuitarHighlightNoteDrag(final Graphics g, final ChartData data) {
+	private void drawHighlightNoteDrag(final Graphics g, final ChartData data, final int lanes) {
 		final IdOrPos idOrPos = data.findClosestIdOrPosForX(data.mx, data.handler.isCtrl());
 		final int x = idOrPos.isId() ? data.timeToX(data.currentNotes.get(idOrPos.id).pos)//
 				: idOrPos.isPos() ? data.timeToX(idOrPos.pos) : -1;
+		final int noteH = lanes == 5 ? noteH5 : noteH6;
 
-		g.drawRect(x - (noteW / 2), clamp(data.my, 6) - (noteH6 / 2), noteW - 1, noteH6 - 1);
+		g.drawRect(x - (noteW / 2), clamp(data.my, lanes) - (noteH / 2), noteW - 1, noteH - 1);
 	}
 
-	private void drawGuitarDefaultHighlight(final Graphics g, final ChartData data) {
+	private void drawDefaultHighlight(final Graphics g, final ChartData data, final int lanes) {
 		final IdOrPos idOrPos = data.findClosestIdOrPosForX(data.mx);
 		final int x = idOrPos.isId() ? data.timeToX(data.currentNotes.get(idOrPos.id).pos)//
 				: idOrPos.isPos() ? data.timeToX(idOrPos.pos) : -1;
+		final int noteH = lanes == 5 ? noteH5 : noteH6;
 
-		g.drawRect(x - (noteW / 2), clamp(data.my, 6) - (noteH6 / 2), noteW - 1, noteH6 - 1);
+		g.drawRect(x - (noteW / 2), clamp(data.my, lanes) - (noteH / 2), noteW - 1, noteH - 1);
+	}
+
+	private void drawGuitarHighlightNoteAdd(final Graphics g, final ChartData data) {
+		drawHighlightNoteAdd(g, data, 6);
+	}
+
+	private void drawGuitarHighlightNoteDrag(final Graphics g, final ChartData data) {
+		drawHighlightNoteDrag(g, data, 6);
+	}
+
+	private void drawGuitarDefaultHighlight(final Graphics g, final ChartData data) {
+		drawDefaultHighlight(g, data, 6);
 	}
 
 	private void drawGuitarHighlight(final Graphics g, final ChartData data) {
@@ -103,76 +74,15 @@ public class HighlightDrawer implements Drawer {
 	}
 
 	private void drawDrumsKeysHighlightNoteAdd(final Graphics g, final ChartData data) {
-		final DrawList highlighted = new DrawList();
-		int x0, x1;
-		int y0, y1;
-		if (data.mx < data.mousePressX) {
-			x0 = data.mx;
-			y0 = data.my;
-			x1 = data.mousePressX;
-			y1 = data.mousePressY;
-		} else {
-			x0 = data.mousePressX;
-			y0 = data.mousePressY;
-			x1 = data.mx;
-			y1 = data.my;
-		}
-		final IdOrPos idOrPos = data.findClosestIdOrPosForX(x1);
-		final IdOrPos startIdOrPos = data.findClosestIdOrPosForX(x0);
-
-		final double firstNotePos = startIdOrPos.isId() ? data.currentNotes.get(startIdOrPos.id).pos : startIdOrPos.pos;
-		final double lastNotePos = idOrPos.isId() ? data.currentNotes.get(idOrPos.id).pos : idOrPos.pos;
-
-		if (firstNotePos != lastNotePos) {
-			final double length = lastNotePos - firstNotePos;
-
-			final List<Note> notes = data.findNotesFromTo(
-					startIdOrPos.isId() ? startIdOrPos.id : data.findFirstNoteAfterTime(firstNotePos), lastNotePos);
-
-			for (final Note note : notes) {
-				final double part = (note.pos - firstNotePos) / length;
-				final int y = clamp((y0 * (1 - part)) + (part * y1), 5);
-				if (isInLanes(y)) {
-					highlighted.addPositions(data.timeToX(note.pos) - (noteW / 2), y - (noteH5 / 2), noteW - 1,
-							noteH5 - 1);
-				}
-			}
-
-			final List<Double> allGridPositions = data.s.tempoMap.getGridPositionsFromTo(data.gridSize,
-					data.xToTime(x0), data.xToTime(x1));
-			final List<Double> gridPositions = ChartData.removePostionsCloseToNotes(allGridPositions, notes);
-			for (final Double pos : gridPositions) {
-				final double part = (pos - firstNotePos) / length;
-				final double y = (y0 * (1 - part)) + (part * y1);
-				highlighted.addPositions(data.timeToX(pos) - (noteW / 2), clamp(y, 5) - (noteH5 / 2), noteW - 1,
-						noteH5 - 1);
-			}
-		} else {
-			final int x = idOrPos.isId() ? data.timeToX(data.currentNotes.get(idOrPos.id).pos)//
-					: idOrPos.isPos() ? data.timeToX(idOrPos.pos) : -1;
-
-			if (x >= 0) {
-				highlighted.addPositions(x - (noteW / 2), clamp(y0, 5) - (noteH5 / 2), noteW - 1, noteH5 - 1);
-			}
-		}
-
-		highlighted.draw(g, ChartPanel.colors.get("HIGHLIGHT"));
+		drawHighlightNoteAdd(g, data, 5);
 	}
 
 	private void drawDrumsKeysHighlightNoteDrag(final Graphics g, final ChartData data) {
-		final IdOrPos idOrPos = data.findClosestIdOrPosForX(data.mx, data.handler.isCtrl());
-		final int x = idOrPos.isId() ? data.timeToX(data.currentNotes.get(idOrPos.id).pos)//
-				: idOrPos.isPos() ? data.timeToX(idOrPos.pos) : -1;
-
-		g.drawRect(x - (noteW / 2), clamp(data.my, 5) - (noteH5 / 2), noteW - 1, noteH5 - 1);
+		drawHighlightNoteDrag(g, data, 5);
 	}
 
 	private void drawDrumsKeysDefaultHighlight(final Graphics g, final ChartData data) {
-		final IdOrPos idOrPos = data.findClosestIdOrPosForX(data.mx);
-		final int x = idOrPos.isId() ? data.timeToX(data.currentNotes.get(idOrPos.id).pos)//
-				: idOrPos.isPos() ? data.timeToX(idOrPos.pos) : -1;
-
-		g.drawRect(x - (noteW / 2), clamp(data.my, 5) - (noteH5 / 2), noteW - 1, noteH5 - 1);
+		drawDefaultHighlight(g, data, 5);
 	}
 
 	private void drawDrumsKeysHighlight(final Graphics g, final ChartData data) {

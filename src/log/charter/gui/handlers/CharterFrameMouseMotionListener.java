@@ -1,11 +1,13 @@
 package log.charter.gui.handlers;
 
+import static java.lang.Math.abs;
+import static log.charter.gui.ChartPanel.isInLanes;
+import static log.charter.song.TempoMap.calcBPM;
+
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionListener;
 
 import log.charter.data.ChartData;
-import log.charter.gui.ChartPanel;
-import log.charter.song.TempoMap;
 
 public class CharterFrameMouseMotionListener implements MouseMotionListener {
 	private final ChartData data;
@@ -23,18 +25,18 @@ public class CharterFrameMouseMotionListener implements MouseMotionListener {
 			if (data.draggedTempo.pos < (data.draggedTempoPrev.pos + 1)) {
 				data.draggedTempo.pos = data.draggedTempoPrev.pos + 1;
 			}
-			TempoMap.calcBPM(data.draggedTempoPrev, data.draggedTempo);
+			calcBPM(data.draggedTempoPrev, data.draggedTempo);
 			if (data.draggedTempoNext != null) {
 				if (data.draggedTempo.pos > (data.draggedTempoNext.pos - 1)) {
 					data.draggedTempo.pos = data.draggedTempoNext.pos - 1;
 				}
-				TempoMap.calcBPM(data.draggedTempo, data.draggedTempoNext);
+				calcBPM(data.draggedTempo, data.draggedTempoNext);
 			} else {
 				data.draggedTempo.kbpm = data.draggedTempoPrev.kbpm;
 			}
 		}
 
-		if (ChartPanel.isInLanes(data.my) && (Math.abs(data.mx - data.mousePressX) > 20)) {
+		if (isInLanes(data.my) && (abs(data.mx - data.mousePressX) > 20)) {
 			data.isNoteDrag = true;
 		}
 	}

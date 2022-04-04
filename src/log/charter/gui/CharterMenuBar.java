@@ -106,6 +106,9 @@ public class CharterMenuBar extends JMenuBar {
 		menu.add(createItem("Redo", ctrl('R'), e -> handler.redo()));
 		menu.add(createItem("Copy", ctrl('C'), e -> handler.data.copy()));
 		menu.add(createItem("Paste", ctrl('V'), e -> handler.paste()));
+		menu.addSeparator();
+
+		menu.add(createItem("Toggle debug info", e -> handler.toggleDrawDebug()));
 
 		menu.setEnabled(false);
 		editMenu = menu;

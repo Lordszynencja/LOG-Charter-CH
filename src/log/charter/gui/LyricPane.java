@@ -5,7 +5,7 @@ import java.awt.event.KeyEvent;
 import javax.swing.JComponent;
 import javax.swing.KeyStroke;
 
-import log.charter.data.ChartData.IdOrPos;
+import log.charter.data.IdOrPos;
 import log.charter.song.Lyric;
 
 public class LyricPane extends ParamsPane {

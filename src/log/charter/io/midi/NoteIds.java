@@ -84,7 +84,7 @@ public class NoteIds {
 				addNoteId(108 + c, drumsType, diff, 4 + c);
 			}
 		}
-		addNoteId(95, 1, 3, 5);// expert+ bass
+		addNoteId(95, drumsType, 3, 5);// expert+ bass
 
 //		addNoteId(60, 1, 0, 0);
 //		addNoteId(61, 1, 0, 1);

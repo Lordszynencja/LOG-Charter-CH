@@ -18,10 +18,12 @@ public class AudioDrawer implements Drawer {
 			if (start < 0) {
 				start = 0;
 			}
+
 			final int[] musicValues = data.music.data[0];
 			if (end > musicValues.length) {
 				end = musicValues.length;
 			}
+
 			final int midY = getLaneY(0, 1);
 
 			int step = 1;
@@ -31,6 +33,7 @@ public class AudioDrawer implements Drawer {
 				xStep += multiplier;
 			}
 			start -= start % step;
+
 			double x0 = 0;
 			double x1 = -xStep + ((start - zero) * multiplier);
 			int y0 = 0;

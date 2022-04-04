@@ -91,8 +91,10 @@ public class DrumsInstrumentReader extends InstrumentReader {
 					note.notes = 1;
 					notesMap.put((long) note.pos, note);
 					n = note;
+				} else {
+					n.notes |= 1;
 				}
-				note.expertPlus = true;
+				n.expertPlus = true;
 			});
 			notes.get(i).get(6).forEach(note -> {
 				final Note n = notesMap.get((long) note.pos);

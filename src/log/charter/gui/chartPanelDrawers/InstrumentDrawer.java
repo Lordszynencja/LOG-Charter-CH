@@ -6,6 +6,7 @@ import static log.charter.gui.ChartPanel.noteH6;
 import static log.charter.gui.ChartPanel.noteW;
 import static log.charter.util.ByteUtils.getBit;
 
+import java.awt.Font;
 import java.awt.Graphics;
 import java.util.List;
 
@@ -242,6 +243,17 @@ public class InstrumentDrawer implements Drawer {
 		wordConnections.draw(g, ChartPanel.colors.get("LYRIC_WORD_PART"));
 	}
 
+	private void drawDebugNoteId(final Graphics g, final ChartPanel panel, final ChartData data) {
+		for (int i = 0; i < data.currentNotes.size(); i++) {
+			final Note n = data.currentNotes.get(i);
+			final int x = data.timeToX(n.pos);
+			if (x >= 0 && x < panel.getWidth()) {
+				g.setFont(new Font(Font.DIALOG, Font.PLAIN, 15));
+				g.drawString("" + i, x - 5, ChartPanel.beatTextY - 10);
+			}
+		}
+	}
+
 	@Override
 	public void draw(final Graphics g, final ChartPanel panel, final ChartData data) {
 		if (data.s == null) {
@@ -256,6 +268,10 @@ public class InstrumentDrawer implements Drawer {
 			drawLyrics(g, panel, data);
 		} else if (data.currentInstrument.type.isKeysType()) {
 			drawKeysNotes(g, panel, data);
+		}
+
+		if (data.drawDebug) {
+			drawDebugNoteId(g, panel, data);
 		}
 	}
 }

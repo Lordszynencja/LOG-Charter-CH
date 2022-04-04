@@ -13,8 +13,8 @@ import java.util.List;
 import javax.swing.JOptionPane;
 
 import log.charter.data.ChartData;
-import log.charter.data.ChartData.IdOrPos;
 import log.charter.data.Config;
+import log.charter.data.IdOrPos;
 import log.charter.gui.handlers.SongFileHandler;
 import log.charter.io.Logger;
 import log.charter.main.LogCharterMain;
@@ -52,6 +52,8 @@ public class ChartEventsHandler implements KeyListener, MouseListener {
 	private boolean left = false;
 	private boolean right = false;
 	private boolean gPressed = false;
+	private boolean clickCancelsRelease = false;
+	private boolean releaseCancelled = false;
 
 	public final SongFileHandler songFileHandler;
 
@@ -374,6 +376,10 @@ public class ChartEventsHandler implements KeyListener, MouseListener {
 		data.drawAudio = !data.drawAudio;
 	}
 
+	public void toggleDrawDebug() {
+		data.drawDebug = !data.drawDebug;
+	}
+
 	public void toggleClaps() {
 		claps = !claps;
 	}
@@ -522,7 +528,9 @@ public class ChartEventsHandler implements KeyListener, MouseListener {
 
 	public void editLyric() {
 		if (data.selectedNotes.size() == 1) {
-			new LyricPane(frame, new IdOrPos(data.selectedNotes.get(0), -1));
+			final int noteId = data.selectedNotes.get(0);
+			final double pos = data.s.v.lyrics.get(noteId).pos;
+			new LyricPane(frame, IdOrPos.fromId(noteId, pos));
 		}
 		setChanged();
 	}
@@ -598,6 +606,11 @@ public class ChartEventsHandler implements KeyListener, MouseListener {
 
 	@Override
 	public void mouseClicked(final MouseEvent e) {
+		if (releaseCancelled) {
+			clickCancelsRelease = false;
+			return;
+		}
+
 		if (e.getButton() == MouseEvent.BUTTON1) {
 			final int y = e.getY();
 			if (isInTempos(y)) {
@@ -638,6 +651,14 @@ public class ChartEventsHandler implements KeyListener, MouseListener {
 		}
 
 		cancelAllActions();
+		if (clickCancelsRelease) {
+			releaseCancelled = true;
+			return;
+		} else {
+			clickCancelsRelease = true;
+			releaseCancelled = false;
+		}
+
 		data.mx = e.getX();
 		data.my = e.getY();
 
@@ -656,8 +677,6 @@ public class ChartEventsHandler implements KeyListener, MouseListener {
 			}
 		} else if (e.getButton() == MouseEvent.BUTTON3) {
 			if (isInLanes(y)) {
-				data.selectedNotes.clear();
-				data.lastSelectedNote = null;
 				data.startNoteAdding(x, y);
 			}
 		}
@@ -668,6 +687,12 @@ public class ChartEventsHandler implements KeyListener, MouseListener {
 		if (data.isEmpty) {
 			return;
 		}
+
+		clickCancelsRelease = false;
+		if (releaseCancelled) {
+			return;
+		}
+
 		data.mx = e.getX();
 		data.my = e.getY();
 
@@ -759,13 +784,14 @@ public class ChartEventsHandler implements KeyListener, MouseListener {
 		if (!ctrl) {
 			data.deselect();
 		}
-		data.lastSelectedNote = last;
+
 		for (final Integer id : newSelectedNotes) {
 			if (!data.selectedNotes.remove(id)) {
 				data.selectedNotes.add(id);
 			}
 		}
 		data.selectedNotes.sort(null);
+		data.lastSelectedNote = last;
 	}
 
 	public void setChanged() {

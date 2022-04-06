@@ -4,6 +4,8 @@ import static log.charter.io.Logger.error;
 
 import java.io.File;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 import javax.sound.midi.InvalidMidiDataException;
 import javax.swing.JFileChooser;
@@ -405,6 +407,12 @@ public class SongFileHandler {
 			Config.save();
 			handler.data.setSong(dirPath, s, iniData, musicData);
 			handler.data.changed = false;
+
+			final String backupPath = midiFileChosen.getAbsolutePath() + "-"
+					+ new SimpleDateFormat("yyyy-MM-dd_HH.mm.ss").format(new Date()) + ".mid";
+
+			final byte[] bytes = RW.readB(backupPath);
+			RW.writeB(backupPath, bytes);
 		}
 	}
 
